@@ -7,20 +7,27 @@ type sphere = { center: Vec3.vec3;
 type ray = { origin: Vec3.vec3;
              dir: Vec3.vec3 }
 
+let point_at_parameter r t =
+  add r.origin (mul t r.dir)
+
 let hit_sphere sphere ray =
-  let oc = sub ray.dir sphere.center in
+  let oc = sub ray.origin sphere.center in
   let a = dot ray.dir ray.dir in
-  let b = dot oc ray.dir in
+  let b = (dot oc ray.dir) in
   let c = (dot oc oc) -. (sphere.radius *. sphere.radius) in
   let discriminant = b*.b -. a*.c in
 
-  ( discriminant > 0.0)
+  if (discriminant > 0.0)
+  then (-.b +. (sqrt discriminant)) /. a
+  else -1.0
 
 let get_color ray =
-  if (hit_sphere {center = Vec3.of_floats (0., 0., -1.);
-                  radius = 0.5}
-        ray)
-  then Vec3.of_floats (1., 0., 0.)
+  let sphere = {center = Vec3.of_floats (0., 0., -1.);
+                radius = 0.5 } in
+  let t = (hit_sphere sphere ray) in
+  if (t > 0.0)
+  then let n = unit_vector (sub (point_at_parameter ray t) sphere.center) in
+    mul 0.5 (Vec3.of_floats (n.x +. 1., n.y +. 1., n.z +. 1.))
   else let unit_direction = unit_vector ray.dir in
     let t = 0.5 *. (unit_direction.y +. 1.0) in
     add (mul (1.0 -. t) {x= 1.0; y=1.0; z= 1.0}) (mul t {x= 0.5; y= 0.7; z= 1.0})
@@ -60,4 +67,4 @@ let main() =
   done
 ;;
 
-(* main() *)
+main()
