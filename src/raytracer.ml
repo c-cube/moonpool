@@ -63,16 +63,7 @@ and hit h ray (tmin, tmax) =
   | World w -> hit_world w ray (tmin, tmax)
 
 
-let get_color ray =
-  let sphere1 = Sphere {center = Vec3.of_floats (0., 0., -1.);
-                        radius = 0.5 } in
-  let sphere2 = Sphere {center = Vec3.of_floats (0., -100.5, -1.);
-                        radius = 100.0 } in
-  let sphere3 = Sphere {center = Vec3.of_floats (-1.0, -0.75, -2.);
-                        radius = 0.25 } in
-
-  let world = World [sphere2; sphere1; sphere3] in
-
+let get_color world ray =
   match (hit world ray (0., Float.infinity)) with
   Some hit_result ->
     let t = hit_result.t in
@@ -90,6 +81,14 @@ let get_color ray =
 
 let write_to_file filename =
   Random.self_init ();
+
+  let sphere1 = Sphere {center = Vec3.of_floats (0., 0., -1.);
+                        radius = 0.5 } in
+  let sphere2 = Sphere {center = Vec3.of_floats (0., -100.5, -1.);
+                        radius = 100.0 } in
+  let sphere3 = Sphere {center = Vec3.of_floats (-1.0, -0.75, -2.);
+                        radius = 0.25 } in
+  let world = World [sphere2; sphere1; sphere3] in
   
   let nx = 200 in
   let ny = 100 in
@@ -114,7 +113,7 @@ let write_to_file filename =
 
         let r = { origin = origin;
                   dir = Vec3.add lower_left_corner (Vec3.add (Vec3.mul u horizontal) (Vec3.mul v vertical)) } in
-        color := Vec3.add !color (get_color r);
+        color := Vec3.add !color (get_color world r);
 
       done;
 
