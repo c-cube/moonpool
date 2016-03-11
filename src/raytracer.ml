@@ -68,7 +68,10 @@ let get_color ray =
                         radius = 0.5 } in
   let sphere2 = Sphere {center = Vec3.of_floats (0., -100.5, -1.);
                         radius = 100.0 } in
-  let world = World [sphere2; sphere1] in
+  let sphere3 = Sphere {center = Vec3.of_floats (-1.0, -0.75, -2.);
+                        radius = 0.25 } in
+
+  let world = World [sphere2; sphere1; sphere3] in
 
   match (hit world ray (0., Float.infinity)) with
   Some hit_result ->
@@ -86,8 +89,11 @@ let get_color ray =
 
 
 let write_to_file filename =
+  Random.self_init ();
+  
   let nx = 200 in
   let ny = 100 in
+  let ns = 100 in
   let oc = Out_channel.create filename in
   fprintf oc "P3\n";
   fprintf oc "%d\n" nx;
@@ -97,16 +103,22 @@ let write_to_file filename =
   let horizontal = Vec3.of_floats (4., 0., 0.) in
   let vertical = Vec3.of_floats (0., 2., 0.) in
   let origin = Vec3.of_floats (0., 0., 0.) in
-  let color = ref {x=0.; y=0.; z=0.} in
+
   for j = ny downto 1 do
     for i = 0 to nx-1 do
-      let u = (Float.of_int i) /. (Float.of_int nx) in
-      let v = (Float.of_int j) /. (Float.of_int ny) in
+      let color = ref {x=0.; y=0.; z=0.} in
+      for s = 0 to ns-1 do
+        (* NOTE: Random.float is bounds __inclusive__ *)
+        let u = (Float.of_int i +. (Random.float 1.0)) /. (Float.of_int nx) in
+        let v = (Float.of_int j +. (Random.float 1.0)) /. (Float.of_int ny) in
 
-      let r = { origin = origin;
-                dir = Vec3.add lower_left_corner (Vec3.add (Vec3.mul u horizontal) (Vec3.mul v vertical)) } in
-      color := get_color r;
+        let r = { origin = origin;
+                  dir = Vec3.add lower_left_corner (Vec3.add (Vec3.mul u horizontal) (Vec3.mul v vertical)) } in
+        color := Vec3.add !color (get_color r);
 
+      done;
+
+      color := Vec3.mul (1. /. (Float.of_int ns)) !color ;
       let {x=r; y=g; z=b} = !color in
       let (ir, ig, ib) = (Int.of_float (r*.255.99),
                           Int.of_float (g*.255.99),
