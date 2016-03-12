@@ -16,14 +16,15 @@ type hit_rec = { t : float;
 type hit = hit_rec option
 
 let random_in_unit_sphere () =
-  let p = ref (Vec3.of_floats ((Random.float 1.0),
-                               (Random.float 1.0),
-                               (Random.float 1.0))) in
+  let p = ref (Vec3.sub (Vec3.mul 2.0 (Vec3.of_floats ((Random.float 1.0),
+                                                       (Random.float 1.0),
+                                                       (Random.float 1.0))))
+                 (Vec3.of_floats (1., 1., 1.))) in
   while ((Vec3.dot !p !p) >= 1.0) do
-    p := Vec3.mul 2.0 (Vec3.sub (Vec3.of_floats ((Random.float 1.0),
+    p := Vec3.sub (Vec3.mul 2.0 (Vec3.of_floats ((Random.float 1.0),
                                                  (Random.float 1.0),
-                                                 (Random.float 1.0)))
-                         (Vec3.of_floats (1., 1., 1.)))
+                                                  (Random.float 1.0))))
+        (Vec3.of_floats (1., 1., 1.))
   done;
   !p
 ;;
@@ -38,22 +39,22 @@ let hit_sphere sphere ray (tmin, tmax) =
 
   if (discriminant > 0.0)
   then
-    let t = (-.b +. (sqrt discriminant)) /. a in
+    let t = (-.b -. (sqrt discriminant)) /. a in
 
     if (t < tmax && t > tmin)
     then 
       let p = Ray.point_at_parameter ray t in
       Some { t = t;
              p = p;
-             normal = unit_vector (sub p sphere.center); }
+             normal = mul (1. /. sphere.radius) (sub p sphere.center); }
     else
-      let t = (-.b -. (sqrt discriminant)) /. a in
+      let t = (-.b +. (sqrt discriminant)) /. a in
       if (t < tmax && t > tmin)
       then 
         let p = Ray.point_at_parameter ray t in
         Some { t = t;
                p = p;
-               normal = unit_vector (sub p sphere.center); }
+               normal = mul (1. /. sphere.radius) (sub p sphere.center); }
       else None
   else None
 
@@ -78,7 +79,7 @@ and hit h ray (tmin, tmax) =
 
 let rec get_color world ray =
   match (hit world ray (0., Float.infinity)) with
-  Some hit_result ->
+    Some hit_result ->
     let target = Vec3.add (Vec3.add hit_result.p hit_result.normal) 
         (random_in_unit_sphere ()) in
     Vec3.mul 0.5 (get_color world {origin = hit_result.p;
@@ -128,6 +129,10 @@ let write_to_file filename =
       done;
 
       color := Vec3.mul (1. /. (Float.of_int ns)) !color ;
+      (* gamma correction *)
+      color := Vec3.of_floats (sqrt(!color.x),
+                               sqrt(!color.y),
+                               sqrt(!color.z));
       let {x=r; y=g; z=b} = !color in
       let (ir, ig, ib) = (Int.of_float (r*.255.99),
                           Int.of_float (g*.255.99),
@@ -138,4 +143,8 @@ let write_to_file filename =
     done
   done;
   Out_channel.close oc;
+;;
+
+let () =
+  write_to_file "matte.ppm"
 ;;
