@@ -3,15 +3,23 @@ open Printf
 open Vec3
 open Ray
 
+type material = Lambertian of Vec3.vec3
+              | Metal of Vec3.vec3
+              | DummyNone
+
 type sphere = { center: Vec3.vec3;
-                radius: float }
+                radius: float;
+                mat: material;
+              }
 
 type hitable = Sphere of sphere
              | World of hitable list
 
+
 type hit_rec = { t : float;
                  p: Vec3.vec3;
-                 normal: Vec3.vec3; }
+                 normal: Vec3.vec3;
+                 mat: material; }
 
 type hit = hit_rec option
 
@@ -23,12 +31,32 @@ let random_in_unit_sphere () =
   while ((Vec3.dot !p !p) >= 1.0) do
     p := Vec3.sub (Vec3.mul 2.0 (Vec3.of_floats ((Random.float 1.0),
                                                  (Random.float 1.0),
-                                                  (Random.float 1.0))))
+                                                 (Random.float 1.0))))
         (Vec3.of_floats (1., 1., 1.))
   done;
   !p
 ;;
 
+type scatter = { ray : Ray.ray;
+                 color: Vec3.vec3; }
+
+let reflect v n =
+  Vec3.sub v (Vec3.mul (2. *. (Vec3.dot v n)) n)
+
+let hit_scatter rin hit_rec =
+  match hit_rec.mat with
+    Lambertian albedo -> 
+    let target = (Vec3.add (Vec3.add hit_rec.p hit_rec.normal) (random_in_unit_sphere ())) in
+    let scatter = { ray =  Ray.create hit_rec.p (Vec3.sub target hit_rec.p);
+                    color =  albedo; }
+    in scatter
+  (* TODO: C++ version returns boolean here *)
+  | Metal albedo ->
+    let reflected = reflect (Vec3.unit_vector rin.dir) hit_rec.normal in
+    let scattered = { ray = Ray.create hit_rec.p reflected;
+                      color = albedo; } in
+    scattered
+;;
 
 let hit_sphere sphere ray (tmin, tmax) =
   let oc = sub ray.origin sphere.center in
@@ -46,7 +74,9 @@ let hit_sphere sphere ray (tmin, tmax) =
       let p = Ray.point_at_parameter ray t in
       Some { t = t;
              p = p;
-             normal = mul (1. /. sphere.radius) (sub p sphere.center); }
+             normal = mul (1. /. sphere.radius) (sub p sphere.center);
+             mat = sphere.mat
+           }
     else
       let t = (-.b +. (sqrt discriminant)) /. a in
       if (t < tmax && t > tmin)
@@ -54,7 +84,9 @@ let hit_sphere sphere ray (tmin, tmax) =
         let p = Ray.point_at_parameter ray t in
         Some { t = t;
                p = p;
-               normal = mul (1. /. sphere.radius) (sub p sphere.center); }
+               normal = mul (1. /. sphere.radius) (sub p sphere.center);
+               mat = sphere.mat;
+             }
       else None
   else None
 
@@ -65,7 +97,8 @@ let rec hit_world world ray (tmin, tmax) =
         let prev_rec = match acc with
             None -> { t = tmax;
                       p = Vec3.of_floats (-1., -1., -1.);
-                      normal = Vec3.of_floats (-1., -1., -1.); }
+                      normal = Vec3.of_floats (-1., -1., -1.);
+                      mat = DummyNone}
           | Some r -> r in
         match (hit h ray (tmin, prev_rec.t)) with
           Some r -> Some r
@@ -77,13 +110,13 @@ and hit h ray (tmin, tmax) =
   | World w -> hit_world w ray (tmin, tmax)
 
 
-let rec get_color world ray =
+let rec get_color world ray depth =
   match (hit world ray (0., Float.infinity)) with
     Some hit_result ->
-    let target = Vec3.add (Vec3.add hit_result.p hit_result.normal) 
-        (random_in_unit_sphere ()) in
-    Vec3.mul 0.5 (get_color world {origin = hit_result.p;
-                                   dir = Vec3.sub target hit_result.p})
+    if (depth < 50)
+    then let s = hit_scatter ray hit_result in
+      Vec3.pmul s.color (get_color world s.ray (depth+1))
+    else Vec3.of_floats (0., 0., 0.)
   | None ->
     let unit_direction = unit_vector ray.dir in
     let t = 0.5 *. (unit_direction.y +. 1.0) in
@@ -94,15 +127,21 @@ let write_to_file filename =
   Random.self_init ();
 
   let sphere1 = Sphere {center = Vec3.of_floats (0., 0., -1.);
-                        radius = 0.5 } in
+                        radius = 0.5; 
+                        mat = Lambertian (Vec3.of_floats (0.8, 0.3, 0.3)) } in
   let sphere2 = Sphere {center = Vec3.of_floats (0., -100.5, -1.);
-                        radius = 100.0 } in
-  let sphere3 = Sphere {center = Vec3.of_floats (-1.0, -0.75, -2.);
-                        radius = 0.25 } in
-  let world = World [sphere2; sphere1; sphere3] in
+                        radius = 100.0;
+                        mat = Lambertian (Vec3.of_floats (0.8, 0.8, 0.0))} in
+  let sphere3 = Sphere {center = Vec3.of_floats (-1.0, 0., -1.);
+                        radius = 0.5;
+                        mat = Metal (Vec3.of_floats (0.8, 0.6, 0.2))} in
+  let sphere4 = Sphere {center = Vec3.of_floats (1.0, 0., -1.);
+                        radius = 0.5;
+                        mat = Metal (Vec3.of_floats (0.8, 0.8, 0.8))} in
+  let world = World [sphere3; sphere2; sphere1; sphere4] in
   
-  let nx = 200 in
-  let ny = 100 in
+  let nx = 400 in
+  let ny = 200 in
   let ns = 100 in
   let oc = Out_channel.create filename in
   fprintf oc "P3\n";
@@ -124,7 +163,7 @@ let write_to_file filename =
 
         let r = { origin = origin;
                   dir = Vec3.add lower_left_corner (Vec3.add (Vec3.mul u horizontal) (Vec3.mul v vertical)) } in
-        color := Vec3.add !color (get_color world r);
+        color := Vec3.add !color (get_color world r 0);
 
       done;
 

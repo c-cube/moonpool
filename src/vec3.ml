@@ -36,3 +36,9 @@ let mul t v =
   { x = t *. v.x;
     y = t *. v.y;
     z = t *. v.z }
+
+(* pairwise multiplication *)
+let pmul v w =
+  { x = v.x *. w.x;
+    y = v.y *. w.y;
+    z = v.z *. w.z; }

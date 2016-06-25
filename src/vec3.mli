@@ -9,3 +9,4 @@ val dot : vec3 -> vec3 -> float
 val cross: vec3 -> vec3 -> vec3
 val mul : float -> vec3 -> vec3
 val unit_vector : vec3 -> vec3
+val pmul : vec3 -> vec3 -> vec3
