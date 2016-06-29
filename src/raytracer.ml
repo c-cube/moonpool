@@ -21,6 +21,10 @@ type hit_rec = { t : float;
                  normal: Vec3.vec3;
                  mat: material; }
 
+type scatter = { ray : Ray.ray;
+                 color: Vec3.vec3;
+                 scatter: bool;}
+
 type hit = hit_rec option
 
 let random_in_unit_sphere () =
@@ -37,9 +41,6 @@ let random_in_unit_sphere () =
   !p
 ;;
 
-type scatter = { ray : Ray.ray;
-                 color: Vec3.vec3; }
-
 let reflect v n =
   Vec3.sub v (Vec3.mul (2. *. (Vec3.dot v n)) n)
 
@@ -48,13 +49,15 @@ let hit_scatter rin hit_rec =
     Lambertian albedo -> 
     let target = (Vec3.add (Vec3.add hit_rec.p hit_rec.normal) (random_in_unit_sphere ())) in
     let scatter = { ray =  Ray.create hit_rec.p (Vec3.sub target hit_rec.p);
-                    color =  albedo; }
+                    color =  albedo;
+                    scatter = true;}
     in scatter
-  (* TODO: C++ version returns boolean here *)
   | Metal albedo ->
     let reflected = reflect (Vec3.unit_vector rin.dir) hit_rec.normal in
-    let scattered = { ray = Ray.create hit_rec.p reflected;
-                      color = albedo; } in
+    let scattered_ray = Ray.create hit_rec.p reflected in
+    let scattered = { ray = scattered_ray;
+                      color = albedo;
+                      scatter = (Vec3.dot scattered_ray.dir hit_rec.normal) > 0.0;} in
     scattered
 ;;
 
