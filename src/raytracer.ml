@@ -1,11 +1,11 @@
-open Core.Std
+open Core
 open Printf
 open Vec3
 open Ray
 
 type material = Lambertian of Vec3.vec3 (* matte surface *)
               | Metal of Vec3.vec3
-              | DummyNone
+              | DummyNone       (* TODO: use option type instead *)
 
 type sphere = { center: Vec3.vec3;
                 radius: float;
@@ -59,6 +59,7 @@ let hit_scatter rin hit_rec =
                       color = albedo;
                       scatter = (Vec3.dot scattered_ray.dir hit_rec.normal) > 0.0;} in
     scattered
+  | DummyNone -> failwith "not a real material type"
 
 let hit_sphere sphere ray (tmin, tmax) =
   let oc = sub ray.origin sphere.center in
@@ -144,7 +145,7 @@ let write_to_file filename =
   
   let nx = 400 in
   let ny = 200 in
-  let ns = 100 in
+  let ns = 60 in
   let oc = Out_channel.create filename in
   fprintf oc "P3\n";
   fprintf oc "%d\n" nx;
