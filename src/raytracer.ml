@@ -3,7 +3,7 @@ open Printf
 open Vec3
 open Ray
 
-type material = Lambertian of Vec3.vec3
+type material = Lambertian of Vec3.vec3 (* matte surface *)
               | Metal of Vec3.vec3
               | DummyNone
 
@@ -46,20 +46,19 @@ let reflect v n =
 
 let hit_scatter rin hit_rec =
   match hit_rec.mat with
-    Lambertian albedo -> 
+    Lambertian(albedo) ->
     let target = (Vec3.add (Vec3.add hit_rec.p hit_rec.normal) (random_in_unit_sphere ())) in
     let scatter = { ray =  Ray.create hit_rec.p (Vec3.sub target hit_rec.p);
                     color =  albedo;
                     scatter = true;}
     in scatter
-  | Metal albedo ->
+  | Metal(albedo) ->
     let reflected = reflect (Vec3.unit_vector rin.dir) hit_rec.normal in
     let scattered_ray = Ray.create hit_rec.p reflected in
     let scattered = { ray = scattered_ray;
                       color = albedo;
                       scatter = (Vec3.dot scattered_ray.dir hit_rec.normal) > 0.0;} in
     scattered
-;;
 
 let hit_sphere sphere ray (tmin, tmax) =
   let oc = sub ray.origin sphere.center in
@@ -102,15 +101,15 @@ let rec hit_world world ray (tmin, tmax) =
                       p = Vec3.of_floats (-1., -1., -1.);
                       normal = Vec3.of_floats (-1., -1., -1.);
                       mat = DummyNone}
-          | Some r -> r in
+          | Some(r) -> r in
         match (hit h ray (tmin, prev_rec.t)) with
-          Some r -> Some r
+          Some(r) -> Some r
         | None -> acc)
 
 and hit h ray (tmin, tmax) =
   match h with
-    Sphere s -> hit_sphere s ray (tmin, tmax)
-  | World w -> hit_world w ray (tmin, tmax)
+    Sphere(s) -> hit_sphere s ray (tmin, tmax)
+  | World(w) -> hit_world w ray (tmin, tmax)
 
 
 let rec get_color world ray depth =
@@ -188,5 +187,5 @@ let write_to_file filename =
 ;;
 
 let () =
-  write_to_file "matte.ppm"
+  write_to_file "out.ppm"
 ;;

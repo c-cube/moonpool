@@ -1,5 +1,7 @@
 # rayml
 
+![Example rendered scene](examples/demo.jpg)
+
 A raytracer written in OCaml, following Peter Shirley's mini-book
 series [Raytracing in One Weekend][weekend].
 
