@@ -27,31 +27,30 @@ type scatter = { ray : Ray.ray;
 
 type hit = hit_rec option
 
-let random_in_unit_sphere () =
-  let p = ref (Vec3.sub (Vec3.mul 2.0 (Vec3.of_floats ((Random.float 1.0),
-                                                       (Random.float 1.0),
-                                                       (Random.float 1.0))))
-                 (Vec3.of_floats (1., 1., 1.))) in
-  while ((Vec3.dot !p !p) >= 1.0) do
-    p := Vec3.sub (Vec3.mul 2.0 (Vec3.of_floats ((Random.float 1.0),
-                                                 (Random.float 1.0),
-                                                 (Random.float 1.0))))
-        (Vec3.of_floats (1., 1., 1.))
-  done;
-  !p
-;;
+(* Produce a random point inside the unit sphere. Works by picking a
+   random point in the unit cube, rejecting if not inside the sphere. *)
+let rec random_in_unit_sphere () =
+  let p = (Vec3.sub (Vec3.mul 2.0 (Vec3.of_floats ((Random.float 1.0),
+                                                   (Random.float 1.0),
+                                                   (Random.float 1.0))))
+             (Vec3.of_floats (1., 1., 1.))) in
+  if ((Vec3.dot p p) >= 1.0)
+  then p
+  else random_in_unit_sphere ()
 
 let reflect v n =
   Vec3.sub v (Vec3.mul (2. *. (Vec3.dot v n)) n)
 
 let hit_scatter rin hit_rec =
   match hit_rec.mat with
+    (* reflect in random direction *)
     Lambertian(albedo) ->
     let target = (Vec3.add (Vec3.add hit_rec.p hit_rec.normal) (random_in_unit_sphere ())) in
     let scatter = { ray =  Ray.create hit_rec.p (Vec3.sub target hit_rec.p);
                     color =  albedo;
                     scatter = true;}
     in scatter
+  (* "shiny"- angle of reflectance = angle of incidence  *)
   | Metal(albedo) ->
     let reflected = reflect (Vec3.unit_vector rin.dir) hit_rec.normal in
     let scattered_ray = Ray.create hit_rec.p reflected in
@@ -182,11 +181,10 @@ let write_to_file filename =
       fprintf oc "%d " ir;
       fprintf oc "%d " ig;
       fprintf oc "%d \n" ib;
-    done
+    done;
   done;
-  Out_channel.close oc;
-;;
+  Out_channel.close oc
 
 let () =
   write_to_file "out.ppm"
-;;
+
