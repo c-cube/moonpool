@@ -3,8 +3,8 @@ open Printf
 open Vec3
 open Ray
 
-type material = Lambertian of Vec3.vec3 (* matte surface *)
-              | Metal of Vec3.vec3
+type material = Lambertian of Vec3.vec3 (* albedo *)
+              | Metal of Vec3.vec3 * float (* albedo, fuzz *)
               | DummyNone       (* TODO: use option type instead *)
 
 type sphere = { center: Vec3.vec3;
@@ -51,9 +51,9 @@ let hit_scatter rin hit_rec =
                     scatter = true;}
     in scatter
   (* "shiny"- angle of reflectance = angle of incidence  *)
-  | Metal(albedo) ->
+  | Metal(albedo, fuzz) ->
     let reflected = reflect (Vec3.unit_vector rin.dir) hit_rec.normal in
-    let scattered_ray = Ray.create hit_rec.p reflected in
+    let scattered_ray = Ray.create hit_rec.p (Vec3.add reflected (Vec3.mul fuzz (random_in_unit_sphere ()))) in
     let scattered = { ray = scattered_ray;
                       color = albedo;
                       scatter = (Vec3.dot scattered_ray.dir hit_rec.normal) > 0.0;} in
@@ -136,15 +136,15 @@ let write_to_file filename =
                         mat = Lambertian (Vec3.of_floats (0.8, 0.8, 0.0))} in
   let sphere3 = Sphere {center = Vec3.of_floats (-1.0, 0., -1.);
                         radius = 0.5;
-                        mat = Metal (Vec3.of_floats (0.8, 0.6, 0.2))} in
+                        mat = Metal ((Vec3.of_floats (0.8, 0.6, 0.2)), 0.4)} in
   let sphere4 = Sphere {center = Vec3.of_floats (1.0, 0., -1.);
                         radius = 0.5;
-                        mat = Metal (Vec3.of_floats (0.8, 0.8, 0.8))} in
+                        mat = Metal ((Vec3.of_floats (0.8, 0.8, 0.8)), 0.1)} in
   let world = World [sphere3; sphere2; sphere1; sphere4] in
   
   let nx = 400 in
   let ny = 200 in
-  let ns = 60 in
+  let ns = 150 in               (* samples per pixel *)
   let oc = Out_channel.create filename in
   fprintf oc "P3\n";
   fprintf oc "%d\n" nx;
