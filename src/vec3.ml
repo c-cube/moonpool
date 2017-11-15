@@ -15,6 +15,9 @@ let sub v w =
    y = v.y -. w.y; 
    z = v.z -. w.z}
 
+let neg v =
+  sub {x= 0.0; y=0.0; z=0.0} v
+
 let dot v w =
   v.x*.w.x +. v.y*.w.y +.v.z*.w.z
 
