@@ -7,8 +7,8 @@ reflective("metallic") surfaces.
 
 The design of the software roughly follows Peter Shirley's mini-book
 series [Raytracing in One Weekend][weekend] which presents a raytracer
-in C++. I've adopted the programming style to suit the OCaml's
-functional style.
+in C++. I've adopted the programming style to suit OCaml's functional
+style.
 
 ## Usage
 
