@@ -23,7 +23,7 @@ val fib : int -> int = <fun>
 # List.init 10 fib;;
 - : int list = [1; 1; 2; 3; 5; 8; 13; 21; 34; 55]
 
-# let fibs = Array.init 30 (fun n -> Moonpool.Fut.spawn ~on:pool (fun () -> fib n));;
+# let fibs = Array.init 35 (fun n -> Moonpool.Fut.spawn ~on:pool (fun () -> fib n));;
 val fibs : int Moonpool.Fut.t array =
   [|<abstr>; <abstr>; <abstr>; <abstr>; <abstr>; <abstr>; <abstr>; <abstr>;
     <abstr>; <abstr>; <abstr>; <abstr>; <abstr>; <abstr>; <abstr>; <abstr>;
