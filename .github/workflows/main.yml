@@ -1,0 +1,38 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  run:
+    name: build
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+            - macos-latest
+            - ubuntu-latest
+              #- windows-latest
+        ocaml-compiler:
+            - '4.03.x'
+            - '4.14.x'
+            - '5.0.x'
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@main
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          dune-cache: true
+
+      - run: opam install -t moonpool --deps-only
+
+      - run: opam exec -- dune build '@install'
+
+      - run: opam exec -- dune runtest
+

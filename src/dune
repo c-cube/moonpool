@@ -1,0 +1,18 @@
+(library
+ (public_name moonpool)
+ (name moonpool)
+ (private_modules atomic_ domain_)
+ (libraries threads))
+
+(rule
+  (targets atomic_.ml)
+  (action
+    (with-stdout-to %{targets}
+     (run ./gen/gen.exe --ocaml %{ocaml_version} --atomic))))
+          
+(rule
+  (targets domain_.ml)
+  (action
+    (with-stdout-to %{targets}
+     (run ./gen/gen.exe --ocaml %{ocaml_version} --domain))))
+          

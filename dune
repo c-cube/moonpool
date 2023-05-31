@@ -1,0 +1,5 @@
+
+(env
+  (_ (flags :standard -strict-sequence -warn-error -a+8 -w +a-40-70)))
+
+(mdx)
