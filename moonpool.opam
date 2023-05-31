@@ -8,7 +8,7 @@ tags: ["thread" "pool" "domain"]
 homepage: "https://github.com/c-cube/moonpool"
 bug-reports: "https://github.com/c-cube/moonpool/issues"
 depends: [
-  "ocaml"
+  "ocaml" {>= "4.05"}
   "dune" {>= "3.0"}
   "mdx" {>= "1.9.0" & with-test}
   "odoc" {with-doc}

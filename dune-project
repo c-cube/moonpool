@@ -21,7 +21,7 @@
  (name moonpool)
  (synopsis "Pools of threads supported by a pool of domains")
  (depends
-  ocaml
+  (ocaml (>= 4.05))
   dune
   (mdx
    (and
