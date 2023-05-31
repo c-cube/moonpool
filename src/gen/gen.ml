@@ -55,6 +55,8 @@ let get_id (self:t) : int = Thread.id self
 
 let spawn f : t =
   Thread.create f ()
+
+let relax () = Thread.yield ()
 |}
 
 let domain_post_5 =
@@ -65,8 +67,9 @@ type t = unit Domain.t
 
 let get_id (self:t) : int = (Domain.get_id self :> int)
 
-let spawn f : t =
-  Domain.spawn f
+let spawn : _ -> t = Domain.spawn
+
+let relax = Domain.cpu_relax
 |}
 
 let p_version s = Scanf.sscanf s "%d.%d" (fun x y -> x, y)
