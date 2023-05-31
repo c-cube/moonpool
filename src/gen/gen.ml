@@ -66,7 +66,7 @@ type t = unit Domain.t
 let get_id (self:t) : int = (Domain.get_id self :> int)
 
 let spawn f : t =
-  Domain.spawn f ()
+  Domain.spawn f
 |}
 
 let p_version s = Scanf.sscanf s "%d.%d" (fun x y -> x, y)
