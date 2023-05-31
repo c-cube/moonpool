@@ -53,7 +53,7 @@ type t = Thread.t
 
 let get_id (self:t) : int = Thread.id self
 
-let spawn_on f : t =
+let spawn f : t =
   Thread.create f ()
 |}
 

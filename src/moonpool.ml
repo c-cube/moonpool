@@ -59,7 +59,7 @@ module D_pool_ = struct
       (let n = Domain_.recommended_number () in
        Array.init n (fun i ->
            let q = S_queue.create () in
-           let _domain : domain = Domain_.spawn_on (fun () -> work_ i q) in
+           let _domain : domain = Domain_.spawn (fun () -> work_ i q) in
            { q }))
 
   (** Number of domains in the pool *)
