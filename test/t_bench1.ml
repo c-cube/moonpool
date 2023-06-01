@@ -1,7 +1,5 @@
 open Moonpool
 
-let ( let@ ) = ( @@ )
-
 let rec fib x =
   if x <= 1 then
     1
@@ -10,21 +8,12 @@ let rec fib x =
 
 let run ~psize ~n ~j () : _ Fut.t =
   Printf.printf "pool size=%d, n=%d, j=%d\n%!" psize n j;
-  let pool =
-    Pool.create
-      ~on_init_thread:(fun ~dom_id:_ ~t_id () ->
-        Tracy.name_thread (Printf.sprintf "t_%d" t_id))
-      ~min:psize ~per_domain:0 ()
-  in
+  let pool = Pool.create ~min:psize ~per_domain:0 () in
 
+  (* TODO: a ppx for tracy so we can use instrumentation *)
   let loop () =
-    let@ _sp = Tracy.with_ ~file:__FILE__ ~line:__LINE__ ~name:"loop" () in
     for _i = 1 to n do
-      let () =
-        let@ _sp = Tracy.with_ ~file:__FILE__ ~line:__LINE__ ~name:"iter" () in
-        Tracy.add_text _sp (string_of_int _i);
-        ignore (Sys.opaque_identity (fib 30) : int)
-      in
+      let () = ignore (Sys.opaque_identity (fib 30) : int) in
 
       Thread.yield ()
     done
@@ -34,7 +23,6 @@ let run ~psize ~n ~j () : _ Fut.t =
   fut
 
 let () =
-  Tracy.enable ();
   let j = ref 10 in
   let n = ref 10 in
   let psize = ref 4 in
