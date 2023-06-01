@@ -3,7 +3,7 @@
 [![build](https://github.com/c-cube/moonpool/actions/workflows/main.yml/badge.svg)](https://github.com/c-cube/moonpool/actions/workflows/main.yml)
 
 A pool within a bigger pool (ie the ocean). Here, we're talking about
-pools of [Thread.t] which live within a fixed pool of [Domain.t].
+pools of `Thread.t` which live within a fixed pool of `Domain.t`.
 
 ## Usage
 
