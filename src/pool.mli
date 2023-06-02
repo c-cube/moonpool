@@ -33,6 +33,9 @@ val create :
        to use for this pool's workers.
   *)
 
+val size : t -> int
+(** Number of threads *)
+
 val shutdown : t -> unit
 (** Shutdown the pool and wait for it to terminate. Idempotent. *)
 

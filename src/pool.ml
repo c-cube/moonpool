@@ -22,6 +22,7 @@ let add_global_thread_loop_wrapper f : unit =
   done
 
 let[@inline] run self f : unit = S_queue.push self.q f
+let size self = Array.length self.threads
 
 let worker_thread_ ~on_exn (active : bool A.t) (q : _ S_queue.t) : unit =
   while A.get active do
