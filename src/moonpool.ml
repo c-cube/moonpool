@@ -69,7 +69,18 @@ module D_pool_ = struct
     let (lazy arr) = domains_ in
     assert (i < Array.length arr);
     S_queue.push arr.(i).q f
+
+  let run_on_and_wait (i : int) (f : unit -> 'a) : 'a =
+    let q = S_queue.create () in
+    run_on i (fun () ->
+        let x = f () in
+        S_queue.push q x);
+    S_queue.pop q
 end
+
+let start_thread_on_some_domain f x =
+  let did = Random.int (D_pool_.n_domains ()) in
+  D_pool_.run_on_and_wait did (fun () -> Thread.create f x)
 
 module Pool = struct
   (* TODO: use a better queue for the tasks *)
