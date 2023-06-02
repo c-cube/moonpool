@@ -4,8 +4,6 @@
   pools of [Thread.t] which live within a fixed pool of [Domain.t].
 *)
 
-type 'a or_error = ('a, exn * Printexc.raw_backtrace) result
-
 module Pool = Pool
 
 val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
