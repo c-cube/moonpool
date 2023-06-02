@@ -13,6 +13,7 @@ module Pool : sig
   val create :
     ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
     ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
+    ?wrap_thread:((unit -> unit) -> unit -> unit) ->
     ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
     ?min:int ->
     ?per_domain:int ->
@@ -21,6 +22,11 @@ module Pool : sig
   (** [create ()] makes a new thread pool.
      @param on_init_thread called at the beginning of each new thread
        in the pool.
+       @param on_exit_thread called at the end of each thread in the pool
+       @param wrap_thread takes the worker function [loop : unit -> unit] which is
+         the worker's main loop, and returns a new loop function.
+         By default it just returns the same loop function but it can be used
+         to install tracing, effect handlers, etc.
   *)
 
   val shutdown : t -> unit
