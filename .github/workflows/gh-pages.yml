@@ -3,7 +3,7 @@ name: github pages
 on:
   push:
     branches:
-      - master  # Set a branch name to trigger deployment
+      - main
 
 jobs:
   deploy:
@@ -20,7 +20,7 @@ jobs:
 
       - uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-version: '5.0'
+          ocaml-compiler: '5.0'
 
       - name: Pin
         run: opam pin -n .
@@ -39,5 +39,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_build/default/_doc/_html/
-          destination_dir: dev
+          destination_dir: .
           enable_jekyll: true
