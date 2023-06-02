@@ -21,8 +21,9 @@
  (name moonpool)
  (synopsis "Pools of threads supported by a pool of domains")
  (depends
-  (ocaml (>= 4.05))
+  (ocaml (>= 4.08))
   dune
+  either
   (mdx
    (and
     (>= 1.9.0)

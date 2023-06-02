@@ -231,6 +231,9 @@ module Fut = struct
       ()
     done
 
+  let[@inline] fulfill_idempotent self r =
+    try fulfill self r with Already_fulfilled -> ()
+
   (* ### combinators ### *)
 
   let spawn ~on f : _ t =
@@ -304,6 +307,90 @@ module Fut = struct
 
       fut2
 
+  let rec update_ (st : 'a A.t) f : 'a =
+    let x = A.get st in
+    let y = f x in
+    if A.compare_and_set st x y then
+      y
+    else
+      update_ st f
+
+  let both a b : _ t =
+    match peek a, peek b with
+    | Some (Ok x), Some (Ok y) -> return (x, y)
+    | Some (Error (e, bt)), _ | _, Some (Error (e, bt)) -> fail e bt
+    | _ ->
+      let fut, promise = make () in
+
+      let st = A.make `Neither in
+      on_result a (function
+        | Error err -> fulfill_idempotent promise (Error err)
+        | Ok x ->
+          (match
+             update_ st (function
+               | `Neither -> `Left x
+               | `Right y -> `Both (x, y)
+               | _ -> assert false)
+           with
+          | `Both (x, y) -> fulfill promise (Ok (x, y))
+          | _ -> ()));
+      on_result b (function
+        | Error err -> fulfill_idempotent promise (Error err)
+        | Ok y ->
+          (match
+             update_ st (function
+               | `Left x -> `Both (x, y)
+               | `Neither -> `Right y
+               | _ -> assert false)
+           with
+          | `Both (x, y) -> fulfill promise (Ok (x, y))
+          | _ -> ()));
+      fut
+
+  let choose a b : _ t =
+    match peek a, peek b with
+    | Some (Ok x), _ -> return (Either.Left x)
+    | _, Some (Ok y) -> return (Either.Right y)
+    | Some (Error (e, bt)), Some (Error _) -> fail e bt
+    | _ ->
+      let fut, promise = make () in
+
+      let one_failure = A.make false in
+      on_result a (function
+        | Error err ->
+          if A.exchange one_failure true then
+            (* the other one failed already *)
+            fulfill_idempotent promise (Error err)
+        | Ok x -> fulfill_idempotent promise (Ok (Either.Left x)));
+      on_result b (function
+        | Error err ->
+          if A.exchange one_failure true then
+            (* the other one failed already *)
+            fulfill_idempotent promise (Error err)
+        | Ok y -> fulfill_idempotent promise (Ok (Either.Right y)));
+      fut
+
+  let choose_same a b : _ t =
+    match peek a, peek b with
+    | Some (Ok x), _ -> return x
+    | _, Some (Ok y) -> return y
+    | Some (Error (e, bt)), Some (Error _) -> fail e bt
+    | _ ->
+      let fut, promise = make () in
+
+      let one_failure = A.make false in
+      on_result a (function
+        | Error err ->
+          if A.exchange one_failure true then
+            fulfill_idempotent promise (Error err)
+        | Ok x -> fulfill_idempotent promise (Ok x));
+      on_result b (function
+        | Error err ->
+          if A.exchange one_failure true then
+            fulfill_idempotent promise (Error err)
+        | Ok y -> fulfill_idempotent promise (Ok y));
+      fut
+
   let peek_ok_assert_ (self : 'a t) : 'a =
     match A.get self.st with
     | Done (Ok x) -> x
@@ -346,6 +433,12 @@ module Fut = struct
     | [ x ] -> map ?on:None x ~f:(fun x -> [ x ])
     | _ -> join_container_ ~len:List.length ~map:List.map ~iter:List.iter l
 
+  let wait_array (a : _ t array) : unit t =
+    join_container_ a ~iter:Array.iter ~len:Array.length ~map:(fun _f _ -> ())
+
+  let wait_list (a : _ t list) : unit t =
+    join_container_ a ~iter:List.iter ~len:List.length ~map:(fun _f _ -> ())
+
   let for_ ~on n f : unit t =
     let futs = Array.init n (fun i -> spawn ~on (fun () -> f i)) in
     join_container_
@@ -385,4 +478,35 @@ module Fut = struct
     match wait_block self with
     | Ok x -> x
     | Error (e, bt) -> Printexc.raise_with_backtrace e bt
+
+  module type INFIX = sig
+    val ( >|= ) : 'a t -> ('a -> 'b) -> 'b t
+    val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
+    val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
+    val ( and+ ) : 'a t -> 'b t -> ('a * 'b) t
+    val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
+    val ( and* ) : 'a t -> 'b t -> ('a * 'b) t
+  end
+
+  module Infix_ (X : sig
+    val pool : Pool.t option
+  end) : INFIX = struct
+    let[@inline] ( >|= ) x f = map ?on:X.pool ~f x
+    let[@inline] ( >>= ) x f = bind ?on:X.pool ~f x
+    let ( let+ ) = ( >|= )
+    let ( let* ) = ( >>= )
+    let ( and+ ) = both
+    let ( and* ) = both
+  end
+
+  include Infix_ (struct
+    let pool = None
+  end)
+
+  module Infix (X : sig
+    val pool : Pool.t
+  end) =
+  Infix_ (struct
+    let pool = Some X.pool
+  end)
 end
