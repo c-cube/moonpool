@@ -1,6 +1,7 @@
 (** Thread pool *)
 
 type t
+(** A pool of threads. *)
 
 type thread_loop_wrapper =
   thread:Thread.t -> pool:t -> (unit -> unit) -> unit -> unit

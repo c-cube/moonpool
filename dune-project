@@ -24,6 +24,7 @@
   (ocaml (>= 4.08))
   dune
   either
+  (odoc :with-doc)
   (mdx
    (and
     (>= 1.9.0)
