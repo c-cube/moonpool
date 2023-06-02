@@ -1,9 +1,26 @@
-(** Futures *)
+(** Futures.
+
+    A future of type ['a t] represents the result of a computation
+    that will yield a value of type ['a].
+
+    Typically, the computation is running on a thread pool {!Pool.t}
+    and will proceed on some worker. Once set, a future cannot change.
+    It either succeeds (storing a [Ok x] with [x: 'a]), or fail
+    (storing a [Error (exn, bt)] with an exception and the corresponding
+    backtrace).
+
+    Combinators such as {!map} and {!join_array} can be used to produce
+    futures from other futures (in a monadic way). Some combinators take
+    a [pool] argument to specify where the intermediate computation takes
+    place; for example [map ~pool ~f fut] maps the value in [fut]
+    using function [f], applicatively; the call to [f] happens on
+    pool [pool] (once [fut] resolves successfully with a value).
+*)
 
 type 'a or_error = ('a, exn * Printexc.raw_backtrace) result
 
 type 'a t
-(** A future with a result of type ['a] *)
+(** A future with a result of type ['a]. *)
 
 type 'a promise
 (** A promise, which can be fulfilled exactly once to set
