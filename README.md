@@ -32,7 +32,7 @@ val fibs : int Moonpool.Fut.t array =
     <abstr>; <abstr>; <abstr>|]
 
 # Moonpool.Fut.join_array fibs |> Moonpool.Fut.wait_block;;
-- : int array Moonpool.or_error =
+- : int array Moonpool.Fut.or_error =
 Ok
  [|1; 1; 2; 3; 5; 8; 13; 21; 34; 55; 89; 144; 233; 377; 610; 987; 1597; 2584;
    4181; 6765; 10946; 17711; 28657; 46368; 75025; 121393; 196418; 317811;
