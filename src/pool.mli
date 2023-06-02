@@ -1,4 +1,4 @@
-(** Thread pool *)
+(** Thread pool. *)
 
 type t
 (** A pool of threads. *)

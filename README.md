@@ -5,6 +5,14 @@
 A pool within a bigger pool (ie the ocean). Here, we're talking about
 pools of `Thread.t` which live within a fixed pool of `Domain.t`.
 
+This fixed pool of domains is shared between *all* the pools in moonpool.
+The rationale is that we should not have more domains than cores, so
+it's easier to pre-allocate exactly that many domains, and run more flexible
+thread pools on top.
+
+In addition, `Moonpool.Fut` provides futures/promises that execute
+on these thread pools. The futures are thread safe.
+
 ## Usage
 
 The user can create several thread pools. These pools use regular posix threads,
