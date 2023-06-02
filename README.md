@@ -49,7 +49,7 @@ Ok
 
 ## OCaml versions
 
-This works for OCaml >= 4.05.
+This works for OCaml >= 4.08.
 - On OCaml 4.xx, there are no domains, so this is just a library for regular thread pools
     with not actual parallelism (except for threads that call C code that releases the runtime lock, that is).
 - on OCaml 5.xx, there is a fixed pool of domains (using the recommended domain count).
