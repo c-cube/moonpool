@@ -17,8 +17,7 @@ jobs:
               #- macos-latest
               #- windows-latest
         ocaml-compiler:
-          # FIXME: re-enable 4.05 somehow
-          #- '4.05'
+            - '4.05'
             - '4.14'
             - '5.0'
 
