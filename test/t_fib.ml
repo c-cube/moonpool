@@ -1,7 +1,5 @@
 open Moonpool
 
-let pool = Pool.create ~min:4 ()
-
 let rec fib x =
   if x <= 1 then
     1
@@ -9,10 +7,13 @@ let rec fib x =
     fib (x - 1) + fib (x - 2)
 
 let () = assert (List.init 10 fib = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
-let fibs = Array.init 30 (fun n -> Fut.spawn ~on:pool (fun () -> fib n))
-let res = Fut.join_array fibs |> Fut.wait_block
 
-let () =
+let run_test () =
+  let pool = Pool.create ~min:4 () in
+  let fibs = Array.init 30 (fun n -> Fut.spawn ~on:pool (fun () -> fib n)) in
+  let res = Fut.join_array fibs |> Fut.wait_block in
+  Pool.shutdown pool;
+
   assert (
     res
     = Ok
@@ -48,3 +49,12 @@ let () =
           514229;
           832040;
         |])
+
+let () =
+  for _i = 1 to 4 do
+    run_test ()
+  done;
+
+  (* now make sure we can do this with multiple pools in parallel *)
+  let jobs = Array.init 4 (fun _ -> Thread.create run_test ()) in
+  Array.iter Thread.join jobs
