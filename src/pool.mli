@@ -1,7 +1,15 @@
 (** Thread pool. *)
 
 type t
-(** A pool of threads. *)
+(** A pool of threads. The pool contains a fixed number of threads that
+    wait for work items to come, process these, and loop.
+
+    If a pool is no longer needed, {!shutdown} can be used to signal all threads
+    in it to stop (after they finish their work), and wait for them to stop.
+
+    The threads are distributed across a fixed domain pool
+    (whose size is determined by {!Domain.recommended_domain_count} on OCaml 5, and
+    simple the single runtime on OCaml 4). *)
 
 type thread_loop_wrapper =
   thread:Thread.t -> pool:t -> (unit -> unit) -> unit -> unit
@@ -39,6 +47,10 @@ val size : t -> int
 val shutdown : t -> unit
 (** Shutdown the pool and wait for it to terminate. Idempotent. *)
 
+exception Shutdown
+
 val run : t -> (unit -> unit) -> unit
 (** [run pool f] schedules [f] for later execution on the pool
-      in one of the threads. *)
+    in one of the threads. [f()] will run on one of the pool's
+    worker threads.
+    @raise Shutdown if the pool was shut down before [run] was called. *)

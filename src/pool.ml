@@ -21,16 +21,22 @@ let add_global_thread_loop_wrapper f : unit =
     ()
   done
 
-let[@inline] run self f : unit = S_queue.push self.q f
+exception Shutdown
+
+let[@inline] run self f : unit =
+  try S_queue.push self.q f with S_queue.Closed -> raise Shutdown
+
 let size self = Array.length self.threads
 
 let worker_thread_ ~on_exn (active : bool A.t) (q : _ S_queue.t) : unit =
   while A.get active do
-    let task = S_queue.pop q in
-    try task ()
-    with e ->
-      let bt = Printexc.get_raw_backtrace () in
-      on_exn e bt
+    match S_queue.pop q with
+    | exception S_queue.Closed -> ()
+    | task ->
+      (try task ()
+       with e ->
+         let bt = Printexc.get_raw_backtrace () in
+         on_exn e bt)
   done
 
 let default_thread_init_exit_ ~dom_id:_ ~t_id:_ () = ()
@@ -111,8 +117,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
 
 let shutdown (self : t) : unit =
   let was_active = A.exchange self.active false in
-  (* make sure to wakeup all the sleeping threads by scheduling one task each.
-     This way, a thread that is asleep, waiting for tasks,
-     will wakeup to process this trivial task, check [self.active], and terminate. *)
-  if was_active then Array.iter (fun _ -> run self ignore) self.threads;
+  (* close the job queue, which will fail future calls to [run],
+     and wake up the subset of [self.threads] that are waiting on it. *)
+  if was_active then S_queue.close self.q;
   Array.iter Thread.join self.threads
