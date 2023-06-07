@@ -51,12 +51,35 @@ let pop (self : 'a t) : 'a =
   in
   loop ()
 
-let try_pop (self : _ t) : _ option =
-  Mutex.lock self.mutex;
-  match Queue.pop self.q with
-  | x ->
-    Mutex.unlock self.mutex;
-    Some x
-  | exception Queue.Empty ->
-    Mutex.unlock self.mutex;
+let try_pop ~force_lock (self : _ t) : _ option =
+  let has_lock =
+    if force_lock then (
+      Mutex.lock self.mutex;
+      true
+    ) else
+      Mutex.try_lock self.mutex
+  in
+  if has_lock then (
+    match Queue.pop self.q with
+    | x ->
+      Mutex.unlock self.mutex;
+      Some x
+    | exception Queue.Empty ->
+      Mutex.unlock self.mutex;
+      None
+  ) else
     None
+
+let try_push (self : _ t) x : bool =
+  if Mutex.try_lock self.mutex then (
+    if self.closed then (
+      Mutex.unlock self.mutex;
+      raise Closed
+    );
+
+    Queue.push x self.q;
+    Condition.signal self.cond;
+    Mutex.unlock self.mutex;
+    true
+  ) else
+    false
