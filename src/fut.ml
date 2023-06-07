@@ -329,9 +329,11 @@ end) : INFIX = struct
   let ( and* ) = both
 end
 
-include Infix_ (struct
+module Infix_local = Infix_ (struct
   let pool = None
 end)
+
+include Infix_local
 
 module Infix (X : sig
   val pool : Pool.t

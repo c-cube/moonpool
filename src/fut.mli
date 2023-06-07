@@ -141,8 +141,10 @@ module type INFIX = sig
   val ( and* ) : 'a t -> 'b t -> ('a * 'b) t
 end
 
+module Infix_local : INFIX
+(** Operators that run on the same thread as the first future. *)
+
 include INFIX
-(** Operators that run on the same thread *)
 
 (** Make infix combinators *)
 module Infix (_ : sig
