@@ -39,10 +39,12 @@ let run (self : t) (f : task) : unit =
 
   try
     (* try each queue with a round-robin initial offset *)
-    for i = 0 to n_qs - 1 do
-      let q_idx = (i + offset) mod Array.length self.qs in
-      let q = self.qs.(q_idx) in
-      if Bb_queue.try_push q f then raise_notrace Exit
+    for _retry = 1 to 3 do
+      for i = 0 to n_qs - 1 do
+        let q_idx = (i + offset) mod Array.length self.qs in
+        let q = self.qs.(q_idx) in
+        if Bb_queue.try_push q f then raise_notrace Exit
+      done
     done;
     push_wait ()
   with
@@ -67,11 +69,13 @@ let worker_thread_ ~on_exn (active : bool A.t) (qs : task Bb_queue.t array)
 
       let task =
         try
-          for i = 0 to num_qs - 1 do
-            let q = qs.((offset + i) mod num_qs) in
-            match Bb_queue.try_pop ~force_lock:false q with
-            | Some f -> raise_notrace (Got_task f)
-            | None -> ()
+          for _retry = 1 to 3 do
+            for i = 0 to num_qs - 1 do
+              let q = qs.((offset + i) mod num_qs) in
+              match Bb_queue.try_pop ~force_lock:false q with
+              | Some f -> raise_notrace (Got_task f)
+              | None -> ()
+            done
           done;
           pop_blocking ()
         with Got_task f -> f
