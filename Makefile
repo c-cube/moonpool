@@ -28,4 +28,14 @@ bench-fib:
 	hyperfine -L psize $(BENCH_PSIZE) \
 		'./_build/default/benchs/fib_rec.exe -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize={psize} -n $(N)'
 
+NX?=400
+NY?=200
+NS?=150
+RAYOUT?=out.ppm
+RAY_J?=1,4,8,16
+bench-raytracer:
+	dune build $(DUNE_OPTS_BENCH) benchs/raytracer/raytracer.exe
+	hyperfine -L j $(RAY_J) \
+		'./_build/default/benchs/raytracer/raytracer.exe -nx=$(NX) -ny=$(NY) -ns=$(NS) -j={j}'
+
 .PHONY: test clean

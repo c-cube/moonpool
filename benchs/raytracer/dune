@@ -1,4 +1,5 @@
+; parallel version of https://github.com/samrat/rayml
 
 (executable
-  (name raytracer)
-  (flags :standard -warn-error -a+8))
+ (name raytracer)
+ (libraries moonpool unix))
