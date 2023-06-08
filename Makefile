@@ -20,13 +20,11 @@ DUNE_OPTS_BENCH?=--profile=release
 
 N?=40
 NITER?=3
+BENCH_PSIZE?=1,4,8,20
 bench-fib:
 	@echo running for N=$(N)
 	dune build $(DUNE_OPTS_BENCH) benchs/fib_rec.exe
-	hyperfine \
-		'./_build/default/benchs/fib_rec.exe -niter $(NITER) -psize=1 -n $(N)' \
-		'./_build/default/benchs/fib_rec.exe -niter $(NITER) -psize=8 -n $(N)' \
-		'./_build/default/benchs/fib_rec.exe -niter $(NITER) -psize=20 -n $(N)' \
-		'./_build/default/benchs/fib_rec.exe -niter $(NITER) -n $(N) -seq'
+	hyperfine -L psize $(BENCH_PSIZE) \
+		'./_build/default/benchs/fib_rec.exe -niter $(NITER) -psize={psize} -n $(N)'
 
 .PHONY: test clean
