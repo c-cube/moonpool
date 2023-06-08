@@ -1,4 +1,3 @@
-open Core
 open Printf
 open Vec3
 open Ray
@@ -120,9 +119,8 @@ let hit_sphere sphere ray (tmin, tmax) =
   else None
 
 let rec hit_world world ray (tmin, tmax) =
-  List.fold world
-    ~init: None
-    ~f: (fun acc h ->
+  List.fold_left 
+    (fun acc h ->
         let prev_rec = match acc with
             None -> { t = tmax;
                       p = Vec3.of_floats (-1., -1., -1.);
@@ -131,7 +129,7 @@ let rec hit_world world ray (tmin, tmax) =
           | Some(r) -> r in
         match (hit h ray (tmin, prev_rec.t)) with
           Some(r) -> Some r
-        | None -> acc)
+        | None -> acc) None world
 
 and hit h ray (tmin, tmax) =
   match h with
@@ -175,7 +173,7 @@ let write_to_file filename =
   let nx = 400 in
   let ny = 200 in
   let ns = 150 in               (* samples per pixel *)
-  let oc = Out_channel.create filename in
+  let oc = open_out filename in
   fprintf oc "P3\n";
   fprintf oc "%d\n" nx;
   fprintf oc "%d\n"  ny;
