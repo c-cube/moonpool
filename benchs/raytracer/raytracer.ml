@@ -240,9 +240,7 @@ type config = {
   progress: bool;
 }
 
-type queue_item =
-  | Pixel of (int * int * int) Fut.t
-  | Unblock_next_line of unit Fut.promise
+type queue_item = Pixel of (int * int * int) Fut.t
 
 type state = {
   config: config;
@@ -250,8 +248,7 @@ type state = {
   active: bool Atomic.t;
   n_done: int Atomic.t;
   n_waiting: int Atomic.t;
-  n_lines: int Atomic.t;
-  results: queue_item Blocking_queue.t;
+  results: queue_item Queue.t;
 }
 
 let reset_line_ansi = "\x1b[2K\r"
@@ -271,23 +268,19 @@ let progress_thread (st : state) : Thread.t =
 (** background thread that writes the results sequentially into the file *)
 let writer_thread (st : state) oc : Thread.t =
   let run () : unit =
-    try
-      while true do
-        let r = Blocking_queue.pop st.results in
-        match r with
-        | Pixel r ->
-          Atomic.incr st.n_done;
-          Atomic.decr st.n_waiting;
+    while not (Queue.is_empty st.results) do
+      let r = Queue.pop st.results in
+      match r with
+      | Pixel r ->
+        Atomic.incr st.n_done;
+        Atomic.decr st.n_waiting;
 
-          let ir, ig, ib = Fut.wait_block_exn r in
-          fpf oc "%d " ir;
-          fpf oc "%d " ig;
-          fpf oc "%d \n" ib
-        | Unblock_next_line prom ->
-          Atomic.incr st.n_lines;
-          Fut.fulfill prom (Ok ())
-      done
-    with Blocking_queue.Closed -> (* we are done *) Atomic.set st.active false
+        let ir, ig, ib = Fut.wait_block_exn r in
+        fpf oc "%d " ir;
+        fpf oc "%d " ig;
+        fpf oc "%d \n" ib
+    done;
+    (* we are done *) Atomic.set st.active false
   in
 
   Moonpool.start_thread_on_some_domain run ()
@@ -320,12 +313,10 @@ let run (config : config) =
       start = Unix.gettimeofday ();
       n_done = Atomic.make 0;
       n_waiting = Atomic.make 0;
-      n_lines = Atomic.make 0;
-      results = Blocking_queue.create ();
+      results = Queue.create ();
     }
   in
 
-  let t_writer = writer_thread st oc in
   if config.progress then ignore (progress_thread st : Thread.t);
 
   for j = config.ny downto 1 do
@@ -371,16 +362,11 @@ let run (config : config) =
 
       let fut = Fut.spawn ~on:pool run in
       Atomic.incr st.n_waiting;
-      Blocking_queue.push st.results (Pixel fut)
-    done;
-
-    (* wait for all lines to be processed *)
-    let sync_line, prom = Fut.make () in
-    Blocking_queue.push st.results (Unblock_next_line prom);
-    Fut.wait_block_exn sync_line
+      Queue.push (Pixel fut) st.results
+    done
   done;
-  (* now close the queue *)
-  Blocking_queue.close st.results;
+
+  let t_writer = writer_thread st oc in
 
   Thread.join t_writer
 
