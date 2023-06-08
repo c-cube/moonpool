@@ -6,8 +6,10 @@ let rec fib_direct x =
   else
     fib_direct (x - 1) + fib_direct (x - 2)
 
+let cutoff = ref 20
+
 let rec fib ~on x : int Fut.t =
-  if x <= 20 then
+  if x <= !cutoff then
     Fut.spawn ~on (fun () -> fib_direct x)
   else
     let open Fut.Infix_local in
@@ -42,6 +44,7 @@ let () =
       "-n", Arg.Set_int n, " fib <n>";
       "-seq", Arg.Set seq, " sequential";
       "-niter", Arg.Set_int niter, " number of iterations";
+      "-cutoff", Arg.Set_int cutoff, " cutoff for sequential computation";
     ]
     |> Arg.align
   in
