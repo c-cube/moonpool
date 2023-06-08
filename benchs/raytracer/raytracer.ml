@@ -265,15 +265,24 @@ let progress_thread (st : state) : Thread.t =
   in
   Moonpool.start_thread_on_some_domain run ()
 
+let tracy_plot st =
+  Tracy.plot "done" (float_of_int @@ Atomic.get st.n_done);
+  Tracy.plot "waiting" (float_of_int @@ Atomic.get st.n_waiting);
+  ()
+
 (** background thread that writes the results sequentially into the file *)
 let writer_thread (st : state) oc : Thread.t =
   let run () : unit =
+    let@ _sp =
+      Tracy.with_ ~line:__LINE__ ~file:__FILE__ ~name:"wait-next-res" ()
+    in
     while not (Queue.is_empty st.results) do
       let r = Queue.pop st.results in
       match r with
       | Pixel r ->
         Atomic.incr st.n_done;
         Atomic.decr st.n_waiting;
+        tracy_plot st;
 
         let ir, ig, ib = Fut.wait_block_exn r in
         fpf oc "%d " ir;
@@ -325,6 +334,7 @@ let run (config : config) =
       let rst = RS.split rst in
 
       let run () =
+        let@ _sp = Tracy.with_ ~line:__LINE__ ~file:__FILE__ ~name:"pixel" () in
         let color = ref { x = 0.; y = 0.; z = 0. } in
         for _step = 0 to config.ns - 1 do
           (* NOTE: Random.float is bounds __inclusive__ *)
@@ -371,6 +381,7 @@ let run (config : config) =
   Thread.join t_writer
 
 let () =
+  Tracy.enable ();
   let nx = ref 400 in
   let ny = ref 200 in
   let ns = ref 150 in
