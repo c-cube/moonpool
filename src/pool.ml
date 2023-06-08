@@ -26,30 +26,10 @@ let add_global_thread_loop_wrapper f : unit =
 
 exception Shutdown
 
-let run (self : t) (f : task) : unit =
-  let n_qs = Array.length self.qs in
-  let offset = A.fetch_and_add self.cur_q 1 in
-
-  (* blocking push, last resort *)
-  let push_wait () =
-    let q_idx = offset mod Array.length self.qs in
-    let q = self.qs.(q_idx) in
-    Bb_queue.push q f
-  in
-
-  try
-    (* try each queue with a round-robin initial offset *)
-    for _retry = 1 to 3 do
-      for i = 0 to n_qs - 1 do
-        let q_idx = (i + offset) mod Array.length self.qs in
-        let q = self.qs.(q_idx) in
-        if Bb_queue.try_push q f then raise_notrace Exit
-      done
-    done;
-    push_wait ()
-  with
-  | Exit -> ()
-  | Bb_queue.Closed -> raise Shutdown
+let run self f : unit =
+  let i = A.fetch_and_add self.cur_q 1 in
+  let q = self.qs.(i mod Array.length self.qs) in
+  try Bb_queue.push q f with Bb_queue.Closed -> raise Shutdown
 
 let size self = Array.length self.threads
 
