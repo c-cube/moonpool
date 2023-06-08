@@ -245,6 +245,7 @@ type queue_item =
   | Unblock_next_line of unit Fut.promise
 
 type state = {
+  config: config;
   start: float;
   active: bool Atomic.t;
   n_done: int Atomic.t;
@@ -259,8 +260,9 @@ let progress_thread (st : state) : Thread.t =
   let run () =
     while Atomic.get st.active do
       let elapsed = Unix.gettimeofday () -. st.start in
-      pf "%s[%.3fs] %d done, %d waiting%!" reset_line_ansi elapsed
-        (Atomic.get st.n_done) (Atomic.get st.n_waiting);
+      let total = st.config.nx * st.config.ny in
+      pf "%s[%.3fs] %d/%d done, %d waiting%!" reset_line_ansi elapsed
+        (Atomic.get st.n_done) total (Atomic.get st.n_waiting);
       Thread.delay 0.1
     done
   in
@@ -314,6 +316,7 @@ let run (config : config) =
   let st =
     {
       active = Atomic.make true;
+      config;
       start = Unix.gettimeofday ();
       n_done = Atomic.make 0;
       n_waiting = Atomic.make 0;
