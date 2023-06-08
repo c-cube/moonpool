@@ -290,9 +290,9 @@ let wait_block (self : 'a t) : 'a or_error =
   | Waiting _ ->
     let real_block () =
       (* use queue only once *)
-      let q = S_queue.create () in
-      on_result self (fun r -> S_queue.push q r);
-      S_queue.pop q
+      let q = Bb_queue.create () in
+      on_result self (fun r -> Bb_queue.push q r);
+      Bb_queue.pop q
     in
 
     (* a bit of spinlock *)

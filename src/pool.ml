@@ -5,7 +5,7 @@ module A = Atomic_
 type t = {
   active: bool A.t;
   threads: Thread.t array;
-  q: (unit -> unit) S_queue.t;
+  q: (unit -> unit) Bb_queue.t;
 }
 
 type thread_loop_wrapper =
@@ -24,14 +24,14 @@ let add_global_thread_loop_wrapper f : unit =
 exception Shutdown
 
 let[@inline] run self f : unit =
-  try S_queue.push self.q f with S_queue.Closed -> raise Shutdown
+  try Bb_queue.push self.q f with Bb_queue.Closed -> raise Shutdown
 
 let size self = Array.length self.threads
 
-let worker_thread_ ~on_exn (active : bool A.t) (q : _ S_queue.t) : unit =
+let worker_thread_ ~on_exn (active : bool A.t) (q : _ Bb_queue.t) : unit =
   while A.get active do
-    match S_queue.pop q with
-    | exception S_queue.Closed -> ()
+    match Bb_queue.pop q with
+    | exception Bb_queue.Closed -> ()
     | task ->
       (try task ()
        with e ->
@@ -54,7 +54,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
   let offset = Random.int n_domains in
 
   let active = A.make true in
-  let q = S_queue.create () in
+  let q = Bb_queue.create () in
 
   let pool =
     let dummy = Thread.self () in
@@ -63,7 +63,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
 
   (* temporary queue used to obtain thread handles from domains
      on which the thread are started. *)
-  let receive_threads = S_queue.create () in
+  let receive_threads = Bb_queue.create () in
 
   (* start the thread with index [i] *)
   let start_thread_with_idx i =
@@ -96,7 +96,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
     let create_thread_in_domain () =
       let thread = Thread.create main_thread_fun () in
       (* send the thread from the domain back to us *)
-      S_queue.push receive_threads (i, thread)
+      Bb_queue.push receive_threads (i, thread)
     in
 
     D_pool_.run_on dom_idx create_thread_in_domain
@@ -110,7 +110,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
 
   (* receive the newly created threads back from domains *)
   for _j = 1 to n do
-    let i, th = S_queue.pop receive_threads in
+    let i, th = Bb_queue.pop receive_threads in
     pool.threads.(i) <- th
   done;
   pool
@@ -119,5 +119,5 @@ let shutdown (self : t) : unit =
   let was_active = A.exchange self.active false in
   (* close the job queue, which will fail future calls to [run],
      and wake up the subset of [self.threads] that are waiting on it. *)
-  if was_active then S_queue.close self.q;
+  if was_active then Bb_queue.close self.q;
   Array.iter Thread.join self.threads

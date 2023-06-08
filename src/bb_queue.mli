@@ -1,4 +1,4 @@
-(** Simple blocking queue *)
+(** Basic Blocking Queue *)
 
 type 'a t
 
