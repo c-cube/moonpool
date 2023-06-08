@@ -12,7 +12,9 @@ type worker = { q: (unit -> unit) Bb_queue.t } [@@unboxed]
 
 let domains_ : worker array lazy_t =
   lazy
-    (let n = Domain_.recommended_number () in
+    ((* number of domains we spawn. Note that we spawn n-1 domains
+        because there already is the main domain running. *)
+     let n = Domain_.recommended_number () - 1 in
      Array.init n (fun i ->
          let q = Bb_queue.create () in
          let _domain : domain = Domain_.spawn (fun () -> work_ i q) in
