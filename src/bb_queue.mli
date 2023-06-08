@@ -12,7 +12,9 @@ val push : 'a t -> 'a -> unit
 
 val pop : 'a t -> 'a
 (** [pop q] pops the next element in [q]. It might block until an element comes.
-   @raise Closed if the queue was closed before a new element was available. *)
+   @raise Closed if the queue was closed before a new element was available.
+   Note that calls to [pop] on a closed queue that still contains elements
+   will succeed (until all elements are drained). *)
 
 val try_pop : force_lock:bool -> 'a t -> 'a option
 (** [try_pop q] immediately pops the first element of [q], if any,
