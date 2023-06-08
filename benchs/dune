@@ -1,0 +1,4 @@
+
+(executables
+ (names fib_rec)
+ (libraries moonpool))
