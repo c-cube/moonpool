@@ -39,7 +39,7 @@ let on_result (self : _ t) (f : _ waiter) : unit =
       let must_retry = not (A.compare_and_set self.st st (Waiting (f :: l))) in
       must_retry
   do
-    ()
+    Domain_.relax ()
   done
 
 exception Already_fulfilled
@@ -58,7 +58,7 @@ let fulfill (self : _ t) (r : _ result) : unit =
       ) else
         true
   do
-    ()
+    Domain_.relax ()
   done
 
 let[@inline] fulfill_idempotent self r =
@@ -137,13 +137,18 @@ let bind ?on ~f fut : _ t =
 
     fut2
 
-let rec update_ (st : 'a A.t) f : 'a =
-  let x = A.get st in
-  let y = f x in
-  if A.compare_and_set st x y then
-    y
-  else
-    update_ st f
+let update_ (st : 'a A.t) f : 'a =
+  let rec loop () =
+    let x = A.get st in
+    let y = f x in
+    if A.compare_and_set st x y then
+      y
+    else (
+      Domain_.relax ();
+      loop ()
+    )
+  in
+  loop ()
 
 let both a b : _ t =
   match peek a, peek b with
