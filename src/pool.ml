@@ -18,7 +18,7 @@ let add_global_thread_loop_wrapper f : unit =
     let l = A.get global_thread_wrappers_ in
     not (A.compare_and_set global_thread_wrappers_ l (f :: l))
   do
-    ()
+    Domain_.relax ()
   done
 
 exception Shutdown
