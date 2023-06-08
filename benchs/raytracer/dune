@@ -1,0 +1,4 @@
+
+(executable
+  (name raytracer)
+  (flags :standard -warn-error -a+8))
