@@ -116,7 +116,7 @@ val wait_block : 'a t -> 'a or_error
 (** [wait_block fut] blocks the current thread until [fut] is resolved,
       and returns its value.
 
-      A word of warning: this will monopolize the calling thread until the future
+      {b NOTE}: A word of warning: this will monopolize the calling thread until the future
       resolves. This can also easily cause deadlocks, if enough threads in a pool
       call [wait_block] on futures running on the same pool or a pool depending on it.
 
