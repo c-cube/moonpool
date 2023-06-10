@@ -1,18 +1,13 @@
 (lang dune 3.0)
-
 (using mdx 0.2)
 
 (name moonpool)
-
+(version 0.1)
 (generate_opam_files true)
-
 (source
  (github c-cube/moonpool))
-
 (authors "Simon Cruanes")
-
 (maintainers "Simon Cruanes")
-
 (license MIT)
 
 ;(documentation https://url/to/documentation)
