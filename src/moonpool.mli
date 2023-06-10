@@ -32,19 +32,33 @@ module Fut = Fut
 *)
 module Blocking_queue : sig
   type 'a t
+  (** Unbounded blocking queue.
+
+      This queue is thread-safe and will block when calling {!pop}
+      on it when it's empty. *)
 
   val create : unit -> _ t
+  (** Create a new unbounded queue. *)
 
   exception Closed
 
   val push : 'a t -> 'a -> unit
   (** [push q x] pushes [x] into [q], and returns [()].
-    @raise Closed if [close q] was previously called.*)
+
+      In the current implementation, [push q] will never block for
+      a long time, it will only block while waiting for a lock
+      so it can push the element.
+      @raise Closed if the queue is closed (by a previous call to [close q]) *)
 
   val pop : 'a t -> 'a
   (** [pop q] pops the next element in [q]. It might block until an element comes.
-   @raise Closed if the queue was closed before a new element was available. *)
+      @raise Closed if the queue was closed before a new element was available. *)
 
   val close : _ t -> unit
-  (** Close the queue, meaning there won't be any more [push] allowed. *)
+  (** Close the queue, meaning there won't be any more [push] allowed,
+      ie [push] will raise {!Closed}.
+
+      [pop] will keep working and will return the elements present in the
+      queue, until it's entirely drained; then [pop] will
+      also raise {!Closed}. *)
 end
