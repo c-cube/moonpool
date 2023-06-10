@@ -12,4 +12,3 @@ val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
 module Fut = Fut
-module Chan = Chan
