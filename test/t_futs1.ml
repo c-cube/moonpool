@@ -1,4 +1,4 @@
-open Moonpool
+open! Moonpool
 
 let pool = Pool.create ~min:4 ()
 let pool2 = Pool.create ~min:2 ()

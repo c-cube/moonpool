@@ -5,3 +5,4 @@ let start_thread_on_some_domain f x =
 module Pool = Pool
 module Fut = Fut
 module Blocking_queue = Bb_queue
+module Atomic = Atomic_

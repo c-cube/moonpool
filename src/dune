@@ -1,7 +1,7 @@
 (library
  (public_name moonpool)
  (name moonpool)
- (private_modules atomic_ domain_ d_pool_)
+ (private_modules d_pool_)
  (libraries threads either))
 
 (rule

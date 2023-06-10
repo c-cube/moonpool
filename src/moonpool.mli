@@ -62,3 +62,9 @@ module Blocking_queue : sig
       queue, until it's entirely drained; then [pop] will
       also raise {!Closed}. *)
 end
+
+module Atomic = Atomic_
+(** Atomic values.
+
+    This is either a shim using [ref], on pre-OCaml 5, or the
+    standard [Atomic] module on OCaml 5. *)
