@@ -1,7 +1,7 @@
 
 DUNE_OPTS?=
-all:
-	dune build @all $(DUNE_OPTS)
+build:
+	dune build @install $(DUNE_OPTS)
 
 clean:
 	@dune clean
@@ -12,7 +12,7 @@ test:
 doc:
 	@dune build $(DUNE_OPTS) @doc
 
-WATCH?=@all
+WATCH?= @check @runtest
 watch:
 	dune build $(DUNE_OPTS) -w $(WATCH)
 
