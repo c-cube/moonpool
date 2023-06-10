@@ -23,8 +23,8 @@ let run ~psize ~n ~j () : _ Fut.t =
   fut
 
 let () =
-  let j = ref 10 in
-  let n = ref 10 in
+  let j = ref 5 in
+  let n = ref 5 in
   let psize = ref 4 in
   let opts =
     [
