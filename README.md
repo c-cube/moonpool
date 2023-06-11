@@ -20,7 +20,6 @@ but the threads are spread across multiple domains (on OCaml 5), which enables
 parallelism.
 
 ```ocaml
-# #require "moonpool";;
 # let pool = Moonpool.Pool.create ~min:4 ();;
 val pool : Moonpool.Pool.t = <abstr>
 
