@@ -295,7 +295,7 @@ let wait_block (self : 'a t) : 'a or_error =
       Bb_queue.pop q
     in
 
-    (* a bit of spinlock *)
+    (* a bit of spinning before we block *)
     let rec loop i =
       if i = 0 then
         real_block ()
