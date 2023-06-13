@@ -65,13 +65,15 @@ let () =
   (*
   Tracy_client_trace.setup ();
    *)
-  let pool = Pool.create ~per_domain:1 ~min:2 () in
-  ignore (stat_thread () : Thread.t);
 
   let start = Unix.gettimeofday () in
   let n = try int_of_string (Sys.getenv "N") with _ -> default_n in
+  let j = try int_of_string (Sys.getenv "J") with _ -> 4 in
 
-  Printf.printf "n=%d\n%!" n;
+  let pool = Pool.create ~min:j () in
+  ignore (stat_thread () : Thread.t);
+
+  Printf.printf "n=%d, j=%d\n%!" n j;
   let n1, n2 = run ~pool n |> Fut.wait_block_exn in
   Printf.printf "n: %d, n': %d (in %.2fs)\n%!" n1 n2
     (Unix.gettimeofday () -. start);
