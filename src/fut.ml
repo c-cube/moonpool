@@ -354,3 +354,9 @@ end) =
 Infix_ (struct
   let pool = Some X.pool
 end)
+
+let[@inline] infix pool : (module INFIX) =
+  let module M = Infix (struct
+    let pool = pool
+  end) in
+  (module M)

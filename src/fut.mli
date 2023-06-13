@@ -154,3 +154,7 @@ include INFIX
 module Infix (_ : sig
   val pool : Pool.t
 end) : INFIX
+
+val infix : Pool.t -> (module INFIX)
+(** [infix pool] makes a new infix module.
+    @since 0.2 *)
