@@ -120,20 +120,26 @@ let bind ?on ~f fut : _ t =
     | Error (e, bt) -> fail e bt
   in
 
+  let bind_and_fulfill r promise () =
+    let f_res_fut = apply_f_to_res r in
+    (* forward result *)
+    on_result f_res_fut (fun r -> fulfill promise r)
+  in
+
   match peek fut with
-  | Some r -> apply_f_to_res r
+  | Some r ->
+    (match on with
+    | None -> apply_f_to_res r
+    | Some on ->
+      let fut2, promise = make () in
+      Pool.run on (bind_and_fulfill r promise);
+      fut2)
   | None ->
     let fut2, promise = make () in
     on_result fut (fun r ->
-        let bind_and_fulfill () =
-          let f_res_fut = apply_f_to_res r in
-          (* forward result *)
-          on_result f_res_fut (fun r -> fulfill promise r)
-        in
-
         match on with
-        | None -> bind_and_fulfill ()
-        | Some on -> Pool.run on bind_and_fulfill);
+        | None -> bind_and_fulfill r promise ()
+        | Some on -> Pool.run on (bind_and_fulfill r promise));
 
     fut2
 
