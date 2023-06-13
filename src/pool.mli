@@ -36,9 +36,17 @@ val create :
 (** [create ()] makes a new thread pool.
      @param on_init_thread called at the beginning of each new thread
        in the pool.
-       @param on_exit_thread called at the end of each thread in the pool
-       @param thread_wrappers a list of {!thread_loop_wrapper} functions
-       to use for this pool's workers.
+     @param min minimum size of the pool. It will be at least [1] internally,
+      so [0] or negative values make no sense.
+     @param per_domain is the number of threads allocated per domain in the fixed
+       domain pool. The default value is [0], but setting, say, [~per_domain:2]
+       means that if there are [8] domains (which might be the case on an 8-core machine)
+       then the minimum size of the pool is [16].
+       If both [min] and [per_domain] are specified, the maximum of both
+       [min] and [per_domain * num_of_domains] is used.
+     @param on_exit_thread called at the end of each thread in the pool
+     @param thread_wrappers a list of {!thread_loop_wrapper} functions
+     to use for this pool's workers.
   *)
 
 val size : t -> int
