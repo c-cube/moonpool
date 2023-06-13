@@ -49,11 +49,24 @@ let run ~pool n : (int * int) Fut.t =
 
 let default_n = 16
 
+let stat_thread () =
+  Moonpool.start_thread_on_some_domain
+    (fun () ->
+      while true do
+        Thread.delay 0.1;
+        let stat = Gc.quick_stat () in
+        Trace.counter_int "gc.minor" stat.minor_collections;
+        Trace.counter_int "gc.major" stat.major_collections;
+        Trace.counter_float "gc.minor.words" stat.minor_words
+      done)
+    ()
+
 let () =
   (*
   Tracy_client_trace.setup ();
    *)
   let pool = Pool.create ~per_domain:1 ~min:2 () in
+  ignore (stat_thread () : Thread.t);
 
   let start = Unix.gettimeofday () in
   let n = try int_of_string (Sys.getenv "N") with _ -> default_n in
