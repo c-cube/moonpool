@@ -77,6 +77,10 @@ val bind : ?on:Pool.t -> f:('a -> 'b t) -> 'a t -> 'b t
     and fails with [e] if [fut] fails with [e] or [f x] raises [e].
       @param on if provided, [f] runs on the given pool *)
 
+val join : ?on:Pool.t -> 'a t t -> 'a t
+(** [join fut] is [fut >>= Fun.id]. It joins the inner layer of the future.
+    @since 0.2 *)
+
 val both : 'a t -> 'b t -> ('a * 'b) t
 (** [both a b] succeeds with [x, y] if [a] succeeds with [x] and
       [b] succeeds with [y], or fails if any of them fails. *)

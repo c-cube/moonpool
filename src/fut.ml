@@ -143,6 +143,8 @@ let bind ?on ~f fut : _ t =
 
     fut2
 
+let join ?on fut = bind ?on fut ~f:(fun x -> x)
+
 let update_ (st : 'a A.t) f : 'a =
   let rec loop () =
     let x = A.get st in
