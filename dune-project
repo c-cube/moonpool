@@ -18,7 +18,8 @@
  (depends
   (ocaml (>= 4.08))
   dune
-  either
+  (either (>= 1.0))
+  (trace :with-test)
   (odoc :with-doc)
   (mdx
    (and
