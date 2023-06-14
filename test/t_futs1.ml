@@ -109,3 +109,13 @@ let () =
   in
   ignore (Fut.wait_block_exn (Fut.join_list [ fut1; fut2 ]) : _ list);
   assert (Atomic.get n = 99 * 100)
+
+let () =
+  let f1 = mk_ret_delay 0.1 "foo" in
+  assert (
+    try
+      ignore (Fut.get_or_fail f1);
+      false
+    with Fut.Not_ready -> true);
+  ignore (Fut.wait_block f1);
+  assert (Fut.get_or_fail f1 = Ok "foo")
