@@ -88,6 +88,14 @@ let worker_thread_ ~on_exn (active : bool A.t) (qs : task Bb_queue.t array)
 
 let default_thread_init_exit_ ~dom_id:_ ~t_id:_ () = ()
 
+(** We want a reasonable number of queues. Even if your system is
+    a beast with hundreds of cores, trying
+    to work-steal through hundreds of queues will have a cost.
+
+    Hence, we limit the number of queues to at most 32 (number picked
+    via the ancestral technique of the pifomètre). *)
+let max_queues = 32
+
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(thread_wrappers = [])
     ?(on_exn = fun _ _ -> ()) ?min:(min_threads = 1) ?(per_domain = 0) () : t =
@@ -102,7 +110,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
 
   let active = A.make true in
   let qs =
-    let num_qs = min num_domains num_threads in
+    let num_qs = min (min num_domains num_threads) max_queues in
     Array.init num_qs (fun _ -> Bb_queue.create ())
   in
 
