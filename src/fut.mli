@@ -130,6 +130,13 @@ val for_ : on:Pool.t -> int -> (int -> unit) -> unit t
       a future that resolves when all the tasks have resolved, or fails
       as soon as one task has failed. *)
 
+val for_array : on:Pool.t -> 'a array -> (int -> 'a -> unit) -> unit t
+(** [for_array ~on arr f] runs [f 0 arr.(0)], …, [f (n-1) arr.(n-1)] in
+    the pool (where [n = Array.length arr]), and returns a future
+    that resolves when all the tasks are done,
+    or fails if any of them fails.
+    @since 0.2 *)
+
 (** {2 Blocking} *)
 
 val wait_block : 'a t -> 'a or_error

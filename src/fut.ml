@@ -303,6 +303,9 @@ let for_ ~on n f : unit t =
     ~map:(fun _f () -> ())
     ()
 
+let for_array ~on arr f : unit t =
+  for_ ~on (Array.length arr) (fun i -> f i arr.(i))
+
 (* ### blocking ### *)
 
 let wait_block (self : 'a t) : 'a or_error =
