@@ -28,6 +28,19 @@ let[@inline] peek self : _ option =
   | Done x -> Some x
   | Waiting _ -> None
 
+exception Not_ready
+
+let[@inline] get_or_fail self =
+  match A.get self.st with
+  | Done x -> x
+  | Waiting _ -> raise Not_ready
+
+let[@inline] get_or_fail_exn self =
+  match A.get self.st with
+  | Done (Ok x) -> x
+  | Done (Error (exn, bt)) -> Printexc.raise_with_backtrace exn bt
+  | Waiting _ -> raise Not_ready
+
 let on_result (self : _ t) (f : _ waiter) : unit =
   while
     let st = A.get self.st in

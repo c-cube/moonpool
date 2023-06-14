@@ -59,6 +59,22 @@ val peek : 'a t -> 'a or_error option
 (** [peek fut] returns [Some r] if [fut] is currently resolved with [r],
       and [None] if [fut] is not resolved yet. *)
 
+exception Not_ready
+(** @since 0.2 *)
+
+val get_or_fail : 'a t -> 'a or_error
+(** [get_or_fail fut] obtains the result from [fut] if it's fulfilled
+    (i.e. if [peek fut] returns [Some res], [get_or_fail fut] returns [res]).
+    @raise Not_ready if the future is not ready.
+    @since 0.2 *)
+
+val get_or_fail_exn : 'a t -> 'a
+(** [get_or_fail_exn fut] obtains the result from [fut] if it's fulfilled,
+    like {!get_or_fail}. If the result is an [Error _], the exception inside
+    is re-raised.
+    @raise Not_ready if the future is not ready.
+    @since 0.2 *)
+
 (** {2 Combinators} *)
 
 val spawn : on:Pool.t -> (unit -> 'a) -> 'a t
