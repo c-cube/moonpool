@@ -178,9 +178,12 @@ let create ?(on_init_thread = default_thread_init_exit_)
   done;
   pool
 
-let shutdown (self : t) : unit =
+let shutdown_ ~wait (self : t) : unit =
   let was_active = A.exchange self.active false in
   (* close the job queues, which will fail future calls to [run],
      and wake up the subset of [self.threads] that are waiting on them. *)
   if was_active then Array.iter Bb_queue.close self.qs;
-  Array.iter Thread.join self.threads
+  if wait then Array.iter Thread.join self.threads
+
+let shutdown_without_waiting (self : t) : unit = shutdown_ self ~wait:false
+let shutdown (self : t) : unit = shutdown_ self ~wait:true

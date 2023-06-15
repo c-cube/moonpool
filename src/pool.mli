@@ -60,6 +60,10 @@ val num_tasks : t -> int
 val shutdown : t -> unit
 (** Shutdown the pool and wait for it to terminate. Idempotent. *)
 
+val shutdown_without_waiting : t -> unit
+(** Shutdown the pool, and do not wait for it to terminate. Idempotent.
+    @since 0.2 *)
+
 exception Shutdown
 
 val run : t -> (unit -> unit) -> unit
