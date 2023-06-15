@@ -89,6 +89,15 @@ let () =
   assert (Fut.wait_block fut = Ok (2, 20))
 
 let () =
+  let l = [] in
+  let l' = Fut.wait_block_exn (Fut.join_list l) in
+  assert (l' = [])
+
+let () =
+  let l = [] in
+  Fut.wait_block_exn (Fut.wait_list l)
+
+let () =
   let f1 = mk_ret_delay 0.01 true in
   let f2 = mk_ret_delay 0.9 false in
   let fut = Fut.choose f1 f2 in
