@@ -75,6 +75,10 @@ val get_or_fail_exn : 'a t -> 'a
     @raise Not_ready if the future is not ready.
     @since 0.2 *)
 
+val is_done : _ t -> bool
+(** Is the future resolved? This is the same as [peek fut |> Option.is_some].
+    @since 0.2 *)
+
 (** {2 Combinators} *)
 
 val spawn : on:Pool.t -> (unit -> 'a) -> 'a t

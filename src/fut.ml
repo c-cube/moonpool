@@ -28,6 +28,11 @@ let[@inline] peek self : _ option =
   | Done x -> Some x
   | Waiting _ -> None
 
+let[@inline] is_done self : bool =
+  match A.get self.st with
+  | Done _ -> true
+  | Waiting _ -> false
+
 exception Not_ready
 
 let[@inline] get_or_fail self =
