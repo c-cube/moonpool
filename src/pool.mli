@@ -13,7 +13,7 @@ type t
 
 type thread_loop_wrapper =
   thread:Thread.t -> pool:t -> (unit -> unit) -> unit -> unit
-(** a thread wrapper [f] takes the current thread, the current pool,
+(** A thread wrapper [f] takes the current thread, the current pool,
       and the worker function [loop : unit -> unit] which is
       the worker's main loop, and returns a new loop function.
       By default it just returns the same loop function but it can be used
@@ -29,6 +29,7 @@ val create :
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?thread_wrappers:thread_loop_wrapper list ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
+  ?around_task:(t -> 'a) * (t -> 'a -> unit) ->
   ?min:int ->
   ?per_domain:int ->
   unit ->
@@ -47,6 +48,10 @@ val create :
      @param on_exit_thread called at the end of each thread in the pool
      @param thread_wrappers a list of {!thread_loop_wrapper} functions
      to use for this pool's workers.
+     @param around_task a pair of [before, after], where [before pool] is called
+      before a task is processed,
+      on the worker thread about to run it, and returns [x]; and [after pool x] is called by
+      the same thread after the task is over. (since 0.2)
   *)
 
 val size : t -> int
