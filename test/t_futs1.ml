@@ -109,3 +109,7 @@ let () =
   in
   ignore (Fut.wait_block_exn (Fut.join_list [ fut1; fut2 ]) : _ list);
   assert (Atomic.get n = 99 * 100)
+
+let () =
+  let x = [| Fut.return 1 |] |> Fut.join_array |> Fut.wait_block_exn in
+  assert (x = [| 1 |])
