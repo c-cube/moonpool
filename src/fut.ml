@@ -259,7 +259,7 @@ let join_container_ ~iter ~map ~len cont : _ t =
 let join_array (a : _ t array) : _ array t =
   match Array.length a with
   | 0 -> return [||]
-  | 1 -> map ?on:None a.(1) ~f:(fun x -> [| x |])
+  | 1 -> map ?on:None a.(0) ~f:(fun x -> [| x |])
   | _ -> join_container_ ~len:Array.length ~map:Array.map ~iter:Array.iter a
 
 let join_list (l : _ t list) : _ list t =
