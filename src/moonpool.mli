@@ -40,6 +40,12 @@ module Blocking_queue : sig
   val create : unit -> _ t
   (** Create a new unbounded queue. *)
 
+  val size : _ t -> int
+  (** Number of items currently in the queue. Note that [pop]
+      might still block if this returns a non-zero number, since another
+      thread might have consumed the items in the mean time.
+      @since 0.2 *)
+
   exception Closed
 
   val push : 'a t -> 'a -> unit

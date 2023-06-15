@@ -10,6 +10,10 @@ val push : 'a t -> 'a -> unit
 (** [push q x] pushes [x] into [q], and returns [()].
     @raise Closed if [close q] was previously called.*)
 
+val size : _ t -> int
+(** Number of items currently in the queue.
+    @since 0.2 *)
+
 val pop : 'a t -> 'a
 (** [pop q] pops the next element in [q]. It might block until an element comes.
    @raise Closed if the queue was closed before a new element was available. *)

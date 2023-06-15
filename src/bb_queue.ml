@@ -83,3 +83,9 @@ let try_push (self : _ t) x : bool =
     true
   ) else
     false
+
+let size (self : _ t) : int =
+  Mutex.lock self.mutex;
+  let n = Queue.length self.q in
+  Mutex.unlock self.mutex;
+  n
