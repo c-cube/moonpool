@@ -318,6 +318,10 @@ let for_ ~on n f : unit t =
 let for_array ~on arr f : unit t =
   for_ ~on (Array.length arr) (fun i -> f i arr.(i))
 
+let for_list ~on l f : unit t =
+  let futs = List.rev_map (fun x -> spawn ~on (fun () -> f x)) l in
+  wait_list futs
+
 (* ### blocking ### *)
 
 let wait_block (self : 'a t) : 'a or_error =

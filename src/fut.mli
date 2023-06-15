@@ -141,6 +141,10 @@ val for_array : on:Pool.t -> 'a array -> (int -> 'a -> unit) -> unit t
     or fails if any of them fails.
     @since 0.2 *)
 
+val for_list : on:Pool.t -> 'a list -> ('a -> unit) -> unit t
+(** [for_list ~on l f] is like [for_array ~on (Array.of_list l) f].
+    @since 0.2 *)
+
 (** {2 Blocking} *)
 
 val wait_block : 'a t -> 'a or_error

@@ -132,3 +132,14 @@ let () =
 let () =
   let x = [| Fut.return 1 |] |> Fut.join_array |> Fut.wait_block_exn in
   assert (x = [| 1 |])
+
+let () =
+  let run_for n =
+    let l = List.init n (fun x -> x) in
+    let sum = Atomic.make 0 in
+    Fut.for_list ~on:pool l (fun x -> ignore (Atomic.fetch_and_add sum x : int))
+    |> Fut.wait_block_exn;
+    assert (Atomic.get sum = List.fold_left ( + ) 0 l)
+  in
+
+  List.iter run_for [ 1; 10; 50; 1_000 ]
