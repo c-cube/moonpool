@@ -51,7 +51,12 @@ let run (self : t) (f : task) : unit =
   | Exit -> ()
   | Bb_queue.Closed -> raise Shutdown
 
-let size self = Array.length self.threads
+let[@inline] size self = Array.length self.threads
+
+let num_tasks (self : t) : int =
+  let n = ref 0 in
+  Array.iter (fun q -> n := !n + Bb_queue.size q) self.qs;
+  !n
 
 exception Got_task of task
 

@@ -52,6 +52,11 @@ val create :
 val size : t -> int
 (** Number of threads *)
 
+val num_tasks : t -> int
+(** Current number of tasks. This is at best a snapshot, useful for metrics
+    and debugging.
+    @since 0.2 *)
+
 val shutdown : t -> unit
 (** Shutdown the pool and wait for it to terminate. Idempotent. *)
 
