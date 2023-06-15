@@ -232,29 +232,36 @@ let peek_ok_assert_ (self : 'a t) : 'a =
   | _ -> assert false
 
 let join_container_ ~iter ~map ~len cont : _ t =
-  let fut, promise = make () in
-  let missing = A.make (len cont) in
+  let n_items = len cont in
+  if n_items = 0 then (
+    (* no items, return now. *)
+    let cont_empty = map (fun _ -> assert false) cont in
+    return cont_empty
+  ) else (
+    let fut, promise = make () in
+    let missing = A.make n_items in
 
-  (* callback called when a future in [a] is resolved *)
-  let on_res = function
-    | Ok _ ->
-      let n = A.fetch_and_add missing (-1) in
-      if n = 1 then (
-        (* last future, we know they all succeeded, so resolve [fut] *)
-        let res = map peek_ok_assert_ cont in
-        fulfill promise (Ok res)
-      )
-    | Error e_bt ->
-      (* immediately cancel all other [on_res] *)
-      let n = A.exchange missing 0 in
-      if n > 0 then
-        (* we're the only one to set to 0, so we can fulfill [fut]
-           with an error. *)
-        fulfill promise (Error e_bt)
-  in
+    (* callback called when a future in [a] is resolved *)
+    let on_res = function
+      | Ok _ ->
+        let n = A.fetch_and_add missing (-1) in
+        if n = 1 then (
+          (* last future, we know they all succeeded, so resolve [fut] *)
+          let res = map peek_ok_assert_ cont in
+          fulfill promise (Ok res)
+        )
+      | Error e_bt ->
+        (* immediately cancel all other [on_res] *)
+        let n = A.exchange missing 0 in
+        if n > 0 then
+          (* we're the only one to set to 0, so we can fulfill [fut]
+             with an error. *)
+          fulfill promise (Error e_bt)
+    in
 
-  iter (fun fut -> on_result fut on_res) cont;
-  fut
+    iter (fun fut -> on_result fut on_res) cont;
+    fut
+  )
 
 let join_array (a : _ t array) : _ array t =
   match Array.length a with
