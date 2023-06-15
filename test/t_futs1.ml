@@ -119,3 +119,7 @@ let () =
     with Fut.Not_ready -> true);
   ignore (Fut.wait_block f1);
   assert (Fut.get_or_fail f1 = Ok "foo")
+
+let () =
+  let x = [| Fut.return 1 |] |> Fut.join_array |> Fut.wait_block_exn in
+  assert (x = [| 1 |])
