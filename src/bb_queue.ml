@@ -37,10 +37,12 @@ let push (self : _ t) x : unit =
 let pop (self : 'a t) : 'a =
   Mutex.lock self.mutex;
   let rec loop () =
-    if self.closed then (
-      Mutex.unlock self.mutex;
-      raise Closed
-    ) else if Queue.is_empty self.q then (
+    if Queue.is_empty self.q then (
+      if self.closed then (
+        Mutex.unlock self.mutex;
+        raise Closed
+      );
+
       Condition.wait self.cond self.mutex;
       (loop [@tailcall]) ()
     ) else (
