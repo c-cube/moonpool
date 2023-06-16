@@ -46,6 +46,21 @@ Ok
    514229; 832040; 1346269; 2178309; 3524578; 5702887; 9227465|]
 ```
 
+### More intuition
+
+To quote [gasche](https://discuss.ocaml.org/t/ann-moonpool-0-1/12387/15):
+
+<blockquote>
+You are assuming that, if pool P1 has 5000 tasks, and pool P2 has 10 other tasks, then these 10 tasks will get to run faster than if we just added them at the end of pool P1. This sounds like a “fairness” assumption: separate pools will get comparable shares of domain compute ressources, or at least no pool will be delayed too much from running their first tasks.
+
+[…]
+
+- each pool uses a fixed number of threads, all running simultaneously; if there are more tasks sent to the pool, they are delayed and will only get one of the pool threads when previous tasks have finished
+- separate pools run their separate threads simultaneously, so they compete for compute resources on their domain using OCaml’s systhreads scheduler – which does provide fairness in practice
+- as a result, running in a new pool enables quicker completion than adding to an existing pool (as we will be scheduled right away instead of waiting for previous tasks in our pool to free some threads)
+- the ratio of compute resources that each pool gets should be roughly proportional to its number of worker threads
+</blockquote>
+
 ## OCaml versions
 
 This works for OCaml >= 4.08.
