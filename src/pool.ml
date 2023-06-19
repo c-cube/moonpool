@@ -67,6 +67,11 @@ let worker_thread_ pool ~on_exn ~around_task (active : bool A.t)
   let num_qs = Array.length qs in
   let (AT_pair (before_task, after_task)) = around_task in
 
+  (* helper to re-schedule suspended tasks on this same pool *)
+  let suspend_run_ : Suspend_types_.runner =
+    { run = (fun f -> run pool (fun () -> ignore (f ()))) }
+  in
+
   try
     while A.get active do
       (* last resort: block on my queue *)
@@ -88,7 +93,9 @@ let worker_thread_ pool ~on_exn ~around_task (active : bool A.t)
       in
 
       let _ctx = before_task pool in
-      (try task ()
+      (try
+         (* run [task()] and handle [suspend] in it *)
+         Suspend_.with_suspend ~run:suspend_run_ task
        with e ->
          let bt = Printexc.get_raw_backtrace () in
          on_exn e bt);
