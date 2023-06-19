@@ -366,10 +366,12 @@ let await_exn (fut : 'a t) : 'a =
     Suspend_.suspend
       {
         Suspend_types_.handle =
-          (fun runner k ->
+          (fun ~run k ->
             on_result fut (function
-              | Ok _ -> runner.run (fun () -> k (Ok ()))
-              | Error (exn, bt) -> k (Error (exn, bt))));
+              | Ok _ -> run (fun () -> k (Ok ()))
+              | Error (exn, bt) ->
+                (* fail continuation immediately *)
+                k (Error (exn, bt))));
       };
     (* un-suspended: we should have a result! *)
     get_or_fail_exn fut

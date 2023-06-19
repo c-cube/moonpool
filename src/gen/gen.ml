@@ -88,21 +88,21 @@ type _ Effect.t +=
 
 let[@inline] suspend h = Effect.perform (Suspend h)
 
-let with_suspend ~run (f: unit -> unit) : unit =
+let with_suspend ~(run:task -> unit) (f: unit -> unit) : unit =
   let module E = Effect.Deep in
 
   (* effect handler *)
   let effc
-  : type e. e Effect.t -> ((e, unit) E.continuation -> unit) option
+  : type e. e Effect.t -> ((e, _) E.continuation -> _) option
   = function
     | Suspend h ->
       Some (fun k ->
-        let k' = function
+        let k': suspension = function
           | Ok () -> E.continue k ()
           | Error (exn, bt) ->
             E.discontinue_with_backtrace k exn bt
         in
-        h.handle run k'
+        h.handle ~run k'
       )
     | _ -> None
   in

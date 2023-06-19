@@ -26,12 +26,12 @@ let add_global_thread_loop_wrapper f : unit =
 
 exception Shutdown
 
-let run (self : t) (f : task) : unit =
+let run_direct_ (self : t) (task : task) : unit =
   let n_qs = Array.length self.qs in
   let offset = A.fetch_and_add self.cur_q 1 in
 
   (* blocking push, last resort *)
-  let push_wait () =
+  let[@inline] push_wait f =
     let q_idx = offset mod Array.length self.qs in
     let q = self.qs.(q_idx) in
     Bb_queue.push q f
@@ -43,13 +43,20 @@ let run (self : t) (f : task) : unit =
       for i = 0 to n_qs - 1 do
         let q_idx = (i + offset) mod Array.length self.qs in
         let q = self.qs.(q_idx) in
-        if Bb_queue.try_push q f then raise_notrace Exit
+        if Bb_queue.try_push q task then raise_notrace Exit
       done
     done;
-    push_wait ()
+    push_wait task
   with
   | Exit -> ()
   | Bb_queue.Closed -> raise Shutdown
+
+let run (self : t) (task : task) : unit =
+  let task' () =
+    (* run [f()] and handle [suspend] in it *)
+    Suspend_.with_suspend task ~run:(run_direct_ self)
+  in
+  run_direct_ self task'
 
 let[@inline] size self = Array.length self.threads
 
@@ -66,11 +73,6 @@ let worker_thread_ pool ~on_exn ~around_task (active : bool A.t)
     (qs : task Bb_queue.t array) ~(offset : int) : unit =
   let num_qs = Array.length qs in
   let (AT_pair (before_task, after_task)) = around_task in
-
-  (* helper to re-schedule suspended tasks on this same pool *)
-  let suspend_run_ : Suspend_types_.runner =
-    { run = (fun f -> run pool (fun () -> ignore (f ()))) }
-  in
 
   try
     while A.get active do
@@ -93,9 +95,7 @@ let worker_thread_ pool ~on_exn ~around_task (active : bool A.t)
       in
 
       let _ctx = before_task pool in
-      (try
-         (* run [task()] and handle [suspend] in it *)
-         Suspend_.with_suspend ~run:suspend_run_ task
+      (try task ()
        with e ->
          let bt = Printexc.get_raw_backtrace () in
          on_exn e bt);

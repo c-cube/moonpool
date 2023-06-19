@@ -6,10 +6,13 @@
 open Suspend_types_
 
 val suspend : suspension_handler -> unit
-(** [suspend h] calls [h] with the current continuation [k].
-    The suspension handler, [h], can decide to register [k] somewhere,
-    so it's called later. *)
+(** [suspend h] jumps back to the nearest {!with_suspend}
+    and calls [h.handle] with the current continuation [k]
+    and a task runner function.
+*)
 
-val with_suspend : run:runner -> (unit -> unit) -> unit
+val with_suspend : run:(task -> unit) -> (unit -> unit) -> unit
 (** [with_suspend ~run f] runs [f()] in an environment where [suspend]
-    will work. It passes [run] to suspension handlers. *)
+    will work. If [f()] suspends with suspension handler [h],
+    this calls [h ~run k] where [k] is the suspension.
+*)
