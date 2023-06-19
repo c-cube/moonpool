@@ -26,6 +26,8 @@
    (and
     (>= 1.9.0)
     :with-test)))
+ (depopts
+   (domain-local-await (>= 0.2)))
  (tags
   (thread pool domain)))
 

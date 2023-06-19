@@ -2,7 +2,10 @@
  (public_name moonpool)
  (name moonpool)
  (private_modules d_pool_)
- (libraries threads either))
+ (libraries threads either
+            (select dla_.ml from
+             (domain-local-await -> dla_.real.ml)
+             ( -> dla_.dummy.ml))))
 
 (rule
   (targets atomic_.ml)

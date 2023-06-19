@@ -1,6 +1,7 @@
 type domain = Domain_.t
 
 let work_ _i q : unit =
+  Dla_.setup_domain ();
   while true do
     let f = Bb_queue.pop q in
     try f () with _ -> ()
