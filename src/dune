@@ -9,10 +9,15 @@
   (action
     (with-stdout-to %{targets}
      (run ./gen/gen.exe --ocaml %{ocaml_version} --atomic))))
-          
+
 (rule
   (targets domain_.ml)
   (action
     (with-stdout-to %{targets}
      (run ./gen/gen.exe --ocaml %{ocaml_version} --domain))))
-          
+
+(rule
+  (targets suspend_.ml)
+  (action
+    (with-stdout-to %{targets}
+     (run ./gen/gen.exe --ocaml %{ocaml_version} --suspend))))
