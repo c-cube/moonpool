@@ -13,7 +13,7 @@ let fib ~on x : int Fut.t =
     else (
       let t1 = Fut.spawn ~on (fun () -> fib_rec (x - 1))
       and t2 = Fut.spawn ~on (fun () -> fib_rec (x - 2)) in
-      Fut.await_exn t1 + Fut.await_exn t2
+      Fut.await t1 + Fut.await t2
     )
   in
   Fut.spawn ~on (fun () -> fib_rec x)

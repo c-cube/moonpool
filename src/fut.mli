@@ -149,18 +149,12 @@ val for_list : on:Pool.t -> 'a list -> ('a -> unit) -> unit t
 
 This is only available on OCaml 5. *)
 
-val await : 'a t -> 'a or_error
+val await : 'a t -> 'a
 (** [await fut] suspends the current tasks until [fut] is fulfilled, then
     resumes the task on this same pool.
     This must only be run from inside the pool itself.
     @since 0.3
     {b NOTE}: only on OCaml 5 *)
-
-val await_exn : 'a t -> 'a
-(** Same as {!await} but re-raises.
-    @since 0.3
-    {b NOTE}: only on OCaml 5
- *)
 
 (** {2 Blocking} *)
 

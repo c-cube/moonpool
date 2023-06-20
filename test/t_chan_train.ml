@@ -36,8 +36,8 @@ let rec mk_train n ic : _ Chan.t =
 let run () =
   let start = Unix.gettimeofday () in
 
-  let n_trains = 5 in
-  let len_train = 100 in
+  let n_trains = 4 in
+  let len_train = 80 in
   let n_events = 1_000 in
   let range = 5 in
 

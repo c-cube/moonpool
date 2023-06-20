@@ -354,7 +354,7 @@ let wait_block_exn self =
   | Ok x -> x
   | Error (e, bt) -> Printexc.raise_with_backtrace e bt
 
-let await_exn (fut : 'a t) : 'a =
+let await (fut : 'a t) : 'a =
   match peek fut with
   | Some res ->
     (* fast path: peek *)
@@ -375,12 +375,6 @@ let await_exn (fut : 'a t) : 'a =
       };
     (* un-suspended: we should have a result! *)
     get_or_fail_exn fut
-
-let await fut =
-  try Ok (await_exn fut)
-  with exn ->
-    let bt = Printexc.get_raw_backtrace () in
-    Error (exn, bt)
 
 module type INFIX = sig
   val ( >|= ) : 'a t -> ('a -> 'b) -> 'b t

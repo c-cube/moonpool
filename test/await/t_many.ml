@@ -6,13 +6,13 @@ let run () =
   let t1 = Unix.gettimeofday () in
 
   let n = 1_000_000 in
-  let n_tasks = 10 in
+  let n_tasks = 3 in
   let task () =
     let l = List.init n (fun x -> Fut.spawn ~on:pool (fun () -> x)) in
     Fut.spawn ~on:pool (fun () ->
         List.fold_left
           (fun n x ->
-            let _res = Fut.await_exn x in
+            let _res = Fut.await x in
             n + 1)
           0 l)
   in

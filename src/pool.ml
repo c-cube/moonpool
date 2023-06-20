@@ -26,6 +26,7 @@ let add_global_thread_loop_wrapper f : unit =
 
 exception Shutdown
 
+(** Run [task] as is, on the pool. *)
 let run_direct_ (self : t) (task : task) : unit =
   let n_qs = Array.length self.qs in
   let offset = A.fetch_and_add self.cur_q 1 in
@@ -51,6 +52,8 @@ let run_direct_ (self : t) (task : task) : unit =
   | Exit -> ()
   | Bb_queue.Closed -> raise Shutdown
 
+(** Run [task]. It will be wrapped with an effect handler to
+    support {!Fut.await}. *)
 let run (self : t) (task : task) : unit =
   let task' () =
     (* run [f()] and handle [suspend] in it *)
