@@ -2,4 +2,5 @@
 (tests
   (names t_fib1 t_futs1 t_many)
   (enabled_if (>= %{ocaml_version} 5.0))
-  (libraries moonpool trace tracy-client.trace))
+  (libraries moonpool trace ;tracy-client.trace
+             ))

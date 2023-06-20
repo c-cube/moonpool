@@ -18,7 +18,9 @@ let fib ~on x : int Fut.t =
   in
   Fut.spawn ~on (fun () -> fib_rec x)
 
-let () = Tracy_client_trace.setup ()
+(* NOTE: for tracy support
+   let () = Tracy_client_trace.setup ()
+*)
 let () = assert (List.init 10 fib_direct = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 
 let fib_40 : int =
