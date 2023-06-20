@@ -1,5 +1,5 @@
 (tests
- (names t_fib t_bench1 t_fib_rec t_futs1 t_tree_futs t_props)
+ (names t_fib t_bench1 t_fib_rec t_futs1 t_tree_futs t_props t_chan_train)
  (libraries moonpool qcheck-core qcheck-core.runner
             ;tracy-client.trace
             trace))
