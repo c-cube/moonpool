@@ -13,6 +13,7 @@ val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
 
 module Fut = Fut
 module Chan = Chan
+module Fork_join = Fork_join
 
 (** A simple blocking queue.
 
