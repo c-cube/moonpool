@@ -2,5 +2,5 @@
 (env
   (_ (flags :standard -strict-sequence -warn-error -a+8 -w +a-4-40-42-70)))
 
-(mdx (libraries moonpool)
+(mdx (libraries moonpool threads)
      (enabled_if (>= %{ocaml_version} 5.0)))
