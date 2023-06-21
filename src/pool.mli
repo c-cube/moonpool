@@ -75,7 +75,7 @@ val run_async : t -> (unit -> unit) -> unit
 (** [run_async pool f] schedules [f] for later execution on the pool
     in one of the threads. [f()] will run on one of the pool's
     worker threads.
-    @raise Shutdown if the pool was shut down before [run] was called.
+    @raise Shutdown if the pool was shut down before [run_async] was called.
     @since 0.3 *)
 
 val run : t -> (unit -> unit) -> unit
@@ -91,3 +91,17 @@ val run_wait_block : t -> (unit -> 'a) -> 'a
 
     {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}).
     @since 0.3 *)
+
+(** {2 Fork-join computations} *)
+
+val fork_join : (unit -> 'a) -> (unit -> 'b) -> 'a * 'b
+(** [fork_join f g] runs [f()] and [g()], potentially in parallel,
+    and returns their result when both are done.
+    If any of [f()] and [g()] fails, then the whole computation fails.
+
+    This must be run from within the pool, inside {!run}
+    (or inside a {!Fut.spawn} computation).
+    This is because it relies on an effect handler to be installed.
+
+    @since 0.3
+    {b NOTE} this is only available on OCaml 5. *)
