@@ -26,12 +26,13 @@ let add_global_thread_loop_wrapper f : unit =
 
 exception Shutdown
 
-let run (self : t) (f : task) : unit =
+(** Run [task] as is, on the pool. *)
+let run_direct_ (self : t) (task : task) : unit =
   let n_qs = Array.length self.qs in
   let offset = A.fetch_and_add self.cur_q 1 in
 
   (* blocking push, last resort *)
-  let push_wait () =
+  let[@inline] push_wait f =
     let q_idx = offset mod Array.length self.qs in
     let q = self.qs.(q_idx) in
     Bb_queue.push q f
@@ -43,13 +44,22 @@ let run (self : t) (f : task) : unit =
       for i = 0 to n_qs - 1 do
         let q_idx = (i + offset) mod Array.length self.qs in
         let q = self.qs.(q_idx) in
-        if Bb_queue.try_push q f then raise_notrace Exit
+        if Bb_queue.try_push q task then raise_notrace Exit
       done
     done;
-    push_wait ()
+    push_wait task
   with
   | Exit -> ()
   | Bb_queue.Closed -> raise Shutdown
+
+(** Run [task]. It will be wrapped with an effect handler to
+    support {!Fut.await}. *)
+let run (self : t) (task : task) : unit =
+  let task' () =
+    (* run [f()] and handle [suspend] in it *)
+    Suspend_.with_suspend task ~run:(run_direct_ self)
+  in
+  run_direct_ self task'
 
 let[@inline] size self = Array.length self.threads
 

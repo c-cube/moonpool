@@ -145,6 +145,17 @@ val for_list : on:Pool.t -> 'a list -> ('a -> unit) -> unit t
 (** [for_list ~on l f] is like [for_array ~on (Array.of_list l) f].
     @since 0.2 *)
 
+(** {2 Await}
+
+This is only available on OCaml 5. *)
+
+val await : 'a t -> 'a
+(** [await fut] suspends the current tasks until [fut] is fulfilled, then
+    resumes the task on this same pool.
+    This must only be run from inside the pool itself.
+    @since 0.3
+    {b NOTE}: only on OCaml 5 *)
+
 (** {2 Blocking} *)
 
 val wait_block : 'a t -> 'a or_error

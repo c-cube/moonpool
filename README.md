@@ -19,10 +19,55 @@ The user can create several thread pools. These pools use regular posix threads,
 but the threads are spread across multiple domains (on OCaml 5), which enables
 parallelism.
 
+The function `Pool.run pool task` runs `task()` on one of the workers
+of `pool`, as soon as one is available. No result is returned.
+
 ```ocaml
+# #require "threads";;
 # let pool = Moonpool.Pool.create ~min:4 ();;
 val pool : Moonpool.Pool.t = <abstr>
 
+# begin
+   Moonpool.Pool.run pool
+    (fun () ->
+        Thread.delay 0.1;
+        print_endline "running from the pool");
+   print_endline "running from the caller";
+   Thread.delay 0.3; (* wait for task to run before returning *)
+  end ;;
+running from the caller
+running from the pool
+- : unit = ()
+```
+
+The function `Fut.spawn ~on f` schedules `f ()` on the pool `on`, and immediately
+returns a _future_ which will eventually hold the result (or an exception).
+
+The function `Fut.peek` will return the current value, or `None` if the future is
+still not completed.
+The functions `Fut.wait_block` and `Fut.wait_block_exn` will
+block the current thread and wait for the future to complete.
+There are some deadlock risks associated with careless use of these, so
+be sure to consult the documentation of the `Fut` module.
+
+```ocaml
+# let fut = Moonpool.Fut.spawn ~on:pool
+    (fun () ->
+       Thread.delay 0.5;
+       1+1);;
+val fut : int Moonpool.Fut.t = <abstr>
+
+# Moonpool.Fut.peek fut;
+- : int Moonpool.Fut.or_error option = None
+
+# Moonpool.Fut.wait_block_exn fut;;
+- : int = 2
+```
+
+Some combinators on futures are also provided, e.g. to wait for all futures in
+an array to complete:
+
+```ocaml
 # let rec fib x =
     if x <= 1 then 1 else fib (x-1) + fib (x-2);;
 val fib : int -> int = <fun>
@@ -44,6 +89,42 @@ Ok
  [|1; 1; 2; 3; 5; 8; 13; 21; 34; 55; 89; 144; 233; 377; 610; 987; 1597; 2584;
    4181; 6765; 10946; 17711; 28657; 46368; 75025; 121393; 196418; 317811;
    514229; 832040; 1346269; 2178309; 3524578; 5702887; 9227465|]
+```
+
+### Support for `await`
+
+On OCaml 5, effect handlers can be used to implement `Fut.await : 'a Fut.t -> 'a`.
+
+The expression `Fut.await some_fut`, when run from inside some thread pool,
+suspends its caller task; the suspended task is then parked, and will
+be resumed when the future is completed.
+The pool worker that was executing this expression, in the mean time, moves
+on to another task.
+This means that `await` is free of the deadlock risks associated with
+`Fut.wait_block`.
+
+In the following example, we bypass the need for `Fut.join_array` by simply
+using regular array functions along with `Fut.await`.
+
+```ocaml
+# let main_fut =
+    let open Moonpool.Fut in
+    spawn ~on:pool @@ fun () ->
+    (* array of sub-futures *)
+    let tasks: _ Moonpool.Fut.t array = Array.init 100 (fun i ->
+       spawn ~on:pool (fun () ->
+           Thread.delay 0.01;
+           i+1))
+    in
+    Array.fold_left (fun n fut -> n + await fut) 0 tasks
+  ;;
+val main_fut : int Moonpool.Fut.t = <abstr>
+
+# let expected_sum = Array.init 100 (fun i->i+1) |> Array.fold_left (+) 0;;
+val expected_sum : int = 5050
+
+# assert (expected_sum = Moonpool.Fut.wait_block_exn main_fut);;
+- : unit = ()
 ```
 
 ### More intuition
