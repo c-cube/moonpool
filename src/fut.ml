@@ -368,7 +368,9 @@ let await (fut : 'a t) : 'a =
         Suspend_types_.handle =
           (fun ~run k ->
             on_result fut (function
-              | Ok _ -> run (fun () -> k (Ok ()))
+              | Ok _ ->
+                (* run without handler, we're already in a deep effect *)
+                run ~with_handler:false (fun () -> k (Ok ()))
               | Error (exn, bt) ->
                 (* fail continuation immediately *)
                 k (Error (exn, bt))));

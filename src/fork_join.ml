@@ -60,7 +60,7 @@ let both f g : _ * _ =
   let st = A.make { suspension = None; left = St_none; right = St_none } in
 
   let start_tasks ~run () : unit =
-    run (fun () ->
+    run ~with_handler:true (fun () ->
         try
           let res = f () in
           set_left_ st (St_some res)
@@ -68,7 +68,7 @@ let both f g : _ * _ =
           let bt = Printexc.get_raw_backtrace () in
           set_left_ st (St_fail (e, bt)));
 
-    run (fun () ->
+    run ~with_handler:true (fun () ->
         try
           let res = g () in
           set_right_ st (St_some res)

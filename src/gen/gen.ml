@@ -88,7 +88,7 @@ type _ Effect.t +=
 
 let[@inline] suspend h = Effect.perform (Suspend h)
 
-let with_suspend ~(run:task -> unit) (f: unit -> unit) : unit =
+let with_suspend ~(run:with_handler:bool -> task -> unit) (f: unit -> unit) : unit =
   let module E = Effect.Deep in
 
   (* effect handler *)
