@@ -14,6 +14,11 @@ val both : (unit -> 'a) -> (unit -> 'b) -> 'a * 'b
     @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
 
+val both_ignore : (unit -> unit) -> (unit -> unit) -> unit
+(** Same as [both f g |> ignore].
+    @since 0.3
+    {b NOTE} this is only available on OCaml 5. *)
+
 val all_list : (unit -> 'a) list -> 'a list
 (** [all_list fs] runs all functions in [fs] in tasks, and waits for
     all the results.
