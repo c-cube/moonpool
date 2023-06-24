@@ -151,6 +151,83 @@ val expected_sum : int = 5050
 - : unit = ()
 ```
 
+### Fork-join
+
+On OCaml 5, again using effect handlers, the module `Fork_join`
+implements the [fork-join model](https://en.wikipedia.org/wiki/Fork%E2%80%93join_model).
+It must run on a pool (using [Pool.run] or inside a future via [Future.spawn]).
+
+```ocaml
+# let rec select_sort arr i len =
+    if len >= 2 then ( 
+      let idx = ref i in
+      for j = i+1 to i+len-1 do
+        if arr.(j) < arr.(!idx) then idx := j
+      done;
+      let tmp = arr.(!idx) in
+      arr.(!idx) <- arr.(i);
+      arr.(i) <- tmp;
+      select_sort arr (i+1) (len-1)
+    );;
+val select_sort : 'a array -> int -> int -> unit = <fun>
+
+# let rec quicksort arr i len : unit =
+    if len <= 10 then select_sort arr i len
+    else (
+      let pivot = arr.(i + (len / 2)) in
+      let low = ref (i - 1) in
+      let high = ref (i + len) in
+
+      while !low < !high do
+        incr low;
+        decr high;
+        while arr.(!low) < pivot do
+          incr low
+        done;
+        while arr.(!high) > pivot do
+          decr high
+        done;
+        if !low < !high then (
+          let tmp = arr.(!low) in
+          arr.(!low) <- arr.(!high);
+          arr.(!high) <- tmp
+        )
+      done;
+
+      Moonpool.Fork_join.both_ignore
+        (fun () -> quicksort arr i (!low - i))
+        (fun () -> quicksort arr !low (len - (!low - i)))
+    );;
+val quicksort : 'a array -> int -> int -> unit = <fun>
+
+
+# let arr = [| 4;2;1;5;1;10;3 |];;
+val arr : int array = [|4; 2; 1; 5; 1; 10; 3|]
+# Moonpool.Fut.spawn
+    ~on:pool (fun () -> quicksort arr 0 (Array.length arr))
+    |> Moonpool.Fut.wait_block_exn;;
+- : unit = ()
+# arr;;
+- : int array = [|1; 1; 2; 3; 4; 5; 10|]
+
+
+# let arr = Array.init 40 (fun _-> Random.int 300);;
+val arr : int array =
+  [|236; 177; 255; 17; 37; 46; 230; 287; 120; 132; 216; 211; 267; 47; 28;
+    127; 102; 103; 294; 298; 4; 290; 247; 188; 157; 54; 17; 251; 277; 107;
+    21; 261; 236; 243; 152; 21; 297; 55; 43; 279|]
+# Moonpool.Fut.spawn ~on:pool
+    (fun () -> quicksort arr 0 (Array.length arr))
+    |> Moonpool.Fut.wait_block_exn
+    ;;
+- : unit = ()
+# arr;;
+- : int array =
+[|4; 17; 17; 21; 21; 28; 37; 43; 46; 47; 54; 55; 102; 103; 107; 120; 127;
+  132; 152; 157; 177; 188; 211; 216; 230; 236; 236; 243; 247; 251; 255; 261;
+  267; 277; 279; 287; 290; 294; 297; 298|]
+```
+
 ### More intuition
 
 To quote [gasche](https://discuss.ocaml.org/t/ann-moonpool-0-1/12387/15):
