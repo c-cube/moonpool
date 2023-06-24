@@ -14,7 +14,7 @@ val both : (unit -> 'a) -> (unit -> 'b) -> 'a * 'b
     @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
 
-val both_ignore : (unit -> unit) -> (unit -> unit) -> unit
+val both_ignore : (unit -> _) -> (unit -> _) -> unit
 (** Same as [both f g |> ignore].
     @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
