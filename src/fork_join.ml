@@ -87,6 +87,8 @@ let both f g : _ * _ =
     };
   get_exn st
 
+let both_ignore f g = ignore (both f g : unit * unit)
+
 let all_list fs : _ list =
   let len = List.length fs in
   let arr = Array.make len None in
