@@ -82,10 +82,12 @@ val run : t -> (unit -> unit) -> unit
   [@@deprecated "use run_async"]
 (** deprecated alias to {!run_async} *)
 
-val run_wait_block : t -> (unit -> unit) -> unit
+val run_wait_block : t -> (unit -> 'a) -> 'a
 (** [run_wait_block pool f] schedules [f] for later execution
     on the pool, like {!run_async}.
-    It then blocks the current thread until [f()] is done executing.
+    It then blocks the current thread until [f()] is done executing,
+    and returns its result. If [f()] raises an exception, then [run_wait_block pool f]
+    will raise it as well.
 
     {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}).
     @since 0.3 *)

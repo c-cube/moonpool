@@ -63,17 +63,17 @@ let run_async (self : t) (task : task) : unit =
 
 let run = run_async
 
-let run_wait_block self task : unit =
+let run_wait_block self (f : unit -> 'a) : 'a =
   let q = Bb_queue.create () in
   run_async self (fun () ->
       try
-        task ();
-        Bb_queue.push q (Ok ())
+        let x = f () in
+        Bb_queue.push q (Ok x)
       with exn ->
         let bt = Printexc.get_raw_backtrace () in
         Bb_queue.push q (Error (exn, bt)));
   match Bb_queue.pop q with
-  | Ok () -> ()
+  | Ok x -> x
   | Error (exn, bt) -> Printexc.raise_with_backtrace exn bt
 
 let[@inline] size self = Array.length self.threads
