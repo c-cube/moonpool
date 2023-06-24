@@ -97,7 +97,7 @@ let spawn ~on f : _ t =
     fulfill promise res
   in
 
-  Pool.run on task;
+  Pool.run_async on task;
   fut
 
 let map ?on ~f fut : _ t =
@@ -123,7 +123,7 @@ let map ?on ~f fut : _ t =
 
         match on with
         | None -> map_and_fulfill ()
-        | Some on -> Pool.run on map_and_fulfill);
+        | Some on -> Pool.run_async on map_and_fulfill);
 
     fut2
 
@@ -150,14 +150,14 @@ let bind ?on ~f fut : _ t =
     | None -> apply_f_to_res r
     | Some on ->
       let fut2, promise = make () in
-      Pool.run on (bind_and_fulfill r promise);
+      Pool.run_async on (bind_and_fulfill r promise);
       fut2)
   | None ->
     let fut2, promise = make () in
     on_result fut (fun r ->
         match on with
         | None -> bind_and_fulfill r promise ()
-        | Some on -> Pool.run on (bind_and_fulfill r promise));
+        | Some on -> Pool.run_async on (bind_and_fulfill r promise));
 
     fut2
 
