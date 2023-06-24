@@ -19,7 +19,7 @@ The user can create several thread pools. These pools use regular posix threads,
 but the threads are spread across multiple domains (on OCaml 5), which enables
 parallelism.
 
-The function `Pool.run pool task` runs `task()` on one of the workers
+The function `Pool.run_async pool task` runs `task()` on one of the workers
 of `pool`, as soon as one is available. No result is returned.
 
 ```ocaml
@@ -28,7 +28,7 @@ of `pool`, as soon as one is available. No result is returned.
 val pool : Moonpool.Pool.t = <abstr>
 
 # begin
-   Moonpool.Pool.run pool
+   Moonpool.Pool.run_async pool
     (fun () ->
         Thread.delay 0.1;
         print_endline "running from the pool");
@@ -37,6 +37,21 @@ val pool : Moonpool.Pool.t = <abstr>
   end ;;
 running from the caller
 running from the pool
+- : unit = ()
+```
+
+To wait until the task is done, you can use `Pool.run_wait_block` instead:
+
+```ocaml
+# begin
+   Moonpool.Pool.run_wait_block pool
+    (fun () ->
+        Thread.delay 0.1;
+        print_endline "running from the pool");
+   print_endline "running from the caller (after waiting)";
+  end ;;
+running from the pool
+running from the caller (after waiting)
 - : unit = ()
 ```
 

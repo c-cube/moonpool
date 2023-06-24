@@ -71,8 +71,21 @@ val shutdown_without_waiting : t -> unit
 
 exception Shutdown
 
-val run : t -> (unit -> unit) -> unit
-(** [run pool f] schedules [f] for later execution on the pool
+val run_async : t -> (unit -> unit) -> unit
+(** [run_async pool f] schedules [f] for later execution on the pool
     in one of the threads. [f()] will run on one of the pool's
     worker threads.
-    @raise Shutdown if the pool was shut down before [run] was called. *)
+    @raise Shutdown if the pool was shut down before [run] was called.
+    @since 0.3 *)
+
+val run : t -> (unit -> unit) -> unit
+  [@@deprecated "use run_async"]
+(** deprecated alias to {!run_async} *)
+
+val run_wait_block : t -> (unit -> unit) -> unit
+(** [run_wait_block pool f] schedules [f] for later execution
+    on the pool, like {!run_async}.
+    It then blocks the current thread until [f()] is done executing.
+
+    {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}).
+    @since 0.3 *)

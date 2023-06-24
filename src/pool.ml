@@ -54,12 +54,27 @@ let run_direct_ (self : t) (task : task) : unit =
 
 (** Run [task]. It will be wrapped with an effect handler to
     support {!Fut.await}. *)
-let run (self : t) (task : task) : unit =
+let run_async (self : t) (task : task) : unit =
   let task' () =
     (* run [f()] and handle [suspend] in it *)
     Suspend_.with_suspend task ~run:(run_direct_ self)
   in
   run_direct_ self task'
+
+let run = run_async
+
+let run_wait_block self task : unit =
+  let q = Bb_queue.create () in
+  run_async self (fun () ->
+      try
+        task ();
+        Bb_queue.push q (Ok ())
+      with exn ->
+        let bt = Printexc.get_raw_backtrace () in
+        Bb_queue.push q (Error (exn, bt)));
+  match Bb_queue.pop q with
+  | Ok () -> ()
+  | Error (exn, bt) -> Printexc.raise_with_backtrace exn bt
 
 let[@inline] size self = Array.length self.threads
 
