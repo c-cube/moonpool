@@ -10,8 +10,17 @@ The rationale is that we should not have more domains than cores, so
 it's easier to pre-allocate exactly that many domains, and run more flexible
 thread pools on top.
 
-In addition, `Moonpool.Fut` provides futures/promises that execute
-on these thread pools. The futures are thread safe.
+In addition, some concurrency and parallelism primitives are provided:
+- `Moonpool.Fut` provides futures/promises that execute
+    on these thread pools. The futures are thread safe.
+- `Moonpool.Chan` provides simple cooperative and thread-safe channels
+    to use within pool-bound tasks. They're essentially re-usable futures.
+
+    On OCaml 5 (meaning there's actual domains and effects, not just threads),
+    a `Fut.await` primitive is provided. It's simpler and more powerful
+    than the monadic combinators.
+- `Moonpool.Fork_join` provides the fork-join parallelism primitives
+    to use within tasks running in the pool.
 
 ## Usage
 
