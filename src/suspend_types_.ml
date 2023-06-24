@@ -8,6 +8,8 @@ type suspension = (unit, exn * Printexc.raw_backtrace) result -> unit
 
 type task = unit -> unit
 
-type suspension_handler = { handle: run:(task -> unit) -> suspension -> unit }
+type suspension_handler = {
+  handle: run:(with_handler:bool -> task -> unit) -> suspension -> unit;
+}
 [@@unboxed]
 (** The handler that knows what to do with the suspended computation *)

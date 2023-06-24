@@ -54,10 +54,14 @@ let run_direct_ (self : t) (task : task) : unit =
 
 (** Run [task]. It will be wrapped with an effect handler to
     support {!Fut.await}. *)
-let run_async (self : t) (task : task) : unit =
+let rec run_async (self : t) (task : task) : unit =
   let task' () =
     (* run [f()] and handle [suspend] in it *)
-    Suspend_.with_suspend task ~run:(run_direct_ self)
+    Suspend_.with_suspend task ~run:(fun ~with_handler task ->
+        if with_handler then
+          run_async self task
+        else
+          run_direct_ self task)
   in
   run_direct_ self task'
 
