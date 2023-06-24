@@ -87,7 +87,7 @@ let both f g : _ * _ =
     };
   get_exn st
 
-let both_ignore f g = ignore (both f g : unit * unit)
+let both_ignore f g = ignore (both f g : _ * _)
 
 let all_list fs : _ list =
   let len = List.length fs in
