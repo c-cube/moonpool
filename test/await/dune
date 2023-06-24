@@ -1,6 +1,6 @@
 
 (tests
-  (names t_fib1 t_futs1 t_many t_fork_join t_fork_join_all)
+  (names t_fib1 t_futs1 t_many t_fork_join t_fork_join_all t_sort)
   (enabled_if (>= %{ocaml_version} 5.0))
   (libraries moonpool trace ;tracy-client.trace
              ))
