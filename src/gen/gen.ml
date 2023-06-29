@@ -74,7 +74,6 @@ let relax = Domain.cpu_relax
 
 let suspend_pre_5 =
   {|
-open Suspend_types_
 let suspend _ = failwith "Thread suspension is only available on OCaml >= 5.0"
 let with_suspend ~run:_ f : unit = f()
 |}
