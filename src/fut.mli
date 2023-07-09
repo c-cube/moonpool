@@ -3,7 +3,7 @@
     A future of type ['a t] represents the result of a computation
     that will yield a value of type ['a].
 
-    Typically, the computation is running on a thread pool {!Pool.t}
+    Typically, the computation is running on a thread pool {!Runner.t}
     and will proceed on some worker. Once set, a future cannot change.
     It either succeeds (storing a [Ok x] with [x: 'a]), or fail
     (storing a [Error (exn, bt)] with an exception and the corresponding
@@ -11,10 +11,10 @@
 
     Combinators such as {!map} and {!join_array} can be used to produce
     futures from other futures (in a monadic way). Some combinators take
-    a [pool] argument to specify where the intermediate computation takes
-    place; for example [map ~pool ~f fut] maps the value in [fut]
+    a [on] argument to specify a runner on which the intermediate computation takes
+    place; for example [map ~on:pool ~f fut] maps the value in [fut]
     using function [f], applicatively; the call to [f] happens on
-    pool [pool] (once [fut] resolves successfully with a value).
+    the runner [pool] (once [fut] resolves successfully with a value).
 *)
 
 type 'a or_error = ('a, exn * Printexc.raw_backtrace) result
@@ -81,23 +81,23 @@ val is_done : _ t -> bool
 
 (** {2 Combinators} *)
 
-val spawn : on:Pool.t -> (unit -> 'a) -> 'a t
-(** [spaw ~on f] runs [f()] on the given pool, and return a future that will
+val spawn : on:Runner.t -> (unit -> 'a) -> 'a t
+(** [spaw ~on f] runs [f()] on the given runner [on], and return a future that will
       hold its result. *)
 
-val map : ?on:Pool.t -> f:('a -> 'b) -> 'a t -> 'b t
+val map : ?on:Runner.t -> f:('a -> 'b) -> 'a t -> 'b t
 (** [map ?on ~f fut] returns a new future [fut2] that resolves
       with [f x] if [fut] resolved with [x];
       and fails with [e] if [fut] fails with [e] or [f x] raises [e].
-      @param on if provided, [f] runs on the given pool *)
+      @param on if provided, [f] runs on the given runner *)
 
-val bind : ?on:Pool.t -> f:('a -> 'b t) -> 'a t -> 'b t
+val bind : ?on:Runner.t -> f:('a -> 'b t) -> 'a t -> 'b t
 (** [map ?on ~f fut] returns a new future [fut2] that resolves
       like the future [f x] if [fut] resolved with [x];
     and fails with [e] if [fut] fails with [e] or [f x] raises [e].
-      @param on if provided, [f] runs on the given pool *)
+      @param on if provided, [f] runs on the given runner *)
 
-val join : ?on:Pool.t -> 'a t t -> 'a t
+val join : ?on:Runner.t -> 'a t t -> 'a t
 (** [join fut] is [fut >>= Fun.id]. It joins the inner layer of the future.
     @since 0.2 *)
 
@@ -129,19 +129,19 @@ val wait_list : _ t list -> unit t
 (** [wait_list l] waits for all futures in [l] to resolve. It discards
       the individual results of futures in [l]. It fails if any future fails. *)
 
-val for_ : on:Pool.t -> int -> (int -> unit) -> unit t
-(** [for_ ~on n f] runs [f 0], [f 1], …, [f (n-1)] on the pool, and returns
+val for_ : on:Runner.t -> int -> (int -> unit) -> unit t
+(** [for_ ~on n f] runs [f 0], [f 1], …, [f (n-1)] on the runner, and returns
       a future that resolves when all the tasks have resolved, or fails
       as soon as one task has failed. *)
 
-val for_array : on:Pool.t -> 'a array -> (int -> 'a -> unit) -> unit t
+val for_array : on:Runner.t -> 'a array -> (int -> 'a -> unit) -> unit t
 (** [for_array ~on arr f] runs [f 0 arr.(0)], …, [f (n-1) arr.(n-1)] in
-    the pool (where [n = Array.length arr]), and returns a future
+    the runner (where [n = Array.length arr]), and returns a future
     that resolves when all the tasks are done,
     or fails if any of them fails.
     @since 0.2 *)
 
-val for_list : on:Pool.t -> 'a list -> ('a -> unit) -> unit t
+val for_list : on:Runner.t -> 'a list -> ('a -> unit) -> unit t
 (** [for_list ~on l f] is like [for_array ~on (Array.of_list l) f].
     @since 0.2 *)
 
@@ -153,10 +153,14 @@ val for_list : on:Pool.t -> 'a list -> ('a -> unit) -> unit t
 
 val await : 'a t -> 'a
 (** [await fut] suspends the current tasks until [fut] is fulfilled, then
-    resumes the task on this same pool.
-    This must only be run from inside the pool itself.
+    resumes the task on this same runner.
+
     @since 0.3
-    {b NOTE}: only on OCaml 5 *)
+
+    This must only be run from inside the runner itself. The runner must
+    support {!Suspend_}.
+    {b NOTE}: only on OCaml 5.x
+*)
 
 [@@@endif]
 
@@ -198,9 +202,9 @@ include INFIX
 
 (** Make infix combinators *)
 module Infix (_ : sig
-  val pool : Pool.t
+  val pool : Runner.t
 end) : INFIX
 
-val infix : Pool.t -> (module INFIX)
-(** [infix pool] makes a new infix module.
+val infix : Runner.t -> (module INFIX)
+(** [infix runner] makes a new infix module.
     @since 0.2 *)
