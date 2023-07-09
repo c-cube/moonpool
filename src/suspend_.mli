@@ -32,6 +32,15 @@ type suspension_handler = {
 *)
 
 [@@@ifge 5.0]
+[@@@ocaml.alert "-unstable"]
+
+type _ Effect.t +=
+  | Suspend : suspension_handler -> unit Effect.t
+        (** The effect used to suspend the current thread and pass it, suspended,
+    to the handler. The handler will ensure that the suspension is resumed later
+    once some computation has been done. *)
+
+[@@@ocaml.alert "+unstable"]
 
 val suspend : suspension_handler -> unit
 (** [suspend h] jumps back to the nearest {!with_suspend}

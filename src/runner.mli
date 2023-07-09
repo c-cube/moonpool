@@ -64,13 +64,4 @@ module For_runner_implementors : sig
 
       {b NOTE}: the runner should support DLA and {!Suspend_} on OCaml 5.x,
       so that {!Fork_join} and other 5.x features work properly. *)
-
-  module Suspend_ = Suspend_
-  [@@alert
-    unstable "this module is an implementation detail of moonpool for now"]
-  (** Suspensions.
-
-      This is only going to work on OCaml 5.x.
-
-      {b NOTE}: this is not stable for now. *)
 end

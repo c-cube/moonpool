@@ -77,3 +77,13 @@ module Atomic = Atomic_
 
     This is either a shim using [ref], on pre-OCaml 5, or the
     standard [Atomic] module on OCaml 5. *)
+
+(** {2 Suspensions} *)
+
+module Suspend_ = Suspend_
+[@@alert unstable "this module is an implementation detail of moonpool for now"]
+(** Suspensions.
+
+    This is only going to work on OCaml 5.x.
+
+    {b NOTE}: this is not stable for now. *)

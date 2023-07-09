@@ -9,3 +9,4 @@ module Lock = Lock
 module Fork_join = Fork_join
 module Fut = Fut
 module Pool = Pool
+module Suspend_ = Suspend_

@@ -34,6 +34,4 @@ let run_wait_block self (f : unit -> 'a) : 'a =
 module For_runner_implementors = struct
   let create ~size ~num_tasks ~shutdown ~run_async () : t =
     { size; num_tasks; shutdown; run_async }
-
-  module Suspend_ = Suspend_
 end
