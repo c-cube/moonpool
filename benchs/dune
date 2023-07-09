@@ -1,4 +1,6 @@
 
 (executables
- (names fib_rec)
- (libraries moonpool))
+ (names fib_rec pi)
+ (preprocess (action
+   (run %{project_root}/src/cpp/cpp.exe %{input-file})))
+ (libraries moonpool unix))
