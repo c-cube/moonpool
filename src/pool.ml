@@ -102,7 +102,7 @@ let prepare_for_await () : Dla_.t =
     | Some (run, k) -> run ~with_handler:true (fun () -> k (Ok ()))
   and await () : unit =
     Suspend_.suspend
-      { Suspend_types_.handle = (fun ~run k -> A.set st (Some (run, k))) }
+      { Suspend_.handle = (fun ~run k -> A.set st (Some (run, k))) }
   in
 
   let t = { Dla_.release; await } in

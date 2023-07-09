@@ -2,25 +2,10 @@
  (public_name moonpool)
  (name moonpool)
  (private_modules d_pool_)
+ (preprocess
+  (action
+   (run %{project_root}/src/cpp/cpp.exe %{input-file})))
  (libraries threads either
             (select dla_.ml from
              (domain-local-await -> dla_.real.ml)
              ( -> dla_.dummy.ml))))
-
-(rule
-  (targets atomic_.ml)
-  (action
-    (with-stdout-to %{targets}
-     (run ./gen/gen.exe --ocaml %{ocaml_version} --atomic))))
-
-(rule
-  (targets domain_.ml)
-  (action
-    (with-stdout-to %{targets}
-     (run ./gen/gen.exe --ocaml %{ocaml_version} --domain))))
-
-(rule
-  (targets suspend_.ml)
-  (action
-    (with-stdout-to %{targets}
-     (run ./gen/gen.exe --ocaml %{ocaml_version} --suspend))))

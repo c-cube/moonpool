@@ -1,6 +1,10 @@
 (** Fork-join primitives.
 
+    {b NOTE} These are only available on OCaml 5.0 and above.
+
     @since 0.3 *)
+
+[@@@ifge 5.0]
 
 val both : (unit -> 'a) -> (unit -> 'b) -> 'a * 'b
 (** [both f g] runs [f()] and [g()], potentially in parallel,
@@ -30,3 +34,5 @@ val all_init : int -> (int -> 'a) -> 'a list
     all the results.
     @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
+
+[@@@endif]

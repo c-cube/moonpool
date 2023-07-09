@@ -1,0 +1,5 @@
+; our little preprocessor (ported from containers)
+
+(executable
+ (name cpp)
+ (modes (best exe)))

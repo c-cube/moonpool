@@ -147,7 +147,9 @@ val for_list : on:Pool.t -> 'a list -> ('a -> unit) -> unit t
 
 (** {2 Await}
 
-This is only available on OCaml 5. *)
+    {b NOTE} This is only available on OCaml 5. *)
+
+[@@@ifge 5.0]
 
 val await : 'a t -> 'a
 (** [await fut] suspends the current tasks until [fut] is fulfilled, then
@@ -155,6 +157,8 @@ val await : 'a t -> 'a
     This must only be run from inside the pool itself.
     @since 0.3
     {b NOTE}: only on OCaml 5 *)
+
+[@@@endif]
 
 (** {2 Blocking} *)
 

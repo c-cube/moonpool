@@ -1,3 +1,5 @@
+[@@@ifge 5.0]
+
 module A = Atomic_
 
 module State_ = struct
@@ -79,7 +81,7 @@ let both f g : _ * _ =
 
   Suspend_.suspend
     {
-      Suspend_types_.handle =
+      Suspend_.handle =
         (fun ~run suspension ->
           (* nothing else is started, no race condition possible *)
           (A.get st).suspension <- Some suspension;
@@ -95,7 +97,7 @@ let all_list fs : _ list =
   let has_failed = A.make false in
   let missing = A.make len in
 
-  let start_tasks ~run (suspension : Suspend_types_.suspension) =
+  let start_tasks ~run (suspension : Suspend_.suspension) =
     let task_for i f =
       try
         let x = f () in
@@ -117,7 +119,7 @@ let all_list fs : _ list =
 
   Suspend_.suspend
     {
-      Suspend_types_.handle =
+      Suspend_.handle =
         (fun ~run suspension ->
           (* nothing else is started, no race condition possible *)
           start_tasks ~run suspension);
@@ -130,3 +132,5 @@ let all_list fs : _ list =
       | Some x -> x)
 
 let all_init n f = all_list @@ List.init n (fun i () -> f i)
+
+[@@@endif]

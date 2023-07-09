@@ -354,6 +354,8 @@ let wait_block_exn self =
   | Ok x -> x
   | Error (e, bt) -> Printexc.raise_with_backtrace e bt
 
+[@@@ifge 5.0]
+
 let await (fut : 'a t) : 'a =
   match peek fut with
   | Some res ->
@@ -365,7 +367,7 @@ let await (fut : 'a t) : 'a =
     (* suspend until the future is resolved *)
     Suspend_.suspend
       {
-        Suspend_types_.handle =
+        Suspend_.handle =
           (fun ~run k ->
             on_result fut (function
               | Ok _ ->
@@ -377,6 +379,8 @@ let await (fut : 'a t) : 'a =
       };
     (* un-suspended: we should have a result! *)
     get_or_fail_exn fut
+
+[@@@endif]
 
 module type INFIX = sig
   val ( >|= ) : 'a t -> ('a -> 'b) -> 'b t
