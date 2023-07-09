@@ -73,8 +73,7 @@ let num_tasks_ (self : state) : int =
 let prepare_for_await () : Dla_.t =
   (* current state *)
   let st :
-      ((with_handler:bool -> task -> unit) * Suspend_types_.suspension) option
-      A.t =
+      ((with_handler:bool -> task -> unit) * Suspend_.suspension) option A.t =
     A.make None
   in
 
