@@ -1,15 +1,7 @@
 (* TODO: use a better queue for the tasks *)
 
 module A = Atomic_
-
-type task = unit -> unit
-
-type t = {
-  active: bool A.t;
-  threads: Thread.t array;
-  qs: task Bb_queue.t array;
-  cur_q: int A.t;  (** Selects queue into which to push *)
-}
+include Runner
 
 type thread_loop_wrapper =
   thread:Thread.t -> pool:t -> (unit -> unit) -> unit -> unit
@@ -24,10 +16,16 @@ let add_global_thread_loop_wrapper f : unit =
     Domain_.relax ()
   done
 
-exception Shutdown
+type state = {
+  active: bool A.t;
+  threads: Thread.t array;
+  qs: task Bb_queue.t array;
+  cur_q: int A.t;  (** Selects queue into which to push *)
+}
+(** internal state *)
 
 (** Run [task] as is, on the pool. *)
-let run_direct_ (self : t) (task : task) : unit =
+let run_direct_ (self : state) (task : task) : unit =
   let n_qs = Array.length self.qs in
   let offset = A.fetch_and_add self.cur_q 1 in
 
@@ -52,37 +50,21 @@ let run_direct_ (self : t) (task : task) : unit =
   | Exit -> ()
   | Bb_queue.Closed -> raise Shutdown
 
-(** Run [task]. It will be wrapped with an effect handler to
-    support {!Fut.await}. *)
-let rec run_async (self : t) (task : task) : unit =
+let rec run_async_ (self : state) (task : task) : unit =
   let task' () =
     (* run [f()] and handle [suspend] in it *)
     Suspend_.with_suspend task ~run:(fun ~with_handler task ->
         if with_handler then
-          run_async self task
+          run_async_ self task
         else
           run_direct_ self task)
   in
   run_direct_ self task'
 
 let run = run_async
+let size_ (self : state) = Array.length self.threads
 
-let run_wait_block self (f : unit -> 'a) : 'a =
-  let q = Bb_queue.create () in
-  run_async self (fun () ->
-      try
-        let x = f () in
-        Bb_queue.push q (Ok x)
-      with exn ->
-        let bt = Printexc.get_raw_backtrace () in
-        Bb_queue.push q (Error (exn, bt)));
-  match Bb_queue.pop q with
-  | Ok x -> x
-  | Error (exn, bt) -> Printexc.raise_with_backtrace exn bt
-
-let[@inline] size self = Array.length self.threads
-
-let num_tasks (self : t) : int =
+let num_tasks_ (self : state) : int =
   let n = ref 0 in
   Array.iter (fun q -> n := !n + Bb_queue.size q) self.qs;
   !n
@@ -112,7 +94,7 @@ exception Got_task of task
 
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
-let worker_thread_ pool ~on_exn ~around_task (active : bool A.t)
+let worker_thread_ (runner : t) ~on_exn ~around_task (active : bool A.t)
     (qs : task Bb_queue.t array) ~(offset : int) : unit =
   let num_qs = Array.length qs in
   let (AT_pair (before_task, after_task)) = around_task in
@@ -137,13 +119,13 @@ let worker_thread_ pool ~on_exn ~around_task (active : bool A.t)
         with Got_task f -> f
       in
 
-      let _ctx = before_task pool in
+      let _ctx = before_task runner in
       (* run the task now, catching errors *)
       (try task ()
        with e ->
          let bt = Printexc.get_raw_backtrace () in
          on_exn e bt);
-      after_task pool _ctx
+      after_task runner _ctx
     done
   in
 
@@ -161,6 +143,13 @@ let default_thread_init_exit_ ~dom_id:_ ~t_id:_ () = ()
     Hence, we limit the number of queues to at most 32 (number picked
     via the ancestral technique of the pifomètre). *)
 let max_queues = 32
+
+let shutdown_ ~wait (self : state) : unit =
+  let was_active = A.exchange self.active false in
+  (* close the job queues, which will fail future calls to [run],
+     and wake up the subset of [self.threads] that are waiting on them. *)
+  if was_active then Array.iter Bb_queue.close self.qs;
+  if wait then Array.iter Thread.join self.threads
 
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(thread_wrappers = [])
@@ -193,6 +182,15 @@ let create ?(on_init_thread = default_thread_init_exit_)
     { active; threads = Array.make num_threads dummy; qs; cur_q = A.make 0 }
   in
 
+  let runner =
+    Runner.For_runner_implementors.create
+      ~shutdown:(fun ~wait () -> shutdown_ pool ~wait)
+      ~run_async:(fun f -> run_async_ pool f)
+      ~size:(fun () -> size_ pool)
+      ~num_tasks:(fun () -> num_tasks_ pool)
+      ()
+  in
+
   (* temporary queue used to obtain thread handles from domains
      on which the thread are started. *)
   let receive_threads = Bb_queue.create () in
@@ -212,12 +210,14 @@ let create ?(on_init_thread = default_thread_init_exit_)
       in
 
       let run () =
-        worker_thread_ pool ~on_exn ~around_task active qs ~offset:i
+        worker_thread_ runner ~on_exn ~around_task active qs ~offset:i
       in
       (* the actual worker loop is [worker_thread_], with all
          wrappers for this pool and for all pools (global_thread_wrappers_) *)
       let run' =
-        List.fold_left (fun run f -> f ~thread ~pool run) run all_wrappers
+        List.fold_left
+          (fun run f -> f ~thread ~pool:runner run)
+          run all_wrappers
       in
 
       (* now run the main loop *)
@@ -247,14 +247,5 @@ let create ?(on_init_thread = default_thread_init_exit_)
     let i, th = Bb_queue.pop receive_threads in
     pool.threads.(i) <- th
   done;
-  pool
 
-let shutdown_ ~wait (self : t) : unit =
-  let was_active = A.exchange self.active false in
-  (* close the job queues, which will fail future calls to [run],
-     and wake up the subset of [self.threads] that are waiting on them. *)
-  if was_active then Array.iter Bb_queue.close self.qs;
-  if wait then Array.iter Thread.join self.threads
-
-let shutdown_without_waiting (self : t) : unit = shutdown_ self ~wait:false
-let shutdown (self : t) : unit = shutdown_ self ~wait:true
+  runner

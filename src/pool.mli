@@ -1,15 +1,19 @@
-(** Thread pool. *)
+(** Thread pool.
 
-type t
-(** A pool of threads. The pool contains a fixed number of threads that
+    A pool of threads. The pool contains a fixed number of threads that
     wait for work items to come, process these, and loop.
+
+    This implements {!Runner.t} since NEXT_RELEASE.
 
     If a pool is no longer needed, {!shutdown} can be used to signal all threads
     in it to stop (after they finish their work), and wait for them to stop.
 
     The threads are distributed across a fixed domain pool
-    (whose size is determined by {!Domain.recommended_domain_count} on OCaml 5, and
-    simple the single runtime on OCaml 4). *)
+    (whose size is determined by {!Domain.recommended_domain_count} on OCaml 5,
+    and simply the single runtime on OCaml 4).
+  *)
+
+include module type of Runner
 
 type thread_loop_wrapper =
   thread:Thread.t -> pool:t -> (unit -> unit) -> unit -> unit
@@ -54,40 +58,6 @@ val create :
       the same thread after the task is over. (since 0.2)
   *)
 
-val size : t -> int
-(** Number of threads *)
-
-val num_tasks : t -> int
-(** Current number of tasks. This is at best a snapshot, useful for metrics
-    and debugging.
-    @since 0.2 *)
-
-val shutdown : t -> unit
-(** Shutdown the pool and wait for it to terminate. Idempotent. *)
-
-val shutdown_without_waiting : t -> unit
-(** Shutdown the pool, and do not wait for it to terminate. Idempotent.
-    @since 0.2 *)
-
-exception Shutdown
-
-val run_async : t -> (unit -> unit) -> unit
-(** [run_async pool f] schedules [f] for later execution on the pool
-    in one of the threads. [f()] will run on one of the pool's
-    worker threads.
-    @raise Shutdown if the pool was shut down before [run_async] was called.
-    @since 0.3 *)
-
 val run : t -> (unit -> unit) -> unit
   [@@deprecated "use run_async"]
 (** deprecated alias to {!run_async} *)
-
-val run_wait_block : t -> (unit -> 'a) -> 'a
-(** [run_wait_block pool f] schedules [f] for later execution
-    on the pool, like {!run_async}.
-    It then blocks the current thread until [f()] is done executing,
-    and returns its result. If [f()] raises an exception, then [run_wait_block pool f]
-    will raise it as well.
-
-    {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}).
-    @since 0.3 *)
