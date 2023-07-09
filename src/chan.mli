@@ -41,3 +41,12 @@ val pop_block_exn : 'a t -> 'a
 val close : _ t -> unit
 (** Close the channel. Further push and pop calls will fail.
     This is idempotent. *)
+
+[@@@ifge 5.0]
+
+val pop_await : 'a t -> 'a
+(** Like {!pop} but suspends the current thread until an element is
+    available. See {!Fut.await} for more details.
+    @since NEXT_RELEASE *)
+
+[@@@endif]

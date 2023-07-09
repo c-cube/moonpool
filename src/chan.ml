@@ -182,3 +182,12 @@ let close (self : _ t) : unit =
   do
     Domain_.relax ()
   done
+
+[@@@ifge 5.0]
+
+let pop_await self =
+  match try_pop self with
+  | Some x -> x
+  | None -> Fut.await @@ pop self
+
+[@@@endif]
