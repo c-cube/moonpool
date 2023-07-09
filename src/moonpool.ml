@@ -5,6 +5,7 @@ let start_thread_on_some_domain f x =
 module Atomic = Atomic_
 module Blocking_queue = Bb_queue
 module Chan = Chan
+module Lock = Lock
 module Fork_join = Fork_join
 module Fut = Fut
 module Pool = Pool

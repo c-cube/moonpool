@@ -11,6 +11,7 @@ val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
     to run the thread. This ensures that we don't always pick the same domain
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
+module Lock = Lock
 module Fut = Fut
 module Chan = Chan
 module Fork_join = Fork_join
