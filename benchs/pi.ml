@@ -2,6 +2,7 @@
 
 open Moonpool
 
+let ( let@ ) = ( @@ )
 let j = ref 0
 let spf = Printf.sprintf
 
@@ -16,15 +17,15 @@ let run_sequential (num_steps : int) : float =
   pi
 
 (** Create a pool *)
-let mk_pool () =
+let with_pool f =
   if !j = 0 then
-    Pool.create ~per_domain:1 ()
+    Pool.with_ ~per_domain:1 f
   else
-    Pool.create ~min:!j ()
+    Pool.with_ ~min:!j f
 
 (** Run in parallel using {!Fut.for_} *)
 let run_par1 (num_steps : int) : float =
-  let pool = mk_pool () in
+  let@ pool = with_pool () in
 
   let num_tasks = Pool.size pool in
 
@@ -51,12 +52,42 @@ let run_par1 (num_steps : int) : float =
   pi
 
 [@@@ifge 5.0]
+
+let run_fork_join num_steps : float =
+  let@ pool = with_pool () in
+
+  let num_tasks = Pool.size pool in
+
+  let step = 1. /. float num_steps in
+  let global_sum = Lock.create 0. in
+
+  Pool.run_wait_block pool (fun () ->
+      Fork_join.for_
+        ~chunk_size:(3 + (num_steps / num_tasks))
+        num_steps
+        (fun range ->
+          let sum = ref 0. in
+          range (fun i ->
+              let x = (float i +. 0.5) *. step in
+              sum := !sum +. (4. /. (1. +. (x *. x))));
+
+          let sum = !sum in
+          Lock.update global_sum (fun n -> n +. sum)));
+
+  let pi = step *. Lock.get global_sum in
+  pi
+
 [@@@else_]
+
+let run_fork_join _ =
+  failwith "fork join not available on this version of OCaml"
+
 [@@@endif]
 
 type mode =
   | Sequential
   | Par1
+  | Fork_join
 
 let () =
   let mode = ref Sequential in
@@ -66,13 +97,16 @@ let () =
   let set_mode = function
     | "seq" -> mode := Sequential
     | "par1" -> mode := Par1
+    | "forkjoin" -> mode := Fork_join
     | _s -> failwith (spf "unknown mode %S" _s)
   in
 
   let opts =
     [
       "-n", Arg.Set_int n, " number of steps";
-      "-mode", Arg.Symbol ([ "seq"; "par1" ], set_mode), " mode of execution";
+      ( "-mode",
+        Arg.Symbol ([ "seq"; "par1"; "forkjoin" ], set_mode),
+        " mode of execution" );
       "-j", Arg.Set_int j, " number of threads";
       "-t", Arg.Set time, " printing timing";
     ]
@@ -85,6 +119,7 @@ let () =
     match !mode with
     | Sequential -> run_sequential !n
     | Par1 -> run_par1 !n
+    | Fork_join -> run_fork_join !n
   in
   let elapsed : float = Unix.gettimeofday () -. t_start in
 

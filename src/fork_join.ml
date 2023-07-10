@@ -2,6 +2,8 @@
 
 module A = Atomic_
 
+type 'a iter = ('a -> unit) -> unit
+
 module State_ = struct
   type 'a single_res =
     | St_none
@@ -91,22 +93,34 @@ let both f g : _ * _ =
 
 let both_ignore f g = ignore (both f g : _ * _)
 
-let all_list fs : _ list =
-  let len = List.length fs in
-  let arr = Array.make len None in
+let for_ ?chunk_size n (f : int iter -> unit) : unit =
   let has_failed = A.make false in
-  let missing = A.make len in
+  let missing = A.make n in
+
+  let chunk_size =
+    match chunk_size with
+    | Some cs -> max 1 (min n cs)
+    | None ->
+      (* guess: try to have roughly one task per core *)
+      max 1 (n / Domain_.recommended_number ())
+  in
 
   let start_tasks ~run (suspension : Suspend_.suspension) =
-    let task_for i f =
-      try
-        let x = f () in
-        arr.(i) <- Some x;
+    let task_for ~offset ~len_range =
+      (* range to process within this task *)
+      let range : int iter =
+       fun yield ->
+        for j = offset to offset + len_range - 1 do
+          yield j
+        done
+      in
 
-        if A.fetch_and_add missing (-1) = 1 then
+      match f range with
+      | () ->
+        if A.fetch_and_add missing (-len_range) = len_range then
           (* all tasks done successfully *)
           suspension (Ok ())
-      with exn ->
+      | exception exn ->
         let bt = Printexc.get_raw_backtrace () in
         if not (A.exchange has_failed true) then
           (* first one to fail, and [missing] must be >= 2
@@ -114,23 +128,79 @@ let all_list fs : _ list =
           suspension (Error (exn, bt))
     in
 
-    List.iteri (fun i f -> run ~with_handler:true (fun () -> task_for i f)) fs
+    let i = ref 0 in
+    while !i < n do
+      let offset = !i in
+
+      let len_range = min chunk_size (n - offset) in
+      assert (offset + len_range <= n);
+
+      run ~with_handler:true (fun () -> task_for ~offset ~len_range);
+      i := !i + len_range
+    done
   in
 
   Suspend_.suspend
     {
       Suspend_.handle =
         (fun ~run suspension ->
-          (* nothing else is started, no race condition possible *)
+          (* run tasks, then we'll resume [suspension] *)
           start_tasks ~run suspension);
     };
+  ()
+
+let all_array ?chunk_size (fs : _ array) : _ array =
+  let len = Array.length fs in
+  let arr = Array.make len None in
+
+  (* parallel for *)
+  for_ ?chunk_size len (fun range ->
+      range (fun i ->
+          let x = fs.(i) () in
+          arr.(i) <- Some x));
 
   (* get all results *)
-  List.init len (fun i ->
+  Array.map
+    (function
+      | None -> assert false
+      | Some x -> x)
+    arr
+
+let all_list ?chunk_size fs : _ list =
+  Array.to_list @@ all_array ?chunk_size @@ Array.of_list fs
+
+let all_init ?chunk_size n f : _ list =
+  let arr = Array.make n None in
+
+  for_ ?chunk_size n (fun range ->
+      range (fun i ->
+          let x = f i in
+          arr.(i) <- Some x));
+
+  (* get all results *)
+  List.init n (fun i ->
       match arr.(i) with
       | None -> assert false
       | Some x -> x)
 
-let all_init n f = all_list @@ List.init n (fun i () -> f i)
+type 'a commutative_monoid = {
+  neutral: unit -> 'a;  (** Neutral element *)
+  combine: 'a -> 'a -> 'a;  (** Combine two items. *)
+}
+
+let map_reduce_commutative ?chunk_size ~gen ~map
+    ~(reduce : 'b commutative_monoid) n : 'b =
+  let res = Lock.create (reduce.neutral ()) in
+
+  for_ ?chunk_size n (fun range ->
+      let local_acc = ref (reduce.neutral ()) in
+      range (fun i ->
+          let x = gen i in
+          let y = map x in
+
+          local_acc := reduce.combine !local_acc y);
+
+      Lock.update res (fun res -> reduce.combine res !local_acc));
+  Lock.get res
 
 [@@@endif]

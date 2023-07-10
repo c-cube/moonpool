@@ -1,6 +1,6 @@
 [@@@ifge 5.0]
 
-open Moonpool
+open! Moonpool
 
 let pool = Pool.create ~min:4 ()
 
@@ -38,5 +38,16 @@ let () =
   in
   let exp_sum = List.init 42 (fun x -> x * x) |> List.fold_left ( + ) 0 in
   assert (par_sum = exp_sum)
+
+let () =
+  let total_sum = Atomic.make 0 in
+
+  Pool.run_wait_block pool (fun () ->
+      Fork_join.for_ ~chunk_size:5 100 (fun range ->
+          (* iterate on the range sequentially. The range should have 5 items or less. *)
+          let local_sum = ref 0 in
+          range (fun i -> local_sum := !local_sum + i);
+          ignore (Atomic.fetch_and_add total_sum !local_sum : int)));
+  assert (Atomic.get total_sum = 4950)
 
 [@@@endif]
