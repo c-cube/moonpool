@@ -65,7 +65,6 @@ let () =
   (*
   Tracy_client_trace.setup ();
    *)
-
   let start = Unix.gettimeofday () in
   let n = try int_of_string (Sys.getenv "N") with _ -> default_n in
   let j = try int_of_string (Sys.getenv "J") with _ -> 4 in

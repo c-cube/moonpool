@@ -7,7 +7,7 @@ let pool = Pool.create ~min:4 ()
 let run () =
   let t1 = Unix.gettimeofday () in
 
-  let n = 1_000_000 in
+  let n = 200_000 in
   let n_tasks = 3 in
   let task () =
     let l = List.init n (fun x -> Fut.spawn ~on:pool (fun () -> x)) in

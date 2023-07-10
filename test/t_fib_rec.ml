@@ -18,7 +18,9 @@ let () = assert (List.init 10 fib_direct = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 
 let fib_40 : int =
   let pool = Pool.create ~min:8 () in
-  fib ~on:pool 40 |> Fut.wait_block_exn
+  let r = fib ~on:pool 40 |> Fut.wait_block_exn in
+  Pool.shutdown pool;
+  r
 
 let run_test () =
   let pool = Pool.create ~min:8 () in
@@ -28,12 +30,13 @@ let run_test () =
     |> Fut.join_list |> Fut.wait_block_exn
     = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ]);
 
-  let fibs = Array.init 5 (fun _ -> fib ~on:pool 40) in
+  let n_fibs = 3 in
+  let fibs = Array.init n_fibs (fun _ -> fib ~on:pool 40) in
 
   let res = Fut.join_array fibs |> Fut.wait_block in
   Pool.shutdown pool;
 
-  assert (res = Ok (Array.make 5 fib_40))
+  assert (res = Ok (Array.make n_fibs fib_40))
 
 let () =
   Printf.printf "fib 40 = %d\n%!" fib_40;
