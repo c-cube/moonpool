@@ -50,6 +50,17 @@ val for_ : ?chunk_size:int -> int -> (int -> int -> unit) -> unit
       let() = assert (Atomic.get total_sum = 4950)
     ]}
 
+    Note how we still compute a local sum sequentially in [(fun low high -> …)],
+    before combining it wholesale into [total_sum]. When the chunk size is large,
+    this can have a dramatic impact on the synchronization overhead.
+
+    When [chunk_size] is not provided, the library will attempt to guess a value
+    that keeps all cores busy but runs as few tasks as possible to reduce
+    the synchronization overhead.
+
+    Use [~chunk_size:1] if you explicitly want to
+    run each iteration of the loop in its own task.
+
     @since NEXT_RELEASE
     {b NOTE} this is only available on OCaml 5. *)
 
