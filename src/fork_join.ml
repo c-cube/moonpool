@@ -100,7 +100,7 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
     | Some cs -> max 1 (min n cs)
     | None ->
       (* guess: try to have roughly one task per core *)
-      max 1 (n / Domain_.recommended_number ())
+      max 1 (1 + (n / D_pool_.n_domains ()))
   in
 
   let start_tasks ~run (suspension : Suspend_.suspension) =
