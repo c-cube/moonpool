@@ -1,3 +1,5 @@
+[@@@ifge 5.0]
+
 open Moonpool
 
 let rec select_sort arr i len =
@@ -66,3 +68,5 @@ let () =
   (* Printf.printf "arr: [%s]\n%!" *)
   (*   (String.concat ", " @@ List.map string_of_int @@ Array.to_list arr); *)
   assert (sorted arr)
+
+[@@@endif]

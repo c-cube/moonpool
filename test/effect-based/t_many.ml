@@ -1,3 +1,5 @@
+[@@@ifge 5.0]
+
 open Moonpool
 
 let pool = Pool.create ~min:4 ()
@@ -27,3 +29,5 @@ let run () =
   assert (List.for_all (fun s -> s = n) lens)
 
 let () = run ()
+
+[@@@endif]

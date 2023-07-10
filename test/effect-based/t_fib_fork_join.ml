@@ -1,3 +1,5 @@
+[@@@ifge 5.0]
+
 open Moonpool
 
 let rec fib_direct x =
@@ -49,3 +51,5 @@ let () =
   (* now make sure we can do this with multiple pools in parallel *)
   let jobs = Array.init 2 (fun _ -> Thread.create run_test ()) in
   Array.iter Thread.join jobs
+
+[@@@endif]

@@ -1,3 +1,5 @@
+[@@@ifge 5.0]
+
 open! Moonpool
 
 let pool = Pool.create ~min:4 ()
@@ -51,3 +53,5 @@ let () =
   in
   let fut = Fut.both f1 f2 in
   assert (Fut.wait_block fut = Ok (2, 20))
+
+[@@@endif]

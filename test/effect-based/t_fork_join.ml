@@ -1,3 +1,5 @@
+[@@@ifge 5.0]
+
 open Moonpool
 
 let pool = Pool.create ~min:4 ()
@@ -36,3 +38,5 @@ let () =
   in
   let exp_sum = List.init 42 (fun x -> x * x) |> List.fold_left ( + ) 0 in
   assert (par_sum = exp_sum)
+
+[@@@endif]
