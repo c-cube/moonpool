@@ -69,6 +69,8 @@ let num_tasks_ (self : state) : int =
   Array.iter (fun q -> n := !n + Bb_queue.size q) self.qs;
   !n
 
+[@@@ifge 5.0]
+
 (* DLA interop *)
 let prepare_for_await () : Dla_.t =
   (* current state *)
@@ -88,6 +90,12 @@ let prepare_for_await () : Dla_.t =
 
   let t = { Dla_.release; await } in
   t
+
+[@@@else_]
+
+let prepare_for_await () = { Dla_.release = ignore; await = ignore }
+
+[@@@endif]
 
 exception Got_task of task
 

@@ -48,11 +48,13 @@ val suspend : suspension_handler -> unit
     and a task runner function.
 *)
 
+[@@@endif]
+
 val with_suspend :
   run:(with_handler:bool -> task -> unit) -> (unit -> unit) -> unit
 (** [with_suspend ~run f] runs [f()] in an environment where [suspend]
     will work. If [f()] suspends with suspension handler [h],
     this calls [h ~run k] where [k] is the suspension.
-*)
 
-[@@@endif]
+    This will not do anything on OCaml 4.x.
+*)

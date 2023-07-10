@@ -33,4 +33,8 @@ let with_suspend ~(run : with_handler:bool -> task -> unit) (f : unit -> unit) :
   E.try_with f () { E.effc }
 
 [@@@ocaml.alert "+unstable"]
+[@@@else_]
+
+let with_suspend ~run:_ f = f ()
+
 [@@@endif]
