@@ -3,6 +3,8 @@
 module A = Atomic_
 include Runner
 
+let ( let@ ) = ( @@ )
+
 type thread_loop_wrapper =
   thread:Thread.t -> pool:t -> (unit -> unit) -> unit -> unit
 
@@ -158,6 +160,17 @@ let shutdown_ ~wait (self : state) : unit =
   if was_active then Array.iter Bb_queue.close self.qs;
   if wait then Array.iter Thread.join self.threads
 
+type 'a create_args =
+  ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
+  ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
+  ?thread_wrappers:thread_loop_wrapper list ->
+  ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
+  ?around_task:(t -> 'a) * (t -> 'a -> unit) ->
+  ?min:int ->
+  ?per_domain:int ->
+  'a
+(** Arguments used in {!create}. See {!create} for explanations. *)
+
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(thread_wrappers = [])
     ?(on_exn = fun _ _ -> ()) ?around_task ?min:(min_threads = 1)
@@ -256,3 +269,12 @@ let create ?(on_init_thread = default_thread_init_exit_)
   done;
 
   runner
+
+let with_ ?on_init_thread ?on_exit_thread ?thread_wrappers ?on_exn ?around_task
+    ?min ?per_domain () f =
+  let pool =
+    create ?on_init_thread ?on_exit_thread ?thread_wrappers ?on_exn ?around_task
+      ?min ?per_domain ()
+  in
+  let@ () = Fun.protect ~finally:(fun () -> shutdown pool) in
+  f pool

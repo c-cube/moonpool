@@ -28,7 +28,7 @@ val add_global_thread_loop_wrapper : thread_loop_wrapper -> unit
       thread, for all existing pools, and all new pools created with [create].
       These wrappers accumulate: they all apply, but their order is not specified. *)
 
-val create :
+type 'a create_args =
   ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?thread_wrappers:thread_loop_wrapper list ->
@@ -36,8 +36,10 @@ val create :
   ?around_task:(t -> 'a) * (t -> 'a -> unit) ->
   ?min:int ->
   ?per_domain:int ->
-  unit ->
-  t
+  'a
+(** Arguments used in {!create}. See {!create} for explanations. *)
+
+val create : (unit -> t) create_args
 (** [create ()] makes a new thread pool.
      @param on_init_thread called at the beginning of each new thread
        in the pool.
@@ -57,6 +59,14 @@ val create :
       on the worker thread about to run it, and returns [x]; and [after pool x] is called by
       the same thread after the task is over. (since 0.2)
   *)
+
+val with_ : (unit -> (t -> 'a) -> 'a) create_args
+(** [with_ () f] calls [f pool], where [pool] is obtained via {!create}.
+    When [f pool] returns or fails, [pool] is shutdown and its resources
+    are released.
+
+    Most parameters are the same as in {!create}.
+    @since NEXT_RELEASE *)
 
 val run : t -> (unit -> unit) -> unit
   [@@deprecated "use run_async"]
