@@ -308,10 +308,12 @@ let wait_list (a : _ t list) : unit t =
   join_container_ a ~iter:List.iter ~len:List.length ~map:(fun _f _ -> ())
 
 let for_ ~on n f : unit t =
-  let futs = Array.init n (fun i -> spawn ~on (fun () -> f i)) in
   join_container_
     ~len:(fun () -> n)
-    ~iter:(fun f () -> Array.iter f futs)
+    ~iter:(fun yield () ->
+      for i = 0 to n - 1 do
+        yield (spawn ~on (fun () -> f i))
+      done)
     ~map:(fun _f () -> ())
     ()
 
