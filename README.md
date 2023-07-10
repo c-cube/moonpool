@@ -34,7 +34,9 @@ of `pool`, as soon as one is available. No result is returned.
 ```ocaml
 # #require "threads";;
 # let pool = Moonpool.Pool.create ~min:4 ();;
-val pool : Moonpool.Pool.t = <abstr>
+val pool : Moonpool.Pool.t =
+  {Moonpool.Pool.run_async = <fun>; shutdown = <fun>; size = <fun>;
+   num_tasks = <fun>}
 
 # begin
    Moonpool.Pool.run_async pool
