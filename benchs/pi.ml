@@ -65,12 +65,12 @@ let run_fork_join num_steps : float =
       Fork_join.for_
         ~chunk_size:(3 + (num_steps / num_tasks))
         num_steps
-        (fun range ->
+        (fun low high ->
           let sum = ref 0. in
-          range (fun i ->
-              let x = (float i +. 0.5) *. step in
-              sum := !sum +. (4. /. (1. +. (x *. x))));
-
+          for i = low to high do
+            let x = (float i +. 0.5) *. step in
+            sum := !sum +. (4. /. (1. +. (x *. x)))
+          done;
           let sum = !sum in
           Lock.update global_sum (fun n -> n +. sum)));
 

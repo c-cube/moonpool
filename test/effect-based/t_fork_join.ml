@@ -43,10 +43,12 @@ let () =
   let total_sum = Atomic.make 0 in
 
   Pool.run_wait_block pool (fun () ->
-      Fork_join.for_ ~chunk_size:5 100 (fun range ->
+      Fork_join.for_ ~chunk_size:5 100 (fun low high ->
           (* iterate on the range sequentially. The range should have 5 items or less. *)
           let local_sum = ref 0 in
-          range (fun i -> local_sum := !local_sum + i);
+          for i = low to high do
+            local_sum := !local_sum + i
+          done;
           ignore (Atomic.fetch_and_add total_sum !local_sum : int)));
   assert (Atomic.get total_sum = 4950)
 

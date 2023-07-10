@@ -2,8 +2,6 @@
 
 module A = Atomic_
 
-type 'a iter = ('a -> unit) -> unit
-
 module State_ = struct
   type 'a single_res =
     | St_none
@@ -93,7 +91,7 @@ let both f g : _ * _ =
 
 let both_ignore f g = ignore (both f g : _ * _)
 
-let for_ ?chunk_size n (f : int iter -> unit) : unit =
+let for_ ?chunk_size n (f : int -> int -> unit) : unit =
   let has_failed = A.make false in
   let missing = A.make n in
 
@@ -107,15 +105,7 @@ let for_ ?chunk_size n (f : int iter -> unit) : unit =
 
   let start_tasks ~run (suspension : Suspend_.suspension) =
     let task_for ~offset ~len_range =
-      (* range to process within this task *)
-      let range : int iter =
-       fun yield ->
-        for j = offset to offset + len_range - 1 do
-          yield j
-        done
-      in
-
-      match f range with
+      match f offset (offset + len_range - 1) with
       | () ->
         if A.fetch_and_add missing (-len_range) = len_range then
           (* all tasks done successfully *)
@@ -154,10 +144,11 @@ let all_array ?chunk_size (fs : _ array) : _ array =
   let arr = Array.make len None in
 
   (* parallel for *)
-  for_ ?chunk_size len (fun range ->
-      range (fun i ->
-          let x = fs.(i) () in
-          arr.(i) <- Some x));
+  for_ ?chunk_size len (fun low high ->
+      for i = low to high do
+        let x = fs.(i) () in
+        arr.(i) <- Some x
+      done);
 
   (* get all results *)
   Array.map
@@ -172,10 +163,11 @@ let all_list ?chunk_size fs : _ list =
 let all_init ?chunk_size n f : _ list =
   let arr = Array.make n None in
 
-  for_ ?chunk_size n (fun range ->
-      range (fun i ->
-          let x = f i in
-          arr.(i) <- Some x));
+  for_ ?chunk_size n (fun low high ->
+      for i = low to high do
+        let x = f i in
+        arr.(i) <- Some x
+      done);
 
   (* get all results *)
   List.init n (fun i ->
@@ -192,13 +184,13 @@ let map_reduce_commutative ?chunk_size ~gen ~map
     ~(reduce : 'b commutative_monoid) n : 'b =
   let res = Lock.create (reduce.neutral ()) in
 
-  for_ ?chunk_size n (fun range ->
+  for_ ?chunk_size n (fun low high ->
       let local_acc = ref (reduce.neutral ()) in
-      range (fun i ->
-          let x = gen i in
-          let y = map x in
-
-          local_acc := reduce.combine !local_acc y);
+      for i = low to high do
+        let x = gen i in
+        let y = map x in
+        local_acc := reduce.combine !local_acc y
+      done;
 
       Lock.update res (fun res -> reduce.combine res !local_acc));
   Lock.get res

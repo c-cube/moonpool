@@ -6,10 +6,6 @@
 
 [@@@ifge 5.0]
 
-type 'a iter = ('a -> unit) -> unit
-(** Iterators of type ['a].
-    @since NEXT_RELEASE *)
-
 val both : (unit -> 'a) -> (unit -> 'b) -> 'a * 'b
 (** [both f g] runs [f()] and [g()], potentially in parallel,
     and returns their result when both are done.
@@ -27,11 +23,12 @@ val both_ignore : (unit -> _) -> (unit -> _) -> unit
     @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
 
-val for_ : ?chunk_size:int -> int -> (int iter -> unit) -> unit
+val for_ : ?chunk_size:int -> int -> (int -> int -> unit) -> unit
 (** [for_ n f] is the parallel version of [for i=0 to n-1 do f i done].
 
-    [f] is called with a [range] parameter, which is an iterator on indices
-    [f] should process.
+    [f] is called with parameters [low] and [high] and must use them like so:
+    {[ for j = low to high do (* … actual work *) done ]}.
+    If [chunk_size=1] then [low=high] and the loop is not actually needed.
 
     @param chunk_size controls the granularity of parallelism.
       The default chunk size is not specified.
@@ -42,11 +39,12 @@ val for_ : ?chunk_size:int -> int -> (int iter -> unit) -> unit
       let total_sum = Atomic.make 0
 
       let() = for_ ~chunk_size:5 100
-        (fun range ->
+        (fun low high ->
           (* iterate on the range sequentially. The range should have 5 items or less. *)
           let local_sum = ref 0 in
-          range
-            (fun i -> local_sum := !local_sum + n);
+          for j=low to high do
+            local_sum := !local_sum + j
+          done;
           ignore (Atomic.fetch_and_add total_sum !local_sum : int)))
 
       let() = assert (Atomic.get total_sum = 4950)
