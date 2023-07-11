@@ -106,35 +106,4 @@ val map_list : ?chunk_size:int -> ('a -> 'b) -> 'a list -> 'b list
     @since NEXT_RELEASE
     {b NOTE} this is only available on OCaml 5. *)
 
-type 'a commutative_monoid = {
-  neutral: unit -> 'a;  (** Neutral element *)
-  combine: 'a -> 'a -> 'a;  (** Combine two items. *)
-}
-(** A commutative monoid: order of operations does not matter.
-    @since NEXT_RELEASE *)
-
-val map_reduce_commutative :
-  ?chunk_size:int ->
-  gen:(int -> 'a) ->
-  map:('a -> 'b) ->
-  reduce:'b commutative_monoid ->
-  int ->
-  'b
-(** [map_reduce_commutative ~gen ~map ~reduce n] produces items of type ['a]
-    using [gen 0], [gen 1], …, [gen (n-1)]. Items are then mapped using [map]
-    in background tasks (each task processes up to [chunk_size] items at a time).
-
-    Then, items of type ['b] obtained by mapping are reduced together using the
-    definition of the commutative monoid [reduce]. The order in which they
-    are reduced is not specified.
-
-    @param chunk_size controls granularity of the mapping process
-    @param gen generates items to process based on an index
-    @param map takes an item and processes it, independently of other items
-    @param reduce is used to aggregate results of mapping.
-
-    @since NEXT_RELEASE
-    {b NOTE} this is only available on OCaml 5.
-*)
-
 [@@@endif]

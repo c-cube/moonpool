@@ -207,24 +207,4 @@ let map_list ?chunk_size f (l : _ list) : _ list =
       | None -> assert false
       | Some x -> x)
 
-type 'a commutative_monoid = {
-  neutral: unit -> 'a;  (** Neutral element *)
-  combine: 'a -> 'a -> 'a;  (** Combine two items. *)
-}
-
-let map_reduce_commutative ?chunk_size ~gen ~map
-    ~(reduce : 'b commutative_monoid) n : 'b =
-  let res = Lock.create (reduce.neutral ()) in
-
-  for_ ?chunk_size n (fun low high ->
-      let local_acc = ref (reduce.neutral ()) in
-      for i = low to high do
-        let x = gen i in
-        let y = map x in
-        local_acc := reduce.combine !local_acc y
-      done;
-
-      Lock.update res (fun res -> reduce.combine res !local_acc));
-  Lock.get res
-
 [@@@endif]
