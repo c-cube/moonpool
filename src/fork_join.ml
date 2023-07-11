@@ -141,20 +141,18 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
 
 let all_array ?chunk_size (fs : _ array) : _ array =
   let len = Array.length fs in
-  let arr = Array.make len None in
+  match len with
+  | 0 -> [||]
+  | 1 -> [| fs.(0) () |]
+  | _ ->
+    let x0 = fs.(0) () in
+    let arr = Array.make len x0 in
 
-  (* parallel for *)
-  for_ ?chunk_size len (fun low high ->
-      for i = low to high do
-        let x = fs.(i) () in
-        arr.(i) <- Some x
-      done);
-
-  (* get all results *)
-  Array.map
-    (function
-      | None -> assert false
-      | Some x -> x)
+    for_ ?chunk_size (len - 1) (fun low high ->
+        for i = low to high do
+          let x = fs.(i + 1) () in
+          arr.(i + 1) <- x
+        done);
     arr
 
 let all_list ?chunk_size fs : _ list =
