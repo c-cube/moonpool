@@ -5,5 +5,7 @@
   (preprocess (action
    (run %{project_root}/src/cpp/cpp.exe %{input-file})))
   (enabled_if (>= %{ocaml_version} 5.0))
-  (libraries moonpool trace ;tracy-client.trace
+  (libraries moonpool trace
+             qcheck-core qcheck-core.runner
+             ;tracy-client.trace
              ))
