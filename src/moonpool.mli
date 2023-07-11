@@ -5,6 +5,7 @@
 *)
 
 module Pool = Pool
+module Runner = Runner
 
 val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
 (** Similar to {!Thread.create}, but it picks a background domain at random
