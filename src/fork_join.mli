@@ -96,6 +96,16 @@ val all_init : ?chunk_size:int -> int -> (int -> 'a) -> 'a list
     @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
 
+val map_array : ?chunk_size:int -> ('a -> 'b) -> 'a array -> 'b array
+(** [map_array f arr] is like [Array.map f arr], but runs in parallel.
+    @since NEXT_RELEASE
+    {b NOTE} this is only available on OCaml 5. *)
+
+val map_list : ?chunk_size:int -> ('a -> 'b) -> 'a list -> 'b list
+(** [map_list f l] is like [List.map f l], but runs in parallel.
+    @since NEXT_RELEASE
+    {b NOTE} this is only available on OCaml 5. *)
+
 type 'a commutative_monoid = {
   neutral: unit -> 'a;  (** Neutral element *)
   combine: 'a -> 'a -> 'a;  (** Combine two items. *)

@@ -175,6 +175,38 @@ let all_init ?chunk_size n f : _ list =
       | None -> assert false
       | Some x -> x)
 
+let map_array ?chunk_size f arr : _ array =
+  let n = Array.length arr in
+  let res = Array.make n None in
+
+  for_ ?chunk_size n (fun low high ->
+      for i = low to high do
+        res.(i) <- Some (f arr.(i))
+      done);
+
+  (* get all results *)
+  Array.map
+    (function
+      | None -> assert false
+      | Some x -> x)
+    res
+
+let map_list ?chunk_size f (l : _ list) : _ list =
+  let arr = Array.of_list l in
+  let n = Array.length arr in
+  let res = Array.make n None in
+
+  for_ ?chunk_size n (fun low high ->
+      for i = low to high do
+        res.(i) <- Some (f arr.(i))
+      done);
+
+  (* get all results *)
+  List.init n (fun i ->
+      match res.(i) with
+      | None -> assert false
+      | Some x -> x)
+
 type 'a commutative_monoid = {
   neutral: unit -> 'a;  (** Neutral element *)
   combine: 'a -> 'a -> 'a;  (** Combine two items. *)
