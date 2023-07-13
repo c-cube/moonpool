@@ -43,6 +43,11 @@ let () =
   assert (par_sum = exp_sum)
 
 let () =
+  Pool.run_wait_block pool (fun () ->
+      Fork_join.for_ 0 (fun _ _ -> assert false));
+  ()
+
+let () =
   let total_sum = Atomic.make 0 in
 
   Pool.run_wait_block pool (fun () ->
