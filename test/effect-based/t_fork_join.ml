@@ -209,7 +209,7 @@ module Evaluator = struct
         ( clamp_if_base 3,
           let+ f = gen_fun
           and+ csize = 1 -- 16
-          and+ l = list_size (1 -- 290) (gen 1)
+          and+ l = list_size (0 -- 290) (gen 1)
           and+ r = oneofl [ R_add; R_max; R_add_shift ] in
           Map_arr (csize, f, l, r) );
         ( clamp_if_base 2,
