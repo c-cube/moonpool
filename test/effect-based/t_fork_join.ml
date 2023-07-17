@@ -267,7 +267,7 @@ module Evaluator = struct
     Runner.run_wait_block pool (fun () -> eval e)
 end
 
-let t1 =
+let t_eval =
   let arb = Q.set_stats [ "size", Evaluator.size ] Evaluator.arb in
   Q.Test.make ~name:"same eval" arb (fun e ->
       let@ pool = Pool.with_ ~min:4 () in
@@ -277,6 +277,44 @@ let t1 =
       if x <> y then Q.Test.fail_reportf "expected %d, got %d" x y;
       true)
 
-let () = QCheck_base_runner.run_tests_main [ t1 ]
+let t_for_nested ~min ~chunk_size () =
+  let ppl = Q.Print.(list @@ list int) in
+  let neg x = -x in
+  Q.Test.make
+    ~name:(spf "t_for_nested ~min:%d" min)
+    Q.(small_list (small_list small_int))
+    (fun l ->
+      let ref_l1 = List.map (List.map neg) l in
+      let ref_l2 = List.map (List.map neg) ref_l1 in
+
+      let l1, l2 =
+        let@ pool = Pool.with_ ~min:4 () in
+        let@ () = Pool.run_wait_block pool in
+        let l1 =
+          Fork_join.map_list ~chunk_size (Fork_join.map_list ~chunk_size neg) l
+        in
+        let l2 =
+          Fork_join.map_list ~chunk_size (Fork_join.map_list ~chunk_size neg) l1
+        in
+        l1, l2
+      in
+
+      if l1 <> ref_l1 then
+        Q.Test.fail_reportf "l1=%s, ref_l1=%s" (ppl l1) (ppl ref_l1);
+      if l2 <> ref_l2 then
+        Q.Test.fail_reportf "l1=%s, ref_l1=%s" (ppl l2) (ppl ref_l2);
+      true)
+
+let () =
+  QCheck_base_runner.run_tests_main
+    [
+      t_eval;
+      t_for_nested ~min:1 ~chunk_size:1 ();
+      t_for_nested ~min:4 ~chunk_size:1 ();
+      t_for_nested ~min:1 ~chunk_size:3 ();
+      t_for_nested ~min:4 ~chunk_size:3 ();
+      t_for_nested ~min:1 ~chunk_size:100 ();
+      t_for_nested ~min:4 ~chunk_size:100 ();
+    ]
 
 [@@@endif]
