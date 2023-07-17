@@ -288,7 +288,7 @@ let t_for_nested ~min ~chunk_size () =
       let ref_l2 = List.map (List.map neg) ref_l1 in
 
       let l1, l2 =
-        let@ pool = Pool.with_ ~min:4 () in
+        let@ pool = Pool.with_ ~min () in
         let@ () = Pool.run_wait_block pool in
         let l1 =
           Fork_join.map_list ~chunk_size (Fork_join.map_list ~chunk_size neg) l
@@ -305,10 +305,30 @@ let t_for_nested ~min ~chunk_size () =
         Q.Test.fail_reportf "l1=%s, ref_l1=%s" (ppl l2) (ppl ref_l2);
       true)
 
+let t_map ~chunk_size () =
+  let ppa = Q.Print.(array string) in
+  Q.Test.make ~name:"map1"
+    Q.(small_list small_int |> Q.set_stats [ "len", List.length ])
+    (fun l ->
+      let@ pool = Pool.with_ ~min:4 () in
+      let@ () = Pool.run_wait_block pool in
+
+      let a1 =
+        Fork_join.map_list ~chunk_size string_of_int l |> Array.of_list
+      in
+      let a2 =
+        Fork_join.map_array ~chunk_size string_of_int @@ Array.of_list l
+      in
+
+      if a1 <> a2 then Q.Test.fail_reportf "a1=%s, a2=%s" (ppa a1) (ppa a2);
+      true)
+
 let () =
   QCheck_base_runner.run_tests_main
     [
       t_eval;
+      t_map ~chunk_size:1 ();
+      t_map ~chunk_size:50 ();
       t_for_nested ~min:1 ~chunk_size:1 ();
       t_for_nested ~min:4 ~chunk_size:1 ();
       t_for_nested ~min:1 ~chunk_size:3 ();
