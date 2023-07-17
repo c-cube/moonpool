@@ -1,6 +1,6 @@
 (** Mutex-protected resource.
 
-    @since NEXT_RELEASE *)
+    @since 0.3 *)
 
 type 'a t
 (** A value protected by a mutex *)

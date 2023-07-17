@@ -1,7 +1,7 @@
 (** Abstract runner.
 
     This provides an abstraction for running tasks in the background.
-    @since NEXT_RELEASE
+    @since 0.3
 *)
 
 type task = unit -> unit

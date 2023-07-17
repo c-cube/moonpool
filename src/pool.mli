@@ -3,7 +3,7 @@
     A pool of threads. The pool contains a fixed number of threads that
     wait for work items to come, process these, and loop.
 
-    This implements {!Runner.t} since NEXT_RELEASE.
+    This implements {!Runner.t} since 0.3.
 
     If a pool is no longer needed, {!shutdown} can be used to signal all threads
     in it to stop (after they finish their work), and wait for them to stop.
@@ -66,7 +66,7 @@ val with_ : (unit -> (t -> 'a) -> 'a) create_args
     are released.
 
     Most parameters are the same as in {!create}.
-    @since NEXT_RELEASE *)
+    @since 0.3 *)
 
 val run : t -> (unit -> unit) -> unit
   [@@deprecated "use run_async"]

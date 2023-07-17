@@ -61,7 +61,7 @@ val for_ : ?chunk_size:int -> int -> (int -> int -> unit) -> unit
     Use [~chunk_size:1] if you explicitly want to
     run each iteration of the loop in its own task.
 
-    @since NEXT_RELEASE
+    @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
 
 val all_array : ?chunk_size:int -> (unit -> 'a) array -> 'a array
@@ -71,7 +71,7 @@ val all_array : ?chunk_size:int -> (unit -> 'a) array -> 'a array
     @param chunk_size if equal to [n], groups items by [n] to be run in
       a single task. Default is [1].
 
-    @since NEXT_RELEASE
+    @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
 
 val all_list : ?chunk_size:int -> (unit -> 'a) list -> 'a list
@@ -80,7 +80,7 @@ val all_list : ?chunk_size:int -> (unit -> 'a) list -> 'a list
 
     @param chunk_size if equal to [n], groups items by [n] to be run in
       a single task. Default is not specified.
-      This parameter is available since NEXT_RELEASE.
+      This parameter is available since 0.3.
 
     @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
@@ -91,19 +91,19 @@ val all_init : ?chunk_size:int -> int -> (int -> 'a) -> 'a list
 
     @param chunk_size if equal to [n], groups items by [n] to be run in
       a single task. Default is not specified.
-      This parameter is available since NEXT_RELEASE.
+      This parameter is available since 0.3.
 
     @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
 
 val map_array : ?chunk_size:int -> ('a -> 'b) -> 'a array -> 'b array
 (** [map_array f arr] is like [Array.map f arr], but runs in parallel.
-    @since NEXT_RELEASE
+    @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
 
 val map_list : ?chunk_size:int -> ('a -> 'b) -> 'a list -> 'b list
 (** [map_list f l] is like [List.map f l], but runs in parallel.
-    @since NEXT_RELEASE
+    @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
 
 [@@@endif]

@@ -47,6 +47,6 @@ val close : _ t -> unit
 val pop_await : 'a t -> 'a
 (** Like {!pop} but suspends the current thread until an element is
     available. See {!Fut.await} for more details.
-    @since NEXT_RELEASE *)
+    @since 0.3 *)
 
 [@@@endif]

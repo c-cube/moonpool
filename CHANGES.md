@@ -1,4 +1,27 @@
 
+# 0.3
+
+- add `Fork_join` for parallelizing computations. This is only
+    available on OCaml 5.x because it relies on effects.
+- add `Fork_join.{for_,map_array,map_list}`
+- add `Fork_join.all_{list,init}`
+- add `Pool.with_`
+- add a channel module
+- add `Runner`, change `Pool` to produce a `Runner.t`
+- add a `Lock` module
+- add support for domain-local-await when installed
+- add `Fut.await` for OCaml >= 5.0
+
+- fix: Fork_join.both_ignore now has a more general type
+
+- expose `Suspend_` and its internal effect with an unstability alert.
+    This is intended for implementors of `Runner` only.
+- port `cpp.ml` from containers, replace previous codegen with it.
+    This will provide better flexibility for supporting multiple versions
+    of OCaml in the future.
+- add `Pool.run_wait_block`; rename `Pool.run` into `Pool.run_async`
+- fix: in blocking queue, `pop` works on a non empty closed queue
+
 # 0.2
 
 - add `Fut.for_list`
