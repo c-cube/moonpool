@@ -1,5 +1,7 @@
 [@@@ifge 5.0]
 
+let ( let@ ) = ( @@ )
+
 open Moonpool
 
 let rec fib_direct x =
@@ -9,6 +11,7 @@ let rec fib_direct x =
     fib_direct (x - 1) + fib_direct (x - 2)
 
 let rec fib x : int =
+  (* some cutoff for sequential computation *)
   if x <= 18 then
     fib_direct x
   else (
@@ -19,13 +22,13 @@ let rec fib x : int =
   )
 
 let fib_40 : int =
-  let pool = Pool.create ~min:8 () in
+  let@ pool = Pool.with_ ~min:8 () in
   Fut.spawn ~on:pool (fun () -> fib 40) |> Fut.wait_block_exn
 
 let () = Printf.printf "fib 40 = %d\n%!" fib_40
 
 let run_test () =
-  let pool = Pool.create ~min:8 () in
+  let@ pool = Pool.with_ ~min:8 () in
 
   let fut =
     Fut.spawn ~on:pool (fun () ->
