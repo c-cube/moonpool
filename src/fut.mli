@@ -85,6 +85,12 @@ val spawn : on:Runner.t -> (unit -> 'a) -> 'a t
 (** [spaw ~on f] runs [f()] on the given runner [on], and return a future that will
       hold its result. *)
 
+val reify_error : 'a t -> 'a or_error t
+(** [reify_error fut] turns a failing future into a non-failing
+    one  that contain [Error (exn, bt)]. A non-failing future
+    returning [x] is turned into [Ok x]
+    @since NEXT_RELEASE *)
+
 val map : ?on:Runner.t -> f:('a -> 'b) -> 'a t -> 'b t
 (** [map ?on ~f fut] returns a new future [fut2] that resolves
       with [f x] if [fut] resolved with [x];
@@ -92,10 +98,18 @@ val map : ?on:Runner.t -> f:('a -> 'b) -> 'a t -> 'b t
       @param on if provided, [f] runs on the given runner *)
 
 val bind : ?on:Runner.t -> f:('a -> 'b t) -> 'a t -> 'b t
-(** [map ?on ~f fut] returns a new future [fut2] that resolves
+(** [bind ?on ~f fut] returns a new future [fut2] that resolves
       like the future [f x] if [fut] resolved with [x];
     and fails with [e] if [fut] fails with [e] or [f x] raises [e].
       @param on if provided, [f] runs on the given runner *)
+
+val bind_reify_error : ?on:Runner.t -> f:('a or_error -> 'b t) -> 'a t -> 'b t
+(** [bind_reify_error ?on ~f fut] returns a new future [fut2] that resolves
+      like the future [f (Ok x)] if [fut] resolved with [x];
+      and resolves like the future [f (Error (exn, bt))]
+      if [fut] fails with [exn] and backtrace [bt].
+    @param on if provided, [f] runs on the given runner
+    @since NEXT_RELEASE *)
 
 val join : ?on:Runner.t -> 'a t t -> 'a t
 (** [join fut] is [fut >>= Fun.id]. It joins the inner layer of the future.

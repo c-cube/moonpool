@@ -9,8 +9,10 @@ let work_ _i q : unit =
 
 (* A domain level worker. It should not do too much except for starting
     new threads for pools. *)
+(* TODO: take [Run of (unit -> unit) | Incr | Decr] to handle refcounting? *)
 type worker = { q: (unit -> unit) Bb_queue.t } [@@unboxed]
 
+(* TODO: use [worker option array], with a mechanism to start/stop them *)
 let domains_ : worker array lazy_t =
   lazy
     ((* number of domains we spawn. Note that we spawn n-1 domains

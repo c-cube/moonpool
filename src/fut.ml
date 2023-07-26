@@ -100,6 +100,14 @@ let spawn ~on f : _ t =
   Pool.run_async on task;
   fut
 
+let reify_error (f : 'a t) : 'a or_error t =
+  match peek f with
+  | Some res -> return res
+  | None ->
+    let fut, promise = make () in
+    on_result f (fun r -> fulfill promise (Ok r));
+    fut
+
 let map ?on ~f fut : _ t =
   let map_res r =
     match r with
@@ -161,6 +169,7 @@ let bind ?on ~f fut : _ t =
 
     fut2
 
+let bind_reify_error ?on ~f fut : _ t = bind ?on ~f (reify_error fut)
 let join ?on fut = bind ?on fut ~f:(fun x -> x)
 
 let update_ (st : 'a A.t) f : 'a =
