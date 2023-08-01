@@ -160,12 +160,12 @@ let shutdown_ ~wait (self : state) : unit =
   if was_active then Array.iter Bb_queue.close self.qs;
   if wait then Array.iter Thread.join self.threads
 
-type 'a create_args =
+type ('a, 'b) create_args =
   ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?thread_wrappers:thread_loop_wrapper list ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
-  ?around_task:(t -> 'a) * (t -> 'a -> unit) ->
+  ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
   ?min:int ->
   ?per_domain:int ->
   'a
