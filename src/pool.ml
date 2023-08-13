@@ -241,7 +241,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
       in
 
       (* now run the main loop *)
-      run' ();
+      Fun.protect run' ~finally:(fun () -> D_pool_.decr_on dom_idx);
       on_exit_thread ~dom_id:dom_idx ~t_id ()
     in
 
