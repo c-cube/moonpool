@@ -22,6 +22,7 @@ type state = {
   active: bool A.t;
   threads: Thread.t array;
   qs: task Bb_queue.t array;
+  domains_to_join: Domain_.t Bb_queue.t;
   cur_q: int A.t;  (** Selects queue into which to push *)
 }
 (** internal state *)
@@ -158,7 +159,19 @@ let shutdown_ ~wait (self : state) : unit =
   (* close the job queues, which will fail future calls to [run],
      and wake up the subset of [self.threads] that are waiting on them. *)
   if was_active then Array.iter Bb_queue.close self.qs;
-  if wait then Array.iter Thread.join self.threads
+  if wait then Array.iter Thread.join self.threads;
+  Bb_queue.close self.domains_to_join;
+
+  (* now join domains which need to be joined *)
+  while
+    match Bb_queue.pop self.domains_to_join with
+    | exception Bb_queue.Closed -> false
+    | d ->
+      Domain_.join d;
+      true
+  do
+    ()
+  done
 
 type ('a, 'b) create_args =
   ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
@@ -199,7 +212,13 @@ let create ?(on_init_thread = default_thread_init_exit_)
 
   let pool =
     let dummy = Thread.self () in
-    { active; threads = Array.make num_threads dummy; qs; cur_q = A.make 0 }
+    {
+      active;
+      threads = Array.make num_threads dummy;
+      qs;
+      cur_q = A.make 0;
+      domains_to_join = Bb_queue.create ();
+    }
   in
 
   let runner =
@@ -241,7 +260,10 @@ let create ?(on_init_thread = default_thread_init_exit_)
       in
 
       (* now run the main loop *)
-      Fun.protect run' ~finally:(fun () -> D_pool_.decr_on dom_idx);
+      Fun.protect run' ~finally:(fun () ->
+          (* on termination, decrease refcount of underlying domain *)
+          D_pool_.decr_on dom_idx
+            ~domain_to_join:(Bb_queue.push pool.domains_to_join));
       on_exit_thread ~dom_id:dom_idx ~t_id ()
     in
 

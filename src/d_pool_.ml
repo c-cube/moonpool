@@ -2,15 +2,14 @@ type domain = Domain_.t
 
 type event =
   | Run of (unit -> unit)  (** Run this function *)
-  | Decr
-      (** decrement number of threads on this domain. If it reaches 0,
-    wind down *)
+  | Die  (** Nudge the domain, asking it to die *)
 
 (* State for a domain worker. It should not do too much except for starting
     new threads for pools. *)
 type worker_state = {
   q: event Bb_queue.t;
   th_count: int Atomic_.t;  (** Number of threads on this *)
+  mutable domain: domain option;
 }
 
 (** Array of (optional) workers.
@@ -22,37 +21,53 @@ let domains_ : worker_state option Lock.t array =
   let n = max 1 (Domain_.recommended_number () - 1) in
   Array.init n (fun _ -> Lock.create None)
 
-let work_ idx (st : worker_state) : unit =
+let work_ (st : worker_state) : unit =
   Dla_.setup_domain ();
-  while Atomic_.get st.th_count > 0 do
+  let continue = ref true in
+  while !continue do
     match Bb_queue.pop st.q with
     | Run f -> (try f () with _ -> ())
-    | Decr ->
-      if Atomic_.fetch_and_add st.th_count (-1) = 1 then
-        Lock.set domains_.(idx) None
+    | Die -> continue := false
   done
 
 let[@inline] n_domains () : int = Array.length domains_
 
 let run_on (i : int) (f : unit -> unit) : unit =
   assert (i < Array.length domains_);
+  let w =
+    Lock.update_map domains_.(i) (function
+      | Some w as st ->
+        Atomic_.incr w.th_count;
+        st, w
+      | None ->
+        let w =
+          { th_count = Atomic_.make 1; q = Bb_queue.create (); domain = None }
+        in
+        let worker : domain = Domain_.spawn (fun () -> work_ w) in
+        w.domain <- Some worker;
+        Some w, w)
+  in
+  Bb_queue.push w.q (Run f)
 
-  Lock.update domains_.(i) (function
-    | Some w as st ->
-      Atomic_.incr w.th_count;
-      Bb_queue.push w.q (Run f);
-      st
-    | None ->
-      let st = { th_count = Atomic_.make 1; q = Bb_queue.create () } in
-      let _domain : domain = Domain_.spawn (fun () -> work_ i st) in
-      Bb_queue.push st.q (Run f);
-      Some st)
-
-let decr_on (i : int) : unit =
+let decr_on (i : int) ~(domain_to_join : Domain_.t -> unit) : unit =
   assert (i < Array.length domains_);
-  match Lock.get domains_.(i) with
+  let st_to_kill =
+    Lock.update_map domains_.(i) (function
+      | None -> assert false
+      | Some st ->
+        if Atomic_.fetch_and_add st.th_count (-1) = 1 then
+          None, Some st
+        else
+          Some st, None)
+  in
+
+  (* prepare for domain termination outside of critical section *)
+  match st_to_kill with
   | None -> ()
-  | Some st -> Bb_queue.push st.q Decr
+  | Some st ->
+    (* ask the domain to die *)
+    Bb_queue.push st.q Die;
+    Option.iter domain_to_join st.domain
 
 let run_on_and_wait (i : int) (f : unit -> 'a) : 'a =
   let q = Bb_queue.create () in

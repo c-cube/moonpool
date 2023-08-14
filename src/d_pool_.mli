@@ -15,8 +15,10 @@ val run_on : int -> (unit -> unit) -> unit
 (** [run_on i f] runs [f()] on the domain with index [i].
     Precondition: [0 <= i < n_domains()] *)
 
-val decr_on : int -> unit
-(** Signal that a thread is stopping on the domain with index [i] *)
+val decr_on : int -> domain_to_join:(Domain_.t -> unit) -> unit
+(** Signal that a thread is stopping on the domain with index [i].
+    @param domain_to_join called with a domain if this domain shuts down
+      because no one is using it anymore *)
 
 val run_on_and_wait : int -> (unit -> 'a) -> 'a
 (** [run_on_and_wait i f] runs [f()] on the domain with index [i],
