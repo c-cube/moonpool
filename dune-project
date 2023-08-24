@@ -2,7 +2,7 @@
 (using mdx 0.2)
 
 (name moonpool)
-(version 0.3)
+(version 0.4)
 (generate_opam_files true)
 (source
  (github c-cube/moonpool))
