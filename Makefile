@@ -40,3 +40,9 @@ bench-pi:
 		'./_build/default/benchs/pi.exe -mode={mode} -n $(PI_NSTEPS)'
 
 .PHONY: test clean bench-fib bench-pi
+
+VERSION=$(shell awk '/^version:/ {print $$2}' moonpool.opam)
+update_next_tag:
+	@echo "update version to $(VERSION)..."
+	sed -i "s/NEXT_VERSION/$(VERSION)/g" $(wildcard src/**/*.ml) $(wildcard src/**/*.mli)
+	sed -i "s/NEXT_RELEASE/$(VERSION)/g" $(wildcard src/**/*.ml) $(wildcard src/**/*.mli)

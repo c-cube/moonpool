@@ -1,4 +1,14 @@
 
+# 0.4
+
+- add `Fut.{reify_error,bind_reify_error}`
+- full lifecycle for worker domains, where a domain
+    will shutdown if no thread runs on it, after a
+    short delay.
+
+- fix: generalize type of `create_arg`
+- perf: in `Bb_queue`, only signal condition on push if queue was empty
+
 # 0.3
 
 - add `Fork_join` for parallelizing computations. This is only
