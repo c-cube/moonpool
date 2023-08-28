@@ -1,0 +1,33 @@
+name: github pages
+
+on:
+  push:
+    branches:
+      - main # Set a branch name to trigger deployment
+
+jobs:
+  deploy:
+    name: Deploy doc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+
+      - name: Use OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: '4.14'
+          dune-cache: true
+
+      - name: Deps
+        run: opam install odig moonpool
+
+      - name: Build
+        run: opam exec -- odig odoc --cache-dir=_doc/ moonpool
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_doc/html
+          destination_dir: dev
+          enable_jekyll: true
