@@ -7,4 +7,4 @@ COPY src src
 COPY test test
 RUN eval `opam env` && opam install . --deps-only -t
 RUN eval `opam env` && dune build @install
-RUN eval `opam env` && dune @runtest
+RUN eval `opam env` && dune runtest
