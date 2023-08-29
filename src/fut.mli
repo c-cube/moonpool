@@ -214,11 +214,12 @@ module Infix_local : INFIX
 
 include INFIX
 
-(** Make infix combinators *)
+(** Make infix combinators, with intermediate computations running on the given pool. *)
 module Infix (_ : sig
   val pool : Runner.t
 end) : INFIX
 
 val infix : Runner.t -> (module INFIX)
-(** [infix runner] makes a new infix module.
+(** [infix runner] makes a new infix module with intermediate computations
+      running on the given runner..
     @since 0.2 *)
