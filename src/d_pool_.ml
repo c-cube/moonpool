@@ -14,11 +14,11 @@ type worker_state = {
 (** Array of (optional) workers.
 
     Workers are started/stop on demand. *)
-let domains_ : worker_state option Lock.t array =
+let domains_ : (worker_state option * unit Domain.t option) Lock.t array =
   (* number of domains we spawn. Note that we spawn n-1 domains
       because there already is the main domain running. *)
   let n = max 1 (Domain_.recommended_number () - 1) in
-  Array.init n (fun _ -> Lock.create None)
+  Array.init n (fun _ -> Lock.create (None, None))
 
 (** main work loop for a domain worker.
 
@@ -64,15 +64,15 @@ let work_ idx (st : worker_state) : unit =
     (* exit: try to remove ourselves from [domains]. If that fails, keep living. *)
     let is_alive =
       Lock.update_map domains_.(idx) (function
-        | None -> assert false
-        | Some _st' ->
+        | None, _ -> assert false
+        | Some (_st'), dom ->
           assert (st == _st');
 
           if Atomic_.get st.th_count > 0 then
             (* still alive! *)
-            Some st, true
+            (Some st, dom), true
           else
-            None, false)
+            (None, dom), false)
     in
 
     is_alive
@@ -87,21 +87,22 @@ let run_on (i : int) (f : unit -> unit) : unit =
   assert (i < Array.length domains_);
   let w =
     Lock.update_map domains_.(i) (function
-      | Some w as st ->
+      | (Some w, _) as st ->
         Atomic_.incr w.th_count;
         st, w
-      | None ->
+      | None, _dom ->
+        Option.iter Domain.join _dom;
         let w = { th_count = Atomic_.make 1; q = Bb_queue.create () } in
-        let _worker : domain = Domain_.spawn (fun () -> work_ i w) in
-        Some w, w)
+        let worker : domain = Domain_.spawn (fun () -> work_ i w) in
+        (Some w, Some worker), w)
   in
   Bb_queue.push w.q (Run f)
 
 let decr_on (i : int) : unit =
   assert (i < Array.length domains_);
   match Lock.get domains_.(i) with
-  | Some st -> Bb_queue.push st.q Decr
-  | None -> ()
+  | Some st, _ -> Bb_queue.push st.q Decr
+  | None, _ -> ()
 
 let run_on_and_wait (i : int) (f : unit -> 'a) : 'a =
   let q = Bb_queue.create () in
