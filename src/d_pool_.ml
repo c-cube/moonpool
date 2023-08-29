@@ -13,7 +13,10 @@ type worker_state = {
 
 (** Array of (optional) workers.
 
-    Workers are started/stop on demand. *)
+    Workers are started/stop on demand. For each index we have
+    the (currently active) domain's state
+    including a work queue and a thread refcount; and the domain itself,
+    if any, in a separate option because it might outlive its own state. *)
 let domains_ : (worker_state option * Domain_.t option) Lock.t array =
   (* number of domains we spawn. Note that we spawn n-1 domains
       because there already is the main domain running. *)
@@ -90,8 +93,9 @@ let run_on (i : int) (f : unit -> unit) : unit =
       | (Some w, _) as st ->
         Atomic_.incr w.th_count;
         st, w
-      | None, _dom ->
-        Option.iter Domain_.join _dom;
+      | None, dying_dom ->
+        (* join previous dying domain, to free its resources, if any *)
+        Option.iter Domain_.join dying_dom;
         let w = { th_count = Atomic_.make 1; q = Bb_queue.create () } in
         let worker : domain = Domain_.spawn (fun () -> work_ i w) in
         (Some w, Some worker), w)
