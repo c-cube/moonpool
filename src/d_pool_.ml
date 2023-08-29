@@ -14,7 +14,7 @@ type worker_state = {
 (** Array of (optional) workers.
 
     Workers are started/stop on demand. *)
-let domains_ : (worker_state option * unit Domain.t option) Lock.t array =
+let domains_ : (worker_state option * unit Domain_.t option) Lock.t array =
   (* number of domains we spawn. Note that we spawn n-1 domains
       because there already is the main domain running. *)
   let n = max 1 (Domain_.recommended_number () - 1) in
