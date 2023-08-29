@@ -14,7 +14,7 @@ type worker_state = {
 (** Array of (optional) workers.
 
     Workers are started/stop on demand. *)
-let domains_ : (worker_state option * unit Domain_.t option) Lock.t array =
+let domains_ : (worker_state option * Domain_.t option) Lock.t array =
   (* number of domains we spawn. Note that we spawn n-1 domains
       because there already is the main domain running. *)
   let n = max 1 (Domain_.recommended_number () - 1) in
@@ -65,7 +65,7 @@ let work_ idx (st : worker_state) : unit =
     let is_alive =
       Lock.update_map domains_.(idx) (function
         | None, _ -> assert false
-        | Some (_st'), dom ->
+        | Some _st', dom ->
           assert (st == _st');
 
           if Atomic_.get st.th_count > 0 then
@@ -91,7 +91,7 @@ let run_on (i : int) (f : unit -> unit) : unit =
         Atomic_.incr w.th_count;
         st, w
       | None, _dom ->
-        Option.iter Domain.join _dom;
+        Option.iter Domain_.join _dom;
         let w = { th_count = Atomic_.make 1; q = Bb_queue.create () } in
         let worker : domain = Domain_.spawn (fun () -> work_ i w) in
         (Some w, Some worker), w)
