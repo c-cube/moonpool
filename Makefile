@@ -12,6 +12,9 @@ test:
 doc:
 	@dune build $(DUNE_OPTS) @doc
 
+build-dev:
+	dune build @install @runtest $(DUNE_OPTS) --workspace=dune-workspace.dev
+
 WATCH?= @check @runtest
 watch:
 	dune build $(DUNE_OPTS) -w $(WATCH)
