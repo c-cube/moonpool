@@ -1,3 +1,21 @@
+=== ⚠️ CAUTION
+
+The developer team is currently preparing the release of OCaml 5.0. This release
+sports a full rewrite of its runtime system for shared-memory parallel
+programming using domains and native support for concurrent programming using
+effect handlers.
+
+Owing to the large number of changes, the initial 5.0 release will be more
+experimental than usual.  It is recommended that all users wanting a stable
+release use the 4.14 release which will continue to be supported and updated
+while 5.0 reaches feature and stability parity. Similarly, if you need one of
+the ports not yet supported in the 5.0 release you must use the 4.14 release.
+
+Only the Mingw-w64 port is supported. On 32-bit systems, only the bytecode
+compiler is supported.  Native-code support for these 32-bit systems is under
+discussion. Support for the MSVC and Cygwin ports will be added back in later
+releases.
+
 = Release notes for the Microsoft Windows ports of OCaml =
 :toc: macro
 
@@ -45,7 +63,7 @@ Cygwin aims to provide a Unix-like environment on Windows, and the build
 procedure for it is the same as for other flavours of Unix.  See
 link:INSTALL.adoc[] for full instructions.
 
-The native ports require Windows XP or later and naturally the 64-bit versions
+The native ports require Windows Vista or later and naturally the 64-bit versions
 need a 64-bit edition of Windows (note that this is both to run *and* build).
 
 The two native Windows ports have to be built differently, and the remainder of
@@ -63,7 +81,9 @@ Only the `make` Cygwin package is required. `diffutils` is required if you wish
 to be able to run the test suite.
 
 Unless you are also compiling the Cygwin port of OCaml, you do not need the
-`gcc-core` or `flexdll` packages.
+`gcc-core` or `flexdll` packages. If you do install them, care may be required
+to ensure that a particular build is using the correct installation of
+`flexlink`.
 
 [[bmflex]]
 In addition to Cygwin, FlexDLL must also be installed, which is available from
@@ -195,7 +215,7 @@ quickly as it will be unable to link `ocamlrun`.
 
 Now run:
 
-        ./configure --build=x86_64-pc-cygwin --host=i686-pc-windows
+        ./configure --build=i686-pc-cygwin --host=i686-pc-windows
 
 for 32-bit, or:
 
@@ -223,7 +243,7 @@ your `~/.bashrc` file.
   the performance of bytecode programs is about 2/3 of that obtained under
   Unix/GCC,  Cygwin or Mingw-w64 on similar hardware.
 
-* Libraries available in this port: `bigarray`, `dynlink`, `num`,
+* Libraries available in this port: `dynlink`, `num`,
   `str`, `threads`, and large parts of `unix`.
 
 * The replay debugger is partially supported (no reverse execution).
@@ -260,7 +280,7 @@ the WinZip Options Window.)
 
 Now run:
 
-        ./configure --build=x86_64-pc-cygwin --host=i686-w64-mingw32
+        ./configure --build=i686-pc-cygwin --host=i686-w64-mingw32
 
 for 32-bit, or:
 
@@ -277,7 +297,7 @@ After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
 can access the C compiler.  You can do this either by using OCaml from Cygwin's
 bash or by adding Cygwin's bin directory (e.g. `C:\cygwin\bin`) to your `PATH`.
 
-* Libraries available in this port: `bigarray`, `dynlink`, `num`,
+* Libraries available in this port: `dynlink`, `num`,
   `str`, `threads`, and large parts of `unix`.
 
 * The replay debugger is partially supported (no reverse execution).
