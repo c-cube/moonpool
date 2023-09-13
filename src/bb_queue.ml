@@ -93,3 +93,26 @@ let size (self : _ t) : int =
   let n = Queue.length self.q in
   Mutex.unlock self.mutex;
   n
+
+type 'a gen = unit -> 'a option
+type 'a iter = ('a -> unit) -> unit
+
+let to_iter self k =
+  try
+    while true do
+      let x = pop self in
+      k x
+    done
+  with Closed -> ()
+
+let to_gen self : _ gen =
+ fun () ->
+  match pop self with
+  | exception Closed -> None
+  | x -> Some x
+
+let rec to_seq self : _ Seq.t =
+ fun () ->
+  match pop self with
+  | exception Closed -> Seq.Nil
+  | x -> Seq.Cons (x, to_seq self)
