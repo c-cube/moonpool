@@ -133,6 +133,8 @@ module Blocking_queue : sig
       @since NEXT_RELEASE *)
 end
 
+module Bounded_queue = Bounded_queue
+
 module Atomic = Atomic_
 (** Atomic values.
 
