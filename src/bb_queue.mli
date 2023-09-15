@@ -23,7 +23,7 @@ val try_pop : force_lock:bool -> 'a t -> 'a option
     or returns [None] without blocking.
     @param force_lock if true, use {!Mutex.lock} (which can block under contention);
       if false, use {!Mutex.try_lock}, which might return [None] even in
-    presence of an element if there's contention *)
+      presence of an element if there's contention *)
 
 val try_push : 'a t -> 'a -> bool
 (** [try_push q x] tries to push into [q], in which case
