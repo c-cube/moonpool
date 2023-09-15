@@ -1,4 +1,17 @@
-(** A blocking queue of finite size. *)
+(** A blocking queue of finite size.
+
+    This queue, while still using locks underneath
+    (like the regular blocking queue) should be enough for
+    usage under reasonable contention.
+
+    The bounded size is helpful whenever some form of backpressure is
+    desirable: if the queue is used to communicate between producer(s)
+    and consumer(s), the consumer(s) can limit the rate at which
+    producer(s) send new work down their way.
+    Whenever the queue is full, means that producer(s) will have to
+    wait before pushing new work.
+
+    @since NEXT_RELEASE *)
 
 type 'a t
 (** A bounded queue. *)
