@@ -94,6 +94,23 @@ let size (self : _ t) : int =
   Mutex.unlock self.mutex;
   n
 
+let transfer (self : 'a t) q2 : unit =
+  Mutex.lock self.mutex;
+  let continue = ref true in
+  while !continue do
+    if Queue.is_empty self.q then (
+      if self.closed then (
+        Mutex.unlock self.mutex;
+        raise Closed
+      );
+      Condition.wait self.cond self.mutex
+    ) else (
+      Queue.transfer self.q q2;
+      Mutex.unlock self.mutex;
+      continue := false
+    )
+  done
+
 type 'a gen = unit -> 'a option
 type 'a iter = ('a -> unit) -> unit
 
