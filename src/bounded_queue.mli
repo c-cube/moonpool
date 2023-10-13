@@ -31,9 +31,15 @@ val push : 'a t -> 'a -> unit
     room for [x].
     @raise Closed if [q] is closed. *)
 
-val try_push : 'a t -> 'a -> bool
+val try_push : force_lock:bool -> 'a t -> 'a -> bool
 (** [try_push q x] attempts to push [x] into [q], but abandons
     if it cannot acquire [q] or if [q] is full.
+
+    @param force_lock if true, use {!Mutex.lock} (which can block
+      under contention);
+      if false, use {!Mutex.try_lock}, which might return [false] even
+      if there's room in the queue.
+
     @raise Closed if [q] is closed. *)
 
 val pop : 'a t -> 'a
@@ -42,7 +48,7 @@ val pop : 'a t -> 'a
     @raise Closed if [q] is empty and closed. *)
 
 val try_pop : force_lock:bool -> 'a t -> 'a option
-(** [try_pop q] tries to pop the first element, or returns [None]
+(** [try_pop ~force_lock q] tries to pop the first element, or returns [None]
     if no element is available or if it failed to acquire [q].
 
     @param force_lock if true, use {!Mutex.lock} (which can block
@@ -71,13 +77,10 @@ type 'a iter = ('a -> unit) -> unit
 
 val to_iter : 'a t -> 'a iter
 (** [to_iter q] returns an iterator over all items in the queue.
-    This might not terminate if [q] is never closed.
-    @since NEXT_RELEASE *)
+    This might not terminate if [q] is never closed. *)
 
 val to_gen : 'a t -> 'a gen
-(** [to_gen q] returns a generator from the queue.
-    @since NEXT_RELEASE *)
+(** [to_gen q] returns a generator from the queue. *)
 
 val to_seq : 'a t -> 'a Seq.t
-(** [to_gen q] returns a (transient) sequence from the queue.
-    @since NEXT_RELEASE *)
+(** [to_gen q] returns a (transient) sequence from the queue. *)
