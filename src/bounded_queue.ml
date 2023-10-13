@@ -70,9 +70,9 @@ let pop (self : 'a t) : 'a =
     ) else (
       let was_full = is_full_ self in
       let x = Queue.pop self.q in
-      Mutex.unlock self.mutex;
-      (* wakeup pushers *)
+      (* wakeup pushers that were blocked *)
       if was_full then Condition.broadcast self.cond_push;
+      Mutex.unlock self.mutex;
       x
     )
   in
@@ -87,11 +87,16 @@ let try_pop ~force_lock (self : _ t) : _ option =
       Mutex.try_lock self.mutex
   in
   if has_lock then (
+    if self.closed then (
+      Mutex.unlock self.mutex;
+      raise Closed
+    );
     let was_full_before_pop = is_full_ self in
     match Queue.pop self.q with
     | x ->
-      Mutex.unlock self.mutex;
+      (* wakeup pushers that are blocked *)
       if was_full_before_pop then Condition.broadcast self.cond_push;
+      Mutex.unlock self.mutex;
       Some x
     | exception Queue.Empty ->
       Mutex.unlock self.mutex;
@@ -99,8 +104,15 @@ let try_pop ~force_lock (self : _ t) : _ option =
   ) else
     None
 
-let try_push (self : _ t) x : bool =
-  if Mutex.try_lock self.mutex then (
+let try_push ~force_lock (self : _ t) x : bool =
+  let has_lock =
+    if force_lock then (
+      Mutex.lock self.mutex;
+      true
+    ) else
+      Mutex.try_lock self.mutex
+  in
+  if has_lock then (
     if self.closed then (
       Mutex.unlock self.mutex;
       raise Closed
