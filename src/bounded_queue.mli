@@ -11,7 +11,7 @@
     Whenever the queue is full, means that producer(s) will have to
     wait before pushing new work.
 
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 type 'a t
 (** A bounded queue. *)

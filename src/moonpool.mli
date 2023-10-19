@@ -114,7 +114,7 @@ module Blocking_queue : sig
       with Bb_queue.Closed -> ()
     ]}
 
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
   type 'a gen = unit -> 'a option
   type 'a iter = ('a -> unit) -> unit
@@ -122,15 +122,15 @@ module Blocking_queue : sig
   val to_iter : 'a t -> 'a iter
   (** [to_iter q] returns an iterator over all items in the queue.
       This might not terminate if [q] is never closed.
-      @since NEXT_RELEASE *)
+      @since 0.4 *)
 
   val to_gen : 'a t -> 'a gen
   (** [to_gen q] returns a generator from the queue.
-      @since NEXT_RELEASE *)
+      @since 0.4 *)
 
   val to_seq : 'a t -> 'a Seq.t
   (** [to_gen q] returns a (transient) sequence from the queue.
-      @since NEXT_RELEASE *)
+      @since 0.4 *)
 end
 
 module Bounded_queue = Bounded_queue

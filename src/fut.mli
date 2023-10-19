@@ -89,7 +89,7 @@ val reify_error : 'a t -> 'a or_error t
 (** [reify_error fut] turns a failing future into a non-failing
     one  that contain [Error (exn, bt)]. A non-failing future
     returning [x] is turned into [Ok x]
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val map : ?on:Runner.t -> f:('a -> 'b) -> 'a t -> 'b t
 (** [map ?on ~f fut] returns a new future [fut2] that resolves
@@ -109,7 +109,7 @@ val bind_reify_error : ?on:Runner.t -> f:('a or_error -> 'b t) -> 'a t -> 'b t
       and resolves like the future [f (Error (exn, bt))]
       if [fut] fails with [exn] and backtrace [bt].
     @param on if provided, [f] runs on the given runner
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val join : ?on:Runner.t -> 'a t t -> 'a t
 (** [join fut] is [fut >>= Fun.id]. It joins the inner layer of the future.

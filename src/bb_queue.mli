@@ -60,7 +60,7 @@ val transfer : 'a t -> 'a Queue.t -> unit
       with Bb_queue.Closed -> ()
     ]}
 
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val close : _ t -> unit
 (** Close the queue, meaning there won't be any more [push] allowed. *)
@@ -71,12 +71,12 @@ type 'a iter = ('a -> unit) -> unit
 val to_iter : 'a t -> 'a iter
 (** [to_iter q] returns an iterator over all items in the queue.
     This might not terminate if [q] is never closed.
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val to_gen : 'a t -> 'a gen
 (** [to_gen q] returns a generator from the queue.
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val to_seq : 'a t -> 'a Seq.t
 (** [to_gen q] returns a (transient) sequence from the queue.
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
