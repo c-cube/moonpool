@@ -31,7 +31,8 @@ let run ~psize ~n ~seq ~niter () : unit =
       )
     in
     Printf.printf "fib %d = %d\n%!" n res
-  done
+  done;
+  if not seq then Pool.shutdown (Lazy.force pool)
 
 let () =
   let n = ref 40 in
