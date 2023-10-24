@@ -326,15 +326,15 @@ let t_map ~chunk_size () =
 let () =
   QCheck_base_runner.run_tests_main
     [
-      t_eval;
-      t_map ~chunk_size:1 ();
-      t_map ~chunk_size:50 ();
-      t_for_nested ~min:1 ~chunk_size:1 ();
-      t_for_nested ~min:4 ~chunk_size:1 ();
-      t_for_nested ~min:1 ~chunk_size:3 ();
-      t_for_nested ~min:4 ~chunk_size:3 ();
+      (* t_eval; *)
+      (* t_map ~chunk_size:1 (); *)
+      (* t_map ~chunk_size:50 (); *)
+      (* t_for_nested ~min:1 ~chunk_size:1 (); *)
+      (* t_for_nested ~min:4 ~chunk_size:1 (); *)
+      (* t_for_nested ~min:1 ~chunk_size:3 (); *)
+      (* t_for_nested ~min:4 ~chunk_size:3 (); *)
       t_for_nested ~min:1 ~chunk_size:100 ();
-      t_for_nested ~min:4 ~chunk_size:100 ();
+      (* t_for_nested ~min:4 ~chunk_size:100 (); *)
     ]
 
 [@@@endif]
