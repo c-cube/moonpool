@@ -8,10 +8,13 @@
   t_props
   t_chan_train
   t_resource
+  t_unfair
   t_bounded_queue)
  (libraries
   moonpool
   qcheck-core
   qcheck-core.runner
   ;tracy-client.trace
+  unix
+  trace-tef
   trace))

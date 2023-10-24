@@ -20,6 +20,7 @@
   dune
   (either (>= 1.0))
   (trace :with-test)
+  (trace-tef :with-test)
   (qcheck-core (and :with-test (>= 0.19)))
   (odoc :with-doc)
   (mdx
