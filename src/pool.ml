@@ -66,6 +66,12 @@ exception Got_task of task
 
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
+(** How many times in a row do we try to read the next local task? *)
+let run_self_task_max_retry = 5
+
+(** How many times in a row do we try to do work-stealing? *)
+let steal_attempt_max_retry = 5
+
 let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
     ~around_task : unit =
   let (AT_pair (before_task, after_task)) = around_task in
@@ -90,8 +96,9 @@ let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
         pop_retries := 0;
         run_task task
       | None ->
+        Domain_.relax ();
         incr pop_retries;
-        if !pop_retries > 10 then continue := false
+        if !pop_retries > run_self_task_max_retry then continue := false
     done
   in
 
@@ -125,7 +132,7 @@ let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
         incr steal_attempts;
         Domain_.relax ();
 
-        if !steal_attempts > 10 then (
+        if !steal_attempts > steal_attempt_max_retry then (
           steal_attempts := 0;
           let task = Bb_queue.pop self.main_q in
           run_task task
