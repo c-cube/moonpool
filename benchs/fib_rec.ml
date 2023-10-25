@@ -18,8 +18,14 @@ let rec fib ~on x : int Fut.t =
 
 let () = assert (List.init 10 fib_direct = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 
-let run ~psize ~n ~seq ~niter () : unit =
-  let pool = lazy (Pool.create ~min:psize ()) in
+let create_pool ~psize ~kind () =
+  match kind with
+  | "simple" -> Simple_pool.create ~min:psize ()
+  | "pool" -> Pool.create ~min:psize ()
+  | _ -> assert false
+
+let run ~psize ~n ~seq ~niter ~kind () : unit =
+  let pool = lazy (create_pool ~kind ~psize ()) in
   for _i = 1 to niter do
     let res =
       if seq then (
@@ -39,6 +45,7 @@ let () =
   let psize = ref 16 in
   let seq = ref false in
   let niter = ref 3 in
+  let kind = ref "pool" in
   let opts =
     [
       "-psize", Arg.Set_int psize, " pool size";
@@ -46,9 +53,12 @@ let () =
       "-seq", Arg.Set seq, " sequential";
       "-niter", Arg.Set_int niter, " number of iterations";
       "-cutoff", Arg.Set_int cutoff, " cutoff for sequential computation";
+      ( "-kind",
+        Arg.Symbol ([ "pool"; "simple" ], ( := ) kind),
+        " pick pool implementation" );
     ]
     |> Arg.align
   in
 
   Arg.parse opts ignore "";
-  run ~psize:!psize ~n:!n ~seq:!seq ~niter:!niter ()
+  run ~psize:!psize ~n:!n ~seq:!seq ~niter:!niter ~kind:!kind ()

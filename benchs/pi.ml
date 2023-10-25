@@ -17,15 +17,23 @@ let run_sequential (num_steps : int) : float =
   pi
 
 (** Create a pool *)
-let with_pool f =
-  if !j = 0 then
-    Pool.with_ ~per_domain:1 f
-  else
-    Pool.with_ ~min:!j f
+let with_pool ~kind f =
+  match kind with
+  | "pool" ->
+    if !j = 0 then
+      Pool.with_ ~per_domain:1 f
+    else
+      Pool.with_ ~min:!j f
+  | "simple" ->
+    if !j = 0 then
+      Simple_pool.with_ ~per_domain:1 f
+    else
+      Simple_pool.with_ ~min:!j f
+  | _ -> assert false
 
 (** Run in parallel using {!Fut.for_} *)
-let run_par1 (num_steps : int) : float =
-  let@ pool = with_pool () in
+let run_par1 ~kind (num_steps : int) : float =
+  let@ pool = with_pool ~kind () in
 
   let num_tasks = Pool.size pool in
 
@@ -53,8 +61,8 @@ let run_par1 (num_steps : int) : float =
 
 [@@@ifge 5.0]
 
-let run_fork_join num_steps : float =
-  let@ pool = with_pool () in
+let run_fork_join ~kind num_steps : float =
+  let@ pool = with_pool ~kind () in
 
   let num_tasks = Pool.size pool in
 
@@ -90,9 +98,11 @@ type mode =
   | Fork_join
 
 let () =
+  let@ () = Trace_tef.with_setup () in
   let mode = ref Sequential in
   let n = ref 1000 in
   let time = ref false in
+  let kind = ref "pool" in
 
   let set_mode = function
     | "seq" -> mode := Sequential
@@ -109,6 +119,9 @@ let () =
         " mode of execution" );
       "-j", Arg.Set_int j, " number of threads";
       "-t", Arg.Set time, " printing timing";
+      ( "-kind",
+        Arg.Symbol ([ "pool"; "simple" ], ( := ) kind),
+        " pick pool implementation" );
     ]
     |> Arg.align
   in
@@ -118,8 +131,8 @@ let () =
   let res =
     match !mode with
     | Sequential -> run_sequential !n
-    | Par1 -> run_par1 !n
-    | Fork_join -> run_fork_join !n
+    | Par1 -> run_par1 ~kind:!kind !n
+    | Fork_join -> run_fork_join ~kind:!kind !n
   in
   let elapsed : float = Unix.gettimeofday () -. t_start in
 

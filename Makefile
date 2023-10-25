@@ -22,22 +22,24 @@ watch:
 DUNE_OPTS_BENCH?=--profile=release
 
 N?=40
-NITER?=3
+NITER?=2
 BENCH_PSIZE?=1,4,8,20
+BENCH_KIND?=simple,pool
 BENCH_CUTOFF?=20
 bench-fib:
 	@echo running for N=$(N)
 	dune build $(DUNE_OPTS_BENCH) benchs/fib_rec.exe
-	hyperfine -L psize $(BENCH_PSIZE) --warmup=1 \
-		'./_build/default/benchs/fib_rec.exe -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize={psize} -n $(N)'
+	hyperfine -L psize $(BENCH_PSIZE) -L kind $(BENCH_KIND) --warmup=1 \
+		'./_build/default/benchs/fib_rec.exe -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize={psize} -kind={kind} -n $(N)'
 
 PI_NSTEPS?=100_000_000
 PI_MODES?=seq,par1,forkjoin
+PI_KIND?=simple,pool
 bench-pi:
 	@echo running for N=$(PI_NSTEPS)
 	dune build $(DUNE_OPTS_BENCH) benchs/pi.exe
-	hyperfine -L mode $(PI_MODES) --warmup=1 \
-		'./_build/default/benchs/pi.exe -mode={mode} -n $(PI_NSTEPS)'
+	hyperfine -L mode $(PI_MODES) -L kind $(PI_KIND) --warmup=1 \
+		'./_build/default/benchs/pi.exe -mode={mode} -kind={kind} -n $(PI_NSTEPS)'
 
 .PHONY: test clean bench-fib bench-pi
 
