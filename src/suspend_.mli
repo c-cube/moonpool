@@ -50,6 +50,9 @@ val suspend : suspension_handler -> unit
 
 [@@@endif]
 
+val prepare_for_await : unit -> Dla_.t
+(** Our stub for DLA. Unstable. *)
+
 val with_suspend :
   run:(with_handler:bool -> task -> unit) -> (unit -> unit) -> unit
 (** [with_suspend ~run f] runs [f()] in an environment where [suspend]
