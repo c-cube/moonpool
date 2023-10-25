@@ -12,10 +12,10 @@ let with_pool ~kind () f =
 
 let () =
   add_test @@ fun ~kind ->
-  let@ pool = with_pool ~kind () in
   Q.Test.make ~name:"map then join_list"
     Q.(small_list small_int)
     (fun l ->
+      let@ pool = with_pool ~kind () in
       let l' = List.map (fun x -> Fut.spawn ~on:pool (fun () -> x + 1)) l in
       let l' = Fut.join_list l' |> Fut.wait_block_exn in
       if l' <> List.map succ l then Q.Test.fail_reportf "bad list";
@@ -23,10 +23,10 @@ let () =
 
 let () =
   add_test @@ fun ~kind ->
-  let@ pool = with_pool ~kind () in
   Q.Test.make ~name:"map bind"
     Q.(small_list small_int)
     (fun l ->
+      let@ pool = with_pool ~kind () in
       let open Fut.Infix_local in
       let l' =
         l
