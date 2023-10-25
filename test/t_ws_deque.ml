@@ -92,8 +92,35 @@ let t_heavy () =
   assert (ref_sum = sum);
   ()
 
+let t_many () =
+  print_endline "pushing many elements";
+  let d = D.create () in
+
+  let push_and_pop count =
+    for i = 1 to count do
+      (* if i mod 100_000 = 0 then Printf.printf "push %d\n%!" i; *)
+      D.push d i
+    done;
+    let n = ref 0 in
+
+    let continue = ref true in
+    while !continue do
+      match D.pop d with
+      | None -> continue := false
+      | Some _ -> incr n
+    done;
+    assert (!n = count)
+  in
+
+  push_and_pop 10_000;
+  push_and_pop 100_000;
+  push_and_pop 100_000_000;
+  print_endline "pushing many elements: ok";
+  ()
+
 let () =
   let@ () = Trace_tef.with_setup () in
   t_simple ();
   t_heavy ();
+  t_many ();
   ()
