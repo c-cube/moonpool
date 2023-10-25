@@ -11,4 +11,9 @@ module Fut = Fut
 module Lock = Lock
 module Pool = Pool
 module Runner = Runner
-module Suspend_ = Suspend_
+module Simple_pool = Simple_pool
+
+module Private = struct
+  module Ws_deque_ = Ws_deque_
+  module Suspend_ = Suspend_
+end

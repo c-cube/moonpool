@@ -1,7 +1,7 @@
 (library
  (public_name moonpool)
  (name moonpool)
- (private_modules d_pool_)
+ (private_modules d_pool_ dla_)
  (preprocess
   (action
    (run %{project_root}/src/cpp/cpp.exe %{input-file})))

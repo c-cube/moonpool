@@ -23,11 +23,6 @@ type thread_loop_wrapper =
       By default it just returns the same loop function but it can be used
       to install tracing, effect handlers, etc. *)
 
-val add_global_thread_loop_wrapper : thread_loop_wrapper -> unit
-(** [add_global_thread_loop_wrapper f] installs [f] to be installed in every new pool worker
-      thread, for all existing pools, and all new pools created with [create].
-      These wrappers accumulate: they all apply, but their order is not specified. *)
-
 type ('a, 'b) create_args =
   ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
