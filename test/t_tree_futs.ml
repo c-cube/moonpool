@@ -2,6 +2,11 @@ open Moonpool
 
 let ( let@ ) = ( @@ )
 
+let with_pool ~kind ~j () f =
+  match kind with
+  | `Simple_pool -> Simple_pool.with_ ~min:j () f
+  | `Pool -> Pool.with_ ~min:j () f
+
 type 'a tree =
   | Leaf of 'a
   | Node of 'a tree Fut.t * 'a tree Fut.t
@@ -61,15 +66,13 @@ let stat_thread () =
       done)
     ()
 
-let () =
-  (*
-  Tracy_client_trace.setup ();
-   *)
+let run_main ~kind () =
+  let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "run_main" in
   let start = Unix.gettimeofday () in
   let n = try int_of_string (Sys.getenv "N") with _ -> default_n in
   let j = try int_of_string (Sys.getenv "J") with _ -> 4 in
 
-  let pool = Pool.create ~min:j () in
+  let@ pool = with_pool ~kind ~j () in
   ignore (stat_thread () : Thread.t);
 
   Printf.printf "n=%d, j=%d\n%!" n j;
@@ -79,3 +82,11 @@ let () =
   assert (n1 = 1 lsl (n - 1));
   assert (n2 = 1 lsl (n - 1));
   ()
+
+let () =
+  let@ () = Trace_tef.with_setup () in
+  (*
+  Tracy_client_trace.setup ();
+   *)
+  run_main ~kind:`Pool ();
+  run_main ~kind:`Simple_pool ()

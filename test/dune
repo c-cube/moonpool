@@ -9,6 +9,7 @@
   t_chan_train
   t_resource
   t_unfair
+  t_ws_deque
   t_bounded_queue)
  (libraries
   moonpool
