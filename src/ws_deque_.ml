@@ -30,12 +30,13 @@ end = struct
     { log_size; arr = Array.make (1 lsl log_size) None }
 
   let[@inline] get (self : _ t) (i : int) : 'a =
-    match Array.unsafe_get self.arr (i mod size self) with
+    match Array.unsafe_get self.arr (i land ((1 lsl self.log_size) - 1)) with
     | Some x -> x
     | None -> assert false
 
   let[@inline] set (self : 'a t) (i : int) (x : 'a) : unit =
-    Array.unsafe_set self.arr (i mod size self) (Some x)
+    assert (i >= 0);
+    Array.unsafe_set self.arr (i land ((1 lsl self.log_size) - 1)) (Some x)
 
   let grow (self : _ t) ~bottom ~top : 'a t =
     let new_arr = create ~log_size:(self.log_size + 1) () in
@@ -73,6 +74,7 @@ let push (self : 'a t) (x : 'a) : unit =
      Only if it seems too big do we actually read [t]. *)
   let size_approx = b - t_approx in
   if size_approx >= CA.size self.arr - 1 then (
+    (* we need to read the actual value of [top], which might entail contention. *)
     let t = A.get self.top in
     self.top_cached <- t;
     let size = b - t in
