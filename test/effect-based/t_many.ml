@@ -2,9 +2,10 @@
 
 open Moonpool
 
-let pool = Pool.create ~min:4 ()
+let ( let@ ) = ( @@ )
 
 let run () =
+  let@ pool = Pool.with_ ~min:4 () in
   let t1 = Unix.gettimeofday () in
 
   let n = 200_000 in
