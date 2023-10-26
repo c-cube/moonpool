@@ -89,10 +89,10 @@ let push (self : 'a t) (x : 'a) : unit =
   CA.set !arr b x;
   A.set self.bottom (b + 1)
 
-let perhaps_shrink (self : _ t) arr ~top ~bottom : unit =
+let maybe_shrink_ (self : _ t) arr ~top ~bottom : unit =
   let size = bottom - top in
   let ca_size = CA.size arr in
-  if ca_size >= 256 && size <= ca_size / 3 then
+  if ca_size >= 256 && size < ca_size / 3 then
     A.set self.arr (CA.shrink arr ~top ~bottom)
 
 let pop (self : 'a t) : 'a option =
@@ -112,7 +112,7 @@ let pop (self : 'a t) : 'a option =
   ) else if size > 0 then (
     (* can pop without modifying [top] *)
     let x = CA.get arr b in
-    perhaps_shrink self arr ~bottom:b ~top:t;
+    maybe_shrink_ self arr ~bottom:b ~top:t;
     Some x
   ) else (
     assert (size = 0);
