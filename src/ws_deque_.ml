@@ -109,14 +109,17 @@ let pop (self : 'a t) : 'a option =
     let x = CA.get arr b in
     perhaps_shrink self ~bottom:b ~top:t;
     Some x
-  ) else if A.compare_and_set self.top t (t + 1) then (
-    (* exactly one slot, so we might be racing against stealers
-       to update [self.top] *)
-    let x = CA.get arr b in
-    A.set self.bottom (t + 1);
-    Some x
-  ) else
-    None
+  ) else (
+    assert (size = 0);
+    if A.compare_and_set self.top t (t + 1) then (
+      (* exactly one slot, so we might be racing against stealers
+         to update [self.top] *)
+      let x = CA.get arr b in
+      A.set self.bottom (t + 1);
+      Some x
+    ) else
+      None
+  )
 
 let steal (self : 'a t) : 'a option =
   (* read [top], but do not update [top_cached]
