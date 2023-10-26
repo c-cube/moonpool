@@ -5,7 +5,7 @@
 *)
 
 module Pool = Pool
-module Simple_pool = Simple_pool
+module Fifo_pool = Fifo_pool
 module Runner = Runner
 
 val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t

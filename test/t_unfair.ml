@@ -20,7 +20,7 @@ let run ~kind () =
     in
 
     match kind with
-    | `Simple -> Simple_pool.create ~min:3 ~on_init_thread ~around_task ()
+    | `Simple -> Fifo_pool.create ~min:3 ~on_init_thread ~around_task ()
     | `Pool -> Pool.create ~min:3 ~on_init_thread ~around_task ()
   in
 

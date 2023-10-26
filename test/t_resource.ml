@@ -4,7 +4,7 @@ let ( let@ ) = ( @@ )
 
 let with_pool ~kind () f =
   match kind with
-  | `Simple_pool -> Simple_pool.with_ ~min:4 ~per_domain:1 () f
+  | `Fifo_pool -> Fifo_pool.with_ ~min:4 ~per_domain:1 () f
   | `Pool -> Pool.with_ ~min:4 ~per_domain:1 () f
 
 (* test proper resource handling *)
@@ -24,4 +24,4 @@ let run ~kind () =
 
 let () =
   run ~kind:`Pool ();
-  run ~kind:`Simple_pool ()
+  run ~kind:`Fifo_pool ()

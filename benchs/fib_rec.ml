@@ -20,7 +20,7 @@ let () = assert (List.init 10 fib_direct = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 
 let create_pool ~psize ~kind () =
   match kind with
-  | "simple" -> Simple_pool.create ~min:psize ()
+  | "fifo" -> Fifo_pool.create ~min:psize ()
   | "pool" -> Pool.create ~min:psize ()
   | _ -> assert false
 
@@ -54,7 +54,7 @@ let () =
       "-niter", Arg.Set_int niter, " number of iterations";
       "-cutoff", Arg.Set_int cutoff, " cutoff for sequential computation";
       ( "-kind",
-        Arg.Symbol ([ "pool"; "simple" ], ( := ) kind),
+        Arg.Symbol ([ "pool"; "fifo" ], ( := ) kind),
         " pick pool implementation" );
     ]
     |> Arg.align

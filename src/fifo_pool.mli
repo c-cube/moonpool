@@ -1,8 +1,16 @@
-(** A simple thread pool.
+(** A simple thread pool in FIFO order.
 
-    This uses a single blocking queue to manage tasks, it's very
-    simple and reliable. Like {!Pool} it distributes a fixed number
-    of workers over several domains.
+    FIFO: first-in, first-out. Basically tasks are put into a queue,
+    and worker threads pull them out of the queue at the other end.
+
+    Since this uses a single blocking queue to manage tasks, it's very
+    simple and reliable. The number of worker threads is fixed, but
+    they are spread over several domains to enable parallelism.
+
+    This can be useful for latency-sensitive applications (e.g. as a
+    pool of workers for network servers). Work-stealing pools might
+    have higher throughput but they're very unfair to some tasks; by
+    contrast, here, older tasks have priority over younger tasks.
 
     @since NEXT_RELEASE *)
 

@@ -24,7 +24,7 @@ DUNE_OPTS_BENCH?=--profile=release
 N?=40
 NITER?=2
 BENCH_PSIZE?=1,4,8,20
-BENCH_KIND?=simple,pool
+BENCH_KIND?=fifo,pool
 BENCH_CUTOFF?=20
 bench-fib:
 	@echo running for N=$(N)
@@ -34,7 +34,7 @@ bench-fib:
 
 PI_NSTEPS?=100_000_000
 PI_MODES?=seq,par1,forkjoin
-PI_KIND?=simple,pool
+PI_KIND?=fifo,pool
 bench-pi:
 	@echo running for N=$(PI_NSTEPS)
 	dune build $(DUNE_OPTS_BENCH) benchs/pi.exe

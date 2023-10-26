@@ -24,11 +24,11 @@ let with_pool ~kind f =
       Pool.with_ ~per_domain:1 f
     else
       Pool.with_ ~min:!j f
-  | "simple" ->
+  | "fifo" ->
     if !j = 0 then
-      Simple_pool.with_ ~per_domain:1 f
+      Fifo_pool.with_ ~per_domain:1 f
     else
-      Simple_pool.with_ ~min:!j f
+      Fifo_pool.with_ ~min:!j f
   | _ -> assert false
 
 (** Run in parallel using {!Fut.for_} *)
@@ -120,7 +120,7 @@ let () =
       "-j", Arg.Set_int j, " number of threads";
       "-t", Arg.Set time, " printing timing";
       ( "-kind",
-        Arg.Symbol ([ "pool"; "simple" ], ( := ) kind),
+        Arg.Symbol ([ "pool"; "fifo" ], ( := ) kind),
         " pick pool implementation" );
     ]
     |> Arg.align
