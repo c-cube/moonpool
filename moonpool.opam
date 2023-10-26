@@ -5,7 +5,7 @@ synopsis: "Pools of threads supported by a pool of domains"
 maintainer: ["Simon Cruanes"]
 authors: ["Simon Cruanes"]
 license: "MIT"
-tags: ["thread" "pool" "domain"]
+tags: ["thread" "pool" "domain" "futures" "fork-join"]
 homepage: "https://github.com/c-cube/moonpool"
 bug-reports: "https://github.com/c-cube/moonpool/issues"
 depends: [

@@ -30,6 +30,6 @@
  (depopts
    (domain-local-await (>= 0.2)))
  (tags
-  (thread pool domain)))
+  (thread pool domain futures fork-join)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
