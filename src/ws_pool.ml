@@ -18,7 +18,7 @@ type mut_cond = {
 }
 
 type state = {
-  active: bool Atomic.t;  (** Becomes [false] when the pool is shutdown. *)
+  active: bool A.t;  (** Becomes [false] when the pool is shutdown. *)
   workers: worker_state array;  (** Fixed set of workers. *)
   main_q: task Queue.t;  (** Main queue for tasks coming from the outside *)
   mc: mut_cond;  (** Used to block on [main_q] *)
