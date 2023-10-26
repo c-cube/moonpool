@@ -12,7 +12,8 @@ let[@inline] size_ (self : state) = Array.length self.threads
 let[@inline] num_tasks_ (self : state) : int = Bb_queue.size self.q
 
 (** Run [task] as is, on the pool. *)
-let run_direct_ (self : state) (task : task) : unit = Bb_queue.push self.q task
+let run_direct_ (self : state) (task : task) : unit =
+  try Bb_queue.push self.q task with Bb_queue.Closed -> raise Shutdown
 
 let rec run_async_ (self : state) (task : task) : unit =
   let task' () =
