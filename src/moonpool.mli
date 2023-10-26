@@ -1,7 +1,12 @@
 (** Moonpool
 
   A pool within a bigger pool (ie the ocean). Here, we're talking about
-  pools of [Thread.t] which live within a fixed pool of [Domain.t].
+  pools of [Thread.t] that are dispatched over several [Domain.t] to
+  enable parallelism.
+
+  We provide several implementations of pools
+  with distinct scheduling strategies, alongside some concurrency
+  primitives such as guarding locks ({!Lock.t}) and futures ({!Fut.t}).
 *)
 
 module Pool = Pool

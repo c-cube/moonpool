@@ -1,17 +1,13 @@
-(** Abstract runner.
+(** Interface for runners.
 
-    This provides an abstraction for running tasks in the background.
+    This provides an abstraction for running tasks in the background,
+    which is implemented by various thread pools.
     @since 0.3
 *)
 
 type task = unit -> unit
 
-type t = private {
-  run_async: task -> unit;
-  shutdown: wait:bool -> unit -> unit;
-  size: unit -> int;
-  num_tasks: unit -> int;
-}
+type t
 (** A runner.
 
     If a runner is no longer needed, {!shutdown} can be used to signal all
@@ -50,8 +46,11 @@ val run_wait_block : t -> (unit -> 'a) -> 'a
     and returns its result. If [f()] raises an exception, then [run_wait_block pool f]
     will raise it as well.
 
-    {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}). *)
+    {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}
+      about the required discipline to avoid deadlocks). *)
 
+(** This module is specifically intended for users who implement their
+    own runners. Regular users of Moonpool should not need to look at it. *)
 module For_runner_implementors : sig
   val create :
     size:(unit -> int) ->
