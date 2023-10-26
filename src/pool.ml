@@ -75,21 +75,24 @@ let run_direct_ (self : state) (w : worker_state option) (task : task) : unit =
       raise Shutdown
 
 let run_async_ (self : state) (task : task) : unit =
-  (* stay on current worker if possible *)
-  let w = find_current_worker_ self in
-
-  let rec run_async_rec_ (task : task) =
+  (* run [task] inside a suspension handler *)
+  let rec run_async_in_suspend_rec_ (task : task) =
     let task_with_suspend_ () =
       (* run [f()] and handle [suspend] in it *)
       Suspend_.with_suspend task ~run:(fun ~with_handler task' ->
           if with_handler then
-            run_async_rec_ task'
-          else
-            run_direct_ self w task')
+            run_async_in_suspend_rec_ task'
+          else (
+            let w = find_current_worker_ self in
+            run_direct_ self w task'
+          ))
     in
+
+    (* schedule on current worker, if run from a worker *)
+    let w = find_current_worker_ self in
     run_direct_ self w task_with_suspend_
   in
-  run_async_rec_ task
+  run_async_in_suspend_rec_ task
 
 let run = run_async
 
@@ -100,6 +103,7 @@ type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 (** How many times in a row do we try to do work-stealing? *)
 let steal_attempt_max_retry = 3
 
+(** Main loop for a worker thread. *)
 let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
     ~around_task : unit =
   let (AT_pair (before_task, after_task)) = around_task in
@@ -142,22 +146,6 @@ let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
     assert (w != w');
     WSQ.steal w'.q
   in
-
-  (*
-    try
-      for _retry = 1 to 1 do
-        for i = 0 to Array.length self.workers - 1 do
-          let w' = self.workers.(i) in
-          if w != w' then (
-            match WSQ.steal w'.q with
-            | None -> ()
-            | Some task -> raise_notrace (Got_task task)
-          )
-        done
-      done;
-      None
-    with Got_task task -> Some task
-          *)
 
   (* try to steal work multiple times *)
   let try_to_steal_work_loop () : bool =

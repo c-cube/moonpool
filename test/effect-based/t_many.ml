@@ -4,8 +4,7 @@ open Moonpool
 
 let ( let@ ) = ( @@ )
 
-let run () =
-  let@ pool = Pool.with_ ~min:4 () in
+let run ~pool () =
   let t1 = Unix.gettimeofday () in
 
   let n = 200_000 in
@@ -15,7 +14,7 @@ let run () =
     Fut.spawn ~on:pool (fun () ->
         List.fold_left
           (fun n x ->
-            let _res = Fut.await x in
+            let _res = Sys.opaque_identity (Fut.await x) in
             n + 1)
           0 l)
   in
@@ -29,6 +28,23 @@ let run () =
   Printf.printf "in %.4fs\n%!" (Unix.gettimeofday () -. t1);
   assert (List.for_all (fun s -> s = n) lens)
 
-let () = run ()
+let () =
+  (print_endline "with fifo";
+   let@ pool = Fifo_pool.with_ ~min:4 () in
+   run ~pool ());
+
+  (print_endline "with WS(1)";
+   let@ pool = Pool.with_ ~min:1 () in
+   run ~pool ());
+
+  (print_endline "with WS(2)";
+   let@ pool = Pool.with_ ~min:2 () in
+   run ~pool ());
+
+  (print_endline "with WS(4)";
+   let@ pool = Pool.with_ ~min:4 () in
+   run ~pool ());
+
+  ()
 
 [@@@endif]
