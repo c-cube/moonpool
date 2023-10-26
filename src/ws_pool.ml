@@ -4,9 +4,6 @@ include Runner
 
 let ( let@ ) = ( @@ )
 
-type thread_loop_wrapper =
-  thread:Thread.t -> pool:t -> (unit -> unit) -> unit -> unit
-
 type worker_state = {
   mutable thread: Thread.t;
   q: task WSQ.t;  (** Work stealing queue *)
@@ -227,7 +224,6 @@ let shutdown_ ~wait (self : state) : unit =
 type ('a, 'b) create_args =
   ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
-  ?thread_wrappers:thread_loop_wrapper list ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
   ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
   ?min:int ->
@@ -236,9 +232,8 @@ type ('a, 'b) create_args =
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
 let create ?(on_init_thread = default_thread_init_exit_)
-    ?(on_exit_thread = default_thread_init_exit_) ?(thread_wrappers = [])
-    ?(on_exn = fun _ _ -> ()) ?around_task ?min:(min_threads = 1)
-    ?(per_domain = 0) () : t =
+    ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
+    ?around_task ?min:(min_threads = 1) ?(per_domain = 0) () : t =
   (* wrapper *)
   let around_task =
     match around_task with
@@ -294,16 +289,9 @@ let create ?(on_init_thread = default_thread_init_exit_)
       on_init_thread ~dom_id:dom_idx ~t_id ();
 
       let run () = worker_thread_ pool runner w ~on_exn ~around_task in
-      (* the actual worker loop is [worker_thread_], with all
-         wrappers for this pool and for all pools (global_thread_wrappers_) *)
-      let run' =
-        List.fold_left
-          (fun run f -> f ~thread ~pool:runner run)
-          run thread_wrappers
-      in
 
       (* now run the main loop *)
-      Fun.protect run' ~finally:(fun () ->
+      Fun.protect run ~finally:(fun () ->
           (* on termination, decrease refcount of underlying domain *)
           D_pool_.decr_on dom_idx);
       on_exit_thread ~dom_id:dom_idx ~t_id ()
@@ -335,11 +323,11 @@ let create ?(on_init_thread = default_thread_init_exit_)
 
   runner
 
-let with_ ?on_init_thread ?on_exit_thread ?thread_wrappers ?on_exn ?around_task
-    ?min ?per_domain () f =
+let with_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?min ?per_domain
+    () f =
   let pool =
-    create ?on_init_thread ?on_exit_thread ?thread_wrappers ?on_exn ?around_task
-      ?min ?per_domain ()
+    create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?min ?per_domain
+      ()
   in
   let@ () = Fun.protect ~finally:(fun () -> shutdown pool) in
   f pool

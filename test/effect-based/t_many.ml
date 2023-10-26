@@ -34,15 +34,15 @@ let () =
    run ~pool ());
 
   (print_endline "with WS(1)";
-   let@ pool = Pool.with_ ~min:1 () in
+   let@ pool = Ws_pool.with_ ~min:1 () in
    run ~pool ());
 
   (print_endline "with WS(2)";
-   let@ pool = Pool.with_ ~min:2 () in
+   let@ pool = Ws_pool.with_ ~min:2 () in
    run ~pool ());
 
   (print_endline "with WS(4)";
-   let@ pool = Pool.with_ ~min:4 () in
+   let@ pool = Ws_pool.with_ ~min:4 () in
    run ~pool ());
 
   ()

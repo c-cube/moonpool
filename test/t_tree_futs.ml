@@ -5,7 +5,7 @@ let ( let@ ) = ( @@ )
 let with_pool ~kind ~j () f =
   match kind with
   | `Fifo_pool -> Fifo_pool.with_ ~min:j () f
-  | `Pool -> Pool.with_ ~min:j () f
+  | `Ws_pool -> Ws_pool.with_ ~min:j () f
 
 type 'a tree =
   | Leaf of 'a
@@ -88,5 +88,5 @@ let () =
   (*
   Tracy_client_trace.setup ();
    *)
-  run_main ~kind:`Pool ();
+  run_main ~kind:`Ws_pool ();
   run_main ~kind:`Fifo_pool ()

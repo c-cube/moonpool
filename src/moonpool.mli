@@ -9,9 +9,13 @@
   primitives such as guarding locks ({!Lock.t}) and futures ({!Fut.t}).
 *)
 
-module Pool = Pool
+module Ws_pool = Ws_pool
 module Fifo_pool = Fifo_pool
 module Runner = Runner
+
+module Pool = Fifo_pool
+[@@deprecated "use Fifo_pool or Ws_pool"]
+(** Default pool. Please explicitly pick an implementation instead. *)
 
 val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
 (** Similar to {!Thread.create}, but it picks a background domain at random

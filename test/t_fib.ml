@@ -5,7 +5,7 @@ let ( let@ ) = ( @@ )
 let with_pool ~kind () f =
   match kind with
   | `Fifo_pool -> Fifo_pool.with_ ~min:4 () f
-  | `Pool -> Pool.with_ ~min:4 () f
+  | `Ws_pool -> Ws_pool.with_ ~min:4 () f
 
 let rec fib x =
   if x <= 1 then
@@ -18,7 +18,7 @@ let () = assert (List.init 10 fib = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 let run_test ~pool () =
   let fibs = Array.init 30 (fun n -> Fut.spawn ~on:pool (fun () -> fib n)) in
   let res = Fut.join_array fibs |> Fut.wait_block in
-  Pool.shutdown pool;
+  Ws_pool.shutdown pool;
 
   assert (
     res
@@ -74,5 +74,5 @@ let run ~kind () =
   Array.iter Thread.join jobs
 
 let () =
-  run ~kind:`Pool ();
+  run ~kind:`Ws_pool ();
   run ~kind:`Fifo_pool ()

@@ -97,7 +97,7 @@ let spawn ~on f : _ t =
     fulfill promise res
   in
 
-  Pool.run_async on task;
+  Runner.run_async on task;
   fut
 
 let reify_error (f : 'a t) : 'a or_error t =
@@ -131,7 +131,7 @@ let map ?on ~f fut : _ t =
 
         match on with
         | None -> map_and_fulfill ()
-        | Some on -> Pool.run_async on map_and_fulfill);
+        | Some on -> Runner.run_async on map_and_fulfill);
 
     fut2
 
@@ -158,14 +158,14 @@ let bind ?on ~f fut : _ t =
     | None -> apply_f_to_res r
     | Some on ->
       let fut2, promise = make () in
-      Pool.run_async on (bind_and_fulfill r promise);
+      Runner.run_async on (bind_and_fulfill r promise);
       fut2)
   | None ->
     let fut2, promise = make () in
     on_result fut (fun r ->
         match on with
         | None -> bind_and_fulfill r promise ()
-        | Some on -> Pool.run_async on (bind_and_fulfill r promise));
+        | Some on -> Runner.run_async on (bind_and_fulfill r promise));
 
     fut2
 
@@ -403,7 +403,7 @@ module type INFIX = sig
 end
 
 module Infix_ (X : sig
-  val pool : Pool.t option
+  val pool : Runner.t option
 end) : INFIX = struct
   let[@inline] ( >|= ) x f = map ?on:X.pool ~f x
   let[@inline] ( >>= ) x f = bind ?on:X.pool ~f x
@@ -420,7 +420,7 @@ end)
 include Infix_local
 
 module Infix (X : sig
-  val pool : Pool.t
+  val pool : Runner.t
 end) =
 Infix_ (struct
   let pool = Some X.pool

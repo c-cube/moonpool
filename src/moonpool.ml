@@ -9,7 +9,8 @@ module Chan = Chan
 module Fork_join = Fork_join
 module Fut = Fut
 module Lock = Lock
-module Pool = Pool
+module Pool = Fifo_pool
+module Ws_pool = Ws_pool
 module Runner = Runner
 module Fifo_pool = Fifo_pool
 

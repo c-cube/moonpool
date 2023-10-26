@@ -21,7 +21,7 @@ let () = assert (List.init 10 fib_direct = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 let create_pool ~psize ~kind () =
   match kind with
   | "fifo" -> Fifo_pool.create ~min:psize ()
-  | "pool" -> Pool.create ~min:psize ()
+  | "pool" -> Ws_pool.create ~min:psize ()
   | _ -> assert false
 
 let run ~psize ~n ~seq ~niter ~kind () : unit =
@@ -38,7 +38,7 @@ let run ~psize ~n ~seq ~niter ~kind () : unit =
     in
     Printf.printf "fib %d = %d\n%!" n res
   done;
-  if not seq then Pool.shutdown (Lazy.force pool)
+  if not seq then Ws_pool.shutdown (Lazy.force pool)
 
 let () =
   let n = ref 40 in

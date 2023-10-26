@@ -8,7 +8,7 @@ let add_test t = tests := t :: !tests
 let with_pool ~kind () f =
   match kind with
   | `Fifo_pool -> Fifo_pool.with_ ~min:4 ~per_domain:1 () f
-  | `Pool -> Pool.with_ ~min:4 ~per_domain:1 () f
+  | `Ws_pool -> Ws_pool.with_ ~min:4 ~per_domain:1 () f
 
 let () =
   add_test @@ fun ~kind ->
@@ -48,7 +48,7 @@ let () =
 
 let () =
   let tests =
-    List.map (fun t -> [ t ~kind:`Fifo_pool; t ~kind:`Pool ]) !tests
+    List.map (fun t -> [ t ~kind:`Fifo_pool; t ~kind:`Ws_pool ]) !tests
     |> List.flatten
   in
   QCheck_base_runner.run_tests_main tests

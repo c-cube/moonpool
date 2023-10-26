@@ -22,13 +22,13 @@ let rec fib x : int =
   )
 
 let fib_40 : int =
-  let@ pool = Pool.with_ ~min:8 () in
+  let@ pool = Ws_pool.with_ ~min:8 () in
   Fut.spawn ~on:pool (fun () -> fib 40) |> Fut.wait_block_exn
 
 let () = Printf.printf "fib 40 = %d\n%!" fib_40
 
 let run_test () =
-  let@ pool = Pool.with_ ~min:8 () in
+  let@ pool = Ws_pool.with_ ~min:8 () in
 
   let fut =
     Fut.spawn ~on:pool (fun () ->
@@ -37,7 +37,7 @@ let run_test () =
   in
 
   let res = Fut.wait_block_exn fut in
-  Pool.shutdown pool;
+  Ws_pool.shutdown pool;
 
   assert (res = (Array.make 3 fib_40 |> Array.to_list))
 

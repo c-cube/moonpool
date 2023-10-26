@@ -24,20 +24,20 @@ In addition, some concurrency and parallelism primitives are provided:
 
 ## Usage
 
-The user can create several thread pools. These pools use regular posix threads,
-but the threads are spread across multiple domains (on OCaml 5), which enables
-parallelism.
+The user can create several thread pools (implementing the interface `Runner.t`).
+These pools use regular posix threads, but the threads are spread across
+multiple domains (on OCaml 5), which enables parallelism.
 
-The function `Pool.run_async pool task` runs `task()` on one of the workers
-of `pool`, as soon as one is available. No result is returned.
+The function `Runner.run_async pool task` schedules `task()` to run on one of
+the workers of `pool`, as soon as one is available. No result is returned by `run_async`.
 
 ```ocaml
 # #require "threads";;
-# let pool = Moonpool.Pool.create ~min:4 ();;
+# let pool = Moonpool.Fifo_pool.create ~min:4 ();;
 val pool : Moonpool.Runner.t = <abstr>
 
 # begin
-   Moonpool.Pool.run_async pool
+   Moonpool.Runner.run_async pool
     (fun () ->
         Thread.delay 0.1;
         print_endline "running from the pool");
@@ -49,11 +49,13 @@ running from the pool
 - : unit = ()
 ```
 
-To wait until the task is done, you can use `Pool.run_wait_block` instead:
+To wait until the task is done, you can use `Runner.run_wait_block`[^1] instead:
+
+[^1]: beware of deadlock! See documentation for more details.
 
 ```ocaml
 # begin
-   Moonpool.Pool.run_wait_block pool
+   Moonpool.Runner.run_wait_block pool
     (fun () ->
         Thread.delay 0.1;
         print_endline "running from the pool");
@@ -155,7 +157,7 @@ val expected_sum : int = 5050
 
 On OCaml 5, again using effect handlers, the module `Fork_join`
 implements the [fork-join model](https://en.wikipedia.org/wiki/Fork%E2%80%93join_model).
-It must run on a pool (using [Pool.run] or inside a future via [Future.spawn]).
+It must run on a pool (using [Runner.run_async] or inside a future via [Fut.spawn]).
 
 ```ocaml
 # let rec select_sort arr i len =
@@ -257,7 +259,7 @@ This works for OCaml >= 4.08.
     the same pool, too — this is useful for threads blocking on IO).
 
     A useful analogy is that each domain is a bit like a CPU core, and `Thread.t` is a logical thread running on a core.
-    Multiple threads have to share a single core and do not run in parallel on it[^1].
+    Multiple threads have to share a single core and do not run in parallel on it[^2].
     We can therefore build pools that spread their worker threads on multiple cores to enable parallelism within each pool.
 
 TODO: actually use https://github.com/haesbaert/ocaml-processor to pin domains to cores,
@@ -273,4 +275,4 @@ MIT license.
 $ opam install moonpool
 ```
 
-[^1]: let's not talk about hyperthreading.
+[^2]: let's not talk about hyperthreading.

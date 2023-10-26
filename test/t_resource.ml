@@ -5,7 +5,7 @@ let ( let@ ) = ( @@ )
 let with_pool ~kind () f =
   match kind with
   | `Fifo_pool -> Fifo_pool.with_ ~min:4 ~per_domain:1 () f
-  | `Pool -> Pool.with_ ~min:4 ~per_domain:1 () f
+  | `Ws_pool -> Ws_pool.with_ ~min:4 ~per_domain:1 () f
 
 (* test proper resource handling *)
 let run ~kind () =
@@ -18,10 +18,10 @@ let run ~kind () =
 
     (* allocate a new pool at each iteration *)
     let@ p = with_pool ~kind () in
-    Pool.run_wait_block p (fun () -> Atomic.incr a)
+    Ws_pool.run_wait_block p (fun () -> Atomic.incr a)
   done;
   assert (Atomic.get a = 1_000)
 
 let () =
-  run ~kind:`Pool ();
+  run ~kind:`Ws_pool ();
   run ~kind:`Fifo_pool ()

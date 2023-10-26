@@ -21,9 +21,9 @@ let with_pool ~kind f =
   match kind with
   | "pool" ->
     if !j = 0 then
-      Pool.with_ ~per_domain:1 f
+      Ws_pool.with_ ~per_domain:1 f
     else
-      Pool.with_ ~min:!j f
+      Ws_pool.with_ ~min:!j f
   | "fifo" ->
     if !j = 0 then
       Fifo_pool.with_ ~per_domain:1 f
@@ -35,7 +35,7 @@ let with_pool ~kind f =
 let run_par1 ~kind (num_steps : int) : float =
   let@ pool = with_pool ~kind () in
 
-  let num_tasks = Pool.size pool in
+  let num_tasks = Ws_pool.size pool in
 
   let step = 1. /. float num_steps in
   let global_sum = Lock.create 0. in
@@ -64,12 +64,12 @@ let run_par1 ~kind (num_steps : int) : float =
 let run_fork_join ~kind num_steps : float =
   let@ pool = with_pool ~kind () in
 
-  let num_tasks = Pool.size pool in
+  let num_tasks = Ws_pool.size pool in
 
   let step = 1. /. float num_steps in
   let global_sum = Lock.create 0. in
 
-  Pool.run_wait_block pool (fun () ->
+  Ws_pool.run_wait_block pool (fun () ->
       Fork_join.for_
         ~chunk_size:(3 + (num_steps / num_tasks))
         num_steps
