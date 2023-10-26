@@ -97,11 +97,8 @@ exception Got_task of task
 
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
-(** How many times in a row do we try to read the next local task? *)
-let run_self_task_max_retry = 5
-
 (** How many times in a row do we try to do work-stealing? *)
-let steal_attempt_max_retry = 7
+let steal_attempt_max_retry = 3
 
 let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
     ~around_task : unit =
@@ -120,16 +117,10 @@ let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
 
   let run_self_tasks_ () =
     let continue = ref true in
-    let pop_retries = ref 0 in
     while !continue do
       match WSQ.pop w.q with
-      | Some task ->
-        pop_retries := 0;
-        run_task task
-      | None ->
-        Domain_.relax ();
-        incr pop_retries;
-        if !pop_retries > run_self_task_max_retry then continue := false
+      | Some task -> run_task task
+      | None -> continue := false
     done
   in
 
