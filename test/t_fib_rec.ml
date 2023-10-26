@@ -30,9 +30,8 @@ let fib_40 : int lazy_t =
      Pool.shutdown pool;
      r)
 
-let run_test () =
+let run_test ~pool () =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "run-test" in
-  let@ pool = Pool.with_ ~min:8 () in
 
   let (lazy fib_40) = fib_40 in
 
@@ -47,6 +46,16 @@ let run_test () =
   let res = Fut.join_array fibs |> Fut.wait_block in
 
   assert (res = Ok (Array.make n_fibs fib_40))
+
+let run_test_size ~size () =
+  Printf.printf "test pool(%d)\n%!" size;
+  let@ pool = Pool.with_ ~min:size () in
+  run_test ~pool ()
+
+let run_test_fifo ~size () =
+  Printf.printf "test fifo(%d)\n%!" size;
+  let@ pool = Fifo_pool.with_ ~min:size () in
+  run_test ~pool ()
 
 let setup_counter () =
   if Trace.enabled () then
@@ -66,10 +75,11 @@ let () =
 
   let (lazy fib_40) = fib_40 in
   Printf.printf "fib 40 = %d\n%!" fib_40;
-  for _i = 1 to 2 do
-    run_test ()
-  done;
+
+  run_test_fifo ~size:4 ();
+
+  List.iter (fun size -> run_test_size ~size ()) [ 1; 2; 4; 8 ];
 
   (* now make sure we can do this with multiple pools in parallel *)
-  let jobs = Array.init 4 (fun _ -> Thread.create run_test ()) in
+  let jobs = Array.init 4 (fun _ -> Thread.create (run_test_size ~size:4) ()) in
   Array.iter Thread.join jobs
