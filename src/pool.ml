@@ -67,7 +67,9 @@ let run_direct_ (self : state) (w : worker_state option) (task : task) : unit =
       if was_empty then Condition.broadcast self.mc.cond;
       Mutex.unlock self.mc.mutex
     ) else
-      raise Bb_queue.Closed
+      (* notify the caller that scheduling tasks is no
+         longer permitted *)
+      raise Shutdown
 
 let run_async_ (self : state) (task : task) : unit =
   (* stay on current worker if possible *)
@@ -185,7 +187,7 @@ let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
           raise_notrace (Got_task task)
       done;
       Mutex.unlock self.mc.mutex;
-      raise Bb_queue.Closed
+      raise Shutdown
     with Got_task t -> t
   in
 
@@ -199,7 +201,7 @@ let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
            run_task task
          )
        done
-     with Bb_queue.Closed -> ());
+     with Shutdown -> ());
     run_self_tasks_ ()
   in
 

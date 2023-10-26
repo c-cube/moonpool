@@ -34,8 +34,6 @@ type ('a, 'b) create_args =
   'a
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
-exception Closed
-
 val create : (unit -> t, _) create_args
 (** [create ()] makes a new thread pool.
      @param on_init_thread called at the beginning of each new thread
