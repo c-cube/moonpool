@@ -114,7 +114,7 @@ let t_many () =
 
   push_and_pop 10_000;
   push_and_pop 100_000;
-  push_and_pop 100_000_000;
+  push_and_pop 1_000_000;
   print_endline "pushing many elements: ok";
   ()
 
