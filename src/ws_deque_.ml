@@ -35,7 +35,6 @@ end = struct
     | None -> assert false
 
   let[@inline] set (self : 'a t) (i : int) (x : 'a) : unit =
-    assert (i >= 0);
     Array.unsafe_set self.arr (i land ((1 lsl self.log_size) - 1)) (Some x)
 
   let grow (self : _ t) ~bottom ~top : 'a t =
@@ -61,8 +60,11 @@ type 'a t = {
 }
 
 let create () : _ t =
-  let arr = CA.create ~log_size:4 () in
-  { top = A.make 0; top_cached = 0; bottom = A.make 0; arr = A.make arr }
+  let top = A.make 0 in
+  let arr = A.make @@ CA.create ~log_size:4 () in
+  (* allocate far from top to avoid false sharing *)
+  let bottom = A.make 0 in
+  { top; top_cached = 0; bottom; arr }
 
 let[@inline] size (self : _ t) : int = max 0 (A.get self.bottom - A.get self.top)
 
