@@ -1,5 +1,3 @@
-module A = Atomic_
-
 type suspension = (unit, exn * Printexc.raw_backtrace) result -> unit
 type task = unit -> unit
 
@@ -8,6 +6,8 @@ type suspension_handler = { handle: run:(task -> unit) -> suspension -> unit }
 
 [@@@ifge 5.0]
 [@@@ocaml.alert "-unstable"]
+
+module A = Atomic_
 
 type _ Effect.t += Suspend : suspension_handler -> unit Effect.t
 
