@@ -51,8 +51,12 @@ PI_KIND?=fifo,pool
 bench-pi:
 	@echo running for N=$(PI_NSTEPS)
 	dune build $(DUNE_OPTS_BENCH) benchs/pi.exe
-	hyperfine -L mode $(PI_MODES) -L kind $(PI_KIND) --warmup=1 \
-		'./_build/default/benchs/pi.exe -mode={mode} -kind={kind} -n $(PI_NSTEPS)'
+	hyperfine --warmup=1 \
+		'./_build/default/benchs/pi.exe -n $(PI_NSTEPS) -mode=seq' \
+		'./_build/default/benchs/pi.exe -n $(PI_NSTEPS) -j 8 -mode par1 -kind=pool' \
+		'./_build/default/benchs/pi.exe -n $(PI_NSTEPS) -j 8 -mode par1 -kind=fifo' \
+		'./_build/default/benchs/pi.exe -n $(PI_NSTEPS) -j 16 -mode forkjoin -kind=pool' \
+		'./_build/default/benchs/pi.exe -n $(PI_NSTEPS) -j 20 -mode forkjoin -kind=pool'
 
 .PHONY: test clean bench-fib bench-pi
 
