@@ -1,5 +1,7 @@
 (* see: https://discuss.ocaml.org/t/a-hack-to-implement-efficient-tls-thread-local-storage/13264 *)
 
+module A = Atomic_
+
 (* sanity check *)
 let () = assert (Obj.field (Obj.repr (Thread.self ())) 1 = Obj.repr ())
 
@@ -11,13 +13,13 @@ type 'a key = {
 }
 
 (** Counter used to allocate new keys *)
-let counter = Atomic.make 0
+let counter = A.make 0
 
 (** Value used to detect a TLS slot that was not initialized yet *)
 let[@inline] sentinel_value_for_uninit_tls_ () : Obj.t = Obj.repr counter
 
 let new_key compute : _ key =
-  let index = Atomic.fetch_and_add counter 1 in
+  let index = A.fetch_and_add counter 1 in
   { index; compute }
 
 type thread_internal_state = {
