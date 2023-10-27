@@ -30,6 +30,8 @@ bench-fib:
 	@echo running for N=$(N)
 	dune build $(DUNE_OPTS_BENCH) benchs/fib_rec.exe
 	hyperfine -L psize $(BENCH_PSIZE) -L kind $(BENCH_KIND) --warmup=1 \
+		'./_build/default/benchs/fib_rec.exe -seq -cutoff $(BENCH_CUTOFF) -niter $(NITER) -n $(N)' \
+		'./_build/default/benchs/fib_rec.exe -dl -cutoff $(BENCH_CUTOFF) -niter $(NITER) -n $(N)' \
 		'./_build/default/benchs/fib_rec.exe -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize={psize} -kind={kind} -n $(N)'
 
 PI_NSTEPS?=100_000_000
