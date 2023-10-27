@@ -1,5 +1,6 @@
 module WSQ = Ws_deque_
 module A = Atomic_
+module TLS = Thread_local_storage
 include Runner
 
 let ( let@ ) = ( @@ )
@@ -36,25 +37,20 @@ let num_tasks_ (self : state) : int =
   Array.iter (fun w -> n := !n + WSQ.size w.q) self.workers;
   !n
 
-exception Got_worker of worker_state
+(** TLS, used by worker to store their specific state
+    and be able to retrieve it from tasks when we schedule new
+    sub-tasks. *)
+let k_worker_state : worker_state option ref TLS.key =
+  TLS.new_key (fun () -> ref None)
 
-(* FIXME: replace with TLS *)
-let[@inline] find_current_worker_ (self : state) : worker_state option =
-  let self_id = Thread.id @@ Thread.self () in
-  try
-    (* see if we're in one of the worker threads *)
-    for i = 0 to Array.length self.workers - 1 do
-      let w = self.workers.(i) in
-      if Thread.id w.thread = self_id then raise_notrace (Got_worker w)
-    done;
-    None
-  with Got_worker w -> Some w
+let[@inline] find_current_worker_ () : worker_state option =
+  !(TLS.get k_worker_state)
 
 (** Try to wake up a waiter, if there's any. *)
 let[@inline] try_wake_someone_ (self : state) : unit =
   if self.n_waiting_nonzero then (
     Mutex.lock self.mutex;
-    Condition.broadcast self.cond;
+    Condition.signal self.cond;
     Mutex.unlock self.mutex
   )
 
@@ -71,7 +67,7 @@ let schedule_task_ (self : state) (w : worker_state option) (task : task) : unit
       (* push into the main queue *)
       Mutex.lock self.mutex;
       Queue.push task self.main_q;
-      if self.n_waiting_nonzero then Condition.broadcast self.cond;
+      if self.n_waiting_nonzero then Condition.signal self.cond;
       Mutex.unlock self.mutex
     ) else
       (* notify the caller that scheduling tasks is no
@@ -87,7 +83,7 @@ let run_task_now_ (self : state) ~runner task : unit =
   (try
      (* run [task()] and handle [suspend] in it *)
      Suspend_.with_suspend task ~run:(fun task' ->
-         let w = find_current_worker_ self in
+         let w = find_current_worker_ () in
          schedule_task_ self w task')
    with e ->
      let bt = Printexc.get_raw_backtrace () in
@@ -95,7 +91,7 @@ let run_task_now_ (self : state) ~runner task : unit =
   after_task runner _ctx
 
 let[@inline] run_async_ (self : state) (task : task) : unit =
-  let w = find_current_worker_ self in
+  let w = find_current_worker_ () in
   schedule_task_ self w task
 
 (* TODO: function to schedule many tasks from the outside.
@@ -140,6 +136,7 @@ let try_to_steal_work_loop (self : state) ~runner w : bool =
     while !n_retries_left > 0 do
       match try_to_steal_work_once_ self w with
       | Some task ->
+        try_wake_someone_ self;
         run_task_now_ self ~runner task;
         has_stolen := true;
         n_retries_left := 0
@@ -153,12 +150,16 @@ let worker_run_self_tasks_ (self : state) ~runner w : unit =
   let continue = ref true in
   while !continue && A.get self.active do
     match WSQ.pop w.q with
-    | Some task -> run_task_now_ self ~runner task
+    | Some task ->
+      try_wake_someone_ self;
+      run_task_now_ self ~runner task
     | None -> continue := false
   done
 
 (** Main loop for a worker thread. *)
 let worker_thread_ (self : state) ~(runner : t) (w : worker_state) : unit =
+  TLS.get k_worker_state := Some w;
+
   let main_loop () : unit =
     let continue = ref true in
     while !continue && A.get self.active do
@@ -172,7 +173,7 @@ let worker_thread_ (self : state) ~(runner : t) (w : worker_state) : unit =
           Mutex.unlock self.mutex;
           run_task_now_ self ~runner task
         | exception Queue.Empty ->
-          wait_ self;
+          if A.get self.active then wait_ self;
           Mutex.unlock self.mutex
       )
     done;

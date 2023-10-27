@@ -13,6 +13,7 @@ module Pool = Fifo_pool
 module Ws_pool = Ws_pool
 module Runner = Runner
 module Fifo_pool = Fifo_pool
+module Thread_local_storage = Thread_local_storage
 
 module Private = struct
   module Ws_deque_ = Ws_deque_
