@@ -98,7 +98,7 @@ exception Got_task of task
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
 (** How many times in a row do we try to do work-stealing? *)
-let steal_attempt_max_retry = 3
+let steal_attempt_max_retry = 2
 
 (** Main loop for a worker thread. *)
 let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
@@ -157,9 +157,8 @@ let worker_thread_ (self : state) (runner : t) (w : worker_state) ~on_exn
           | Some task ->
             run_task task;
             raise_notrace Exit
-          | None ->
-            incr unsuccessful_steal_attempts;
-            Domain_.relax ()
+          | None -> incr unsuccessful_steal_attempts
+          (* Domain_.relax () *)
         done;
         false
       with Exit -> true
