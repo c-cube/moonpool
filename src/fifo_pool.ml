@@ -12,19 +12,8 @@ let[@inline] size_ (self : state) = Array.length self.threads
 let[@inline] num_tasks_ (self : state) : int = Bb_queue.size self.q
 
 (** Run [task] as is, on the pool. *)
-let run_direct_ (self : state) (task : task) : unit =
+let schedule_ (self : state) (task : task) : unit =
   try Bb_queue.push self.q task with Bb_queue.Closed -> raise Shutdown
-
-let rec run_async_ (self : state) (task : task) : unit =
-  let task' () =
-    (* run [f()] and handle [suspend] in it *)
-    Suspend_.with_suspend task ~run:(fun ~with_handler task ->
-        if with_handler then
-          run_async_ self task
-        else
-          run_direct_ self task)
-  in
-  run_direct_ self task'
 
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
@@ -34,7 +23,7 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
   let run_task task : unit =
     let _ctx = before_task runner in
     (* run the task now, catching errors *)
-    (try task ()
+    (try Suspend_.with_suspend task ~run:(fun task' -> schedule_ self task')
      with e ->
        let bt = Printexc.get_raw_backtrace () in
        on_exn e bt);
@@ -98,7 +87,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
   let runner =
     Runner.For_runner_implementors.create
       ~shutdown:(fun ~wait () -> shutdown_ pool ~wait)
-      ~run_async:(fun f -> run_async_ pool f)
+      ~run_async:(fun f -> schedule_ pool f)
       ~size:(fun () -> size_ pool)
       ~num_tasks:(fun () -> num_tasks_ pool)
       ()

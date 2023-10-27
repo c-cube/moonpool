@@ -62,7 +62,7 @@ let both f g : _ * _ =
   let st = A.make { suspension = None; left = St_none; right = St_none } in
 
   let start_tasks ~run () : unit =
-    run ~with_handler:true (fun () ->
+    run (fun () ->
         try
           let res = f () in
           set_left_ st (St_some res)
@@ -70,7 +70,7 @@ let both f g : _ * _ =
           let bt = Printexc.get_raw_backtrace () in
           set_left_ st (St_fail (e, bt)));
 
-    run ~with_handler:true (fun () ->
+    run (fun () ->
         try
           let res = g () in
           set_right_ st (St_some res)
@@ -126,7 +126,7 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
         let len_range = min chunk_size (n - offset) in
         assert (offset + len_range <= n);
 
-        run ~with_handler:true (fun () -> task_for ~offset ~len_range);
+        run (fun () -> task_for ~offset ~len_range);
         i := !i + len_range
       done
     in
