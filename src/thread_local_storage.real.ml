@@ -14,7 +14,7 @@ type 'a key = {
 let counter = Atomic.make 0
 
 (** Value used to detect a TLS slot that was not initialized yet *)
-let sentinel_value_for_uninit_tls_ () : Obj.t = Obj.repr counter
+let[@inline] sentinel_value_for_uninit_tls_ () : Obj.t = Obj.repr counter
 
 let new_key compute : _ key =
   let index = Atomic.fetch_and_add counter 1 in
