@@ -29,8 +29,19 @@ BENCH_CUTOFF?=20
 bench-fib:
 	@echo running for N=$(N)
 	dune build $(DUNE_OPTS_BENCH) benchs/fib_rec.exe
-	hyperfine -L psize $(BENCH_PSIZE) -L kind $(BENCH_KIND) --warmup=1 \
-		'./_build/default/benchs/fib_rec.exe -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize={psize} -kind={kind} -n $(N)'
+
+	hyperfine --warmup=1 \
+      './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -seq' \
+      './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -dl' \
+      './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize=20 -kind=pool -fj' \
+      './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize=20 -kind=pool -await' \
+      './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize=4 -kind=fifo' \
+      './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize=4 -kind=pool' \
+      './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize=8 -kind=fifo' \
+      './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize=16 -kind=pool'
+
+	#hyperfine -L psize $(BENCH_PSIZE) -L kind $(BENCH_KIND) --warmup=1 \
+	#	'./_build/default/benchs/fib_rec.exe -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize={psize} -kind={kind} -n $(N)'
 		#'./_build/default/benchs/fib_rec.exe -seq -cutoff $(BENCH_CUTOFF) -niter $(NITER) -n $(N)' \
 		#'./_build/default/benchs/fib_rec.exe -dl -cutoff $(BENCH_CUTOFF) -niter $(NITER) -n $(N)' \
 
