@@ -30,19 +30,19 @@ let run ~pool () =
 
 let () =
   (print_endline "with fifo";
-   let@ pool = Fifo_pool.with_ ~min:4 () in
+   let@ pool = Fifo_pool.with_ ~num_threads:4 () in
    run ~pool ());
 
   (print_endline "with WS(1)";
-   let@ pool = Ws_pool.with_ ~min:1 () in
+   let@ pool = Ws_pool.with_ ~num_threads:1 () in
    run ~pool ());
 
   (print_endline "with WS(2)";
-   let@ pool = Ws_pool.with_ ~min:2 () in
+   let@ pool = Ws_pool.with_ ~num_threads:2 () in
    run ~pool ());
 
   (print_endline "with WS(4)";
-   let@ pool = Ws_pool.with_ ~min:4 () in
+   let@ pool = Ws_pool.with_ ~num_threads:4 () in
    run ~pool ());
 
   ()

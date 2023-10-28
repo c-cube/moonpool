@@ -59,7 +59,7 @@ let rec quicksort arr i len : unit =
       (fun () -> quicksort arr !low (len - (!low - i)))
   )
 
-let pool = Moonpool.Ws_pool.create ~min:8 ()
+let pool = Moonpool.Ws_pool.create ~num_threads:8 ()
 
 let () =
   let arr = Array.init 400_000 (fun _ -> Random.int 300_000) in

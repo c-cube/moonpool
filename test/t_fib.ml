@@ -4,8 +4,8 @@ let ( let@ ) = ( @@ )
 
 let with_pool ~kind () f =
   match kind with
-  | `Fifo_pool -> Fifo_pool.with_ ~min:4 () f
-  | `Ws_pool -> Ws_pool.with_ ~min:4 () f
+  | `Fifo_pool -> Fifo_pool.with_ ~num_threads:4 () f
+  | `Ws_pool -> Ws_pool.with_ ~num_threads:4 () f
 
 let rec fib x =
   if x <= 1 then

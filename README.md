@@ -33,7 +33,7 @@ the workers of `pool`, as soon as one is available. No result is returned by `ru
 
 ```ocaml
 # #require "threads";;
-# let pool = Moonpool.Fifo_pool.create ~min:4 ();;
+# let pool = Moonpool.Fifo_pool.create ~num_threads:4 ();;
 val pool : Moonpool.Runner.t = <abstr>
 
 # begin
