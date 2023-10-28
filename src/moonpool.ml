@@ -2,6 +2,8 @@ let start_thread_on_some_domain f x =
   let did = Random.int (D_pool_.n_domains ()) in
   D_pool_.run_on_and_wait did (fun () -> Thread.create f x)
 
+let recommended_thread_count () = Domain_.recommended_number ()
+
 module Atomic = Atomic_
 module Blocking_queue = Bb_queue
 module Bounded_queue = Bounded_queue

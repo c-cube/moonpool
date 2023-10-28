@@ -22,6 +22,12 @@ val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
     to run the thread. This ensures that we don't always pick the same domain
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
+val recommended_thread_count : unit -> int
+(** Number of threads recommended to saturate the CPU.
+  For IO pools this makes little sense (you might want more threads than
+  this because many of them will be blocked most of the time).
+  @since NEXT_RELEASE *)
+
 module Lock = Lock
 module Fut = Fut
 module Chan = Chan
