@@ -3,19 +3,21 @@ let start_thread_on_some_domain f x =
   D_pool_.run_on_and_wait did (fun () -> Thread.create f x)
 
 let recommended_thread_count () = Domain_.recommended_number ()
+let spawn = Fut.spawn
 
 module Atomic = Atomic_
 module Blocking_queue = Bb_queue
 module Bounded_queue = Bounded_queue
 module Chan = Chan
+module Fifo_pool = Fifo_pool
 module Fork_join = Fork_join
 module Fut = Fut
 module Lock = Lock
+module No_runner = No_runner
 module Pool = Fifo_pool
-module Ws_pool = Ws_pool
 module Runner = Runner
-module Fifo_pool = Fifo_pool
 module Thread_local_storage = Thread_local_storage
+module Ws_pool = Ws_pool
 
 module Private = struct
   module Ws_deque_ = Ws_deque_
