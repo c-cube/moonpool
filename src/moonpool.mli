@@ -12,9 +12,10 @@
 module Ws_pool = Ws_pool
 module Fifo_pool = Fifo_pool
 module Runner = Runner
+module No_runner = No_runner
 
 module Pool = Fifo_pool
-[@@deprecated "use Fifo_pool or Ws_pool"]
+[@@deprecated "use Fifo_pool or Ws_pool to be more explicit"]
 (** Default pool. Please explicitly pick an implementation instead. *)
 
 val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
@@ -27,6 +28,11 @@ val recommended_thread_count : unit -> int
   For IO pools this makes little sense (you might want more threads than
   this because many of them will be blocked most of the time).
   @since NEXT_RELEASE *)
+
+val spawn : on:Runner.t -> (unit -> 'a) -> 'a Fut.t
+(** [spawn ~on f] runs [f()] on the runner (a thread pool typically)
+    and returns a future result for it. See {!Fut.spawn}.
+    @since NEXT_RELEASE *)
 
 module Lock = Lock
 module Fut = Fut
