@@ -26,8 +26,7 @@ type ('a, 'b) create_args =
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
   ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
-  ?min:int ->
-  ?per_domain:int ->
+  ?num_threads:int ->
   'a
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
@@ -35,14 +34,11 @@ val create : (unit -> t, _) create_args
 (** [create ()] makes a new thread pool.
      @param on_init_thread called at the beginning of each new thread
        in the pool.
-     @param min minimum size of the pool. It will be at least [1] internally,
-      so [0] or negative values make no sense.
-     @param per_domain is the number of threads allocated per domain in the fixed
-       domain pool. The default value is [0], but setting, say, [~per_domain:2]
-       means that if there are [8] domains (which might be the case on an 8-core machine)
-       then the minimum size of the pool is [16].
-       If both [min] and [per_domain] are specified, the maximum of both
-       [min] and [per_domain * num_of_domains] is used.
+     @param num_threads size of the pool, ie. number of worker threads.
+      It will be at least [1] internally, so [0] or negative values make no sense.
+      The default is [Domain.recommended_domain_count()], ie one worker
+      thread per CPU core.
+      On OCaml 4 the default is [4] (since there is only one domain).
      @param on_exit_thread called at the end of each thread in the pool
      @param around_task a pair of [before, after], where [before pool] is called
       before a task is processed,
