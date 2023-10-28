@@ -18,9 +18,7 @@ type worker_state = {
     including a work queue and a thread refcount; and the domain itself,
     if any, in a separate option because it might outlive its own state. *)
 let domains_ : (worker_state option * Domain_.t option) Lock.t array =
-  (* number of domains we spawn. Note that we spawn n-1 domains
-      because there already is the main domain running. *)
-  let n = max 1 (Domain_.recommended_number () - 1) in
+  let n = max 1 (Domain_.recommended_number ()) in
   Array.init n (fun _ -> Lock.create (None, None))
 
 (** main work loop for a domain worker.
@@ -83,6 +81,14 @@ let work_ idx (st : worker_state) : unit =
     ()
   done;
   ()
+
+(* special case for main domain: we start a worker immediately *)
+let () =
+  assert (Domain_.is_main_domain ());
+  let w = { th_count = Atomic_.make 1; q = Bb_queue.create () } in
+  (* thread that stays alive *)
+  ignore (Thread.create (fun () -> work_ 0 w) () : Thread.t);
+  domains_.(0) <- Lock.create (Some w, None)
 
 let[@inline] n_domains () : int = Array.length domains_
 
