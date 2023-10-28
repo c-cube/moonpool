@@ -198,14 +198,13 @@ type ('a, 'b) create_args =
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
   ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
-  ?min:int ->
-  ?per_domain:int ->
+  ?num_threads:int ->
   'a
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
-    ?around_task ?min:(min_threads = 1) ?(per_domain = 0) () : t =
+    ?around_task ?num_threads () : t =
   (* wrapper *)
   let around_task =
     match around_task with
@@ -213,11 +212,8 @@ let create ?(on_init_thread = default_thread_init_exit_)
     | None -> AT_pair (ignore, fun _ _ -> ())
   in
 
-  (* number of threads to run *)
-  let min_threads = max 1 min_threads in
   let num_domains = D_pool_.n_domains () in
-  assert (num_domains >= 1);
-  let num_threads = max min_threads (num_domains * per_domain) in
+  let num_threads = Util_pool_.num_threads ?num_threads () in
 
   (* make sure we don't bias towards the first domain(s) in {!D_pool_} *)
   let offset = Random.int num_domains in
@@ -301,11 +297,10 @@ let create ?(on_init_thread = default_thread_init_exit_)
 
   runner
 
-let with_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?min ?per_domain
-    () f =
+let with_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads () f
+    =
   let pool =
-    create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?min ?per_domain
-      ()
+    create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads ()
   in
   let@ () = Fun.protect ~finally:(fun () -> shutdown pool) in
   f pool
