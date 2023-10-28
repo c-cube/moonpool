@@ -12,7 +12,7 @@
 module Ws_pool = Ws_pool
 module Fifo_pool = Fifo_pool
 module Runner = Runner
-module No_runner = No_runner
+module Immediate_runner = Immediate_runner
 
 module Pool = Fifo_pool
 [@@deprecated "use Fifo_pool or Ws_pool to be more explicit"]
