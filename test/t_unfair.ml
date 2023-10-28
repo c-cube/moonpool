@@ -20,8 +20,8 @@ let run ~kind () =
     in
 
     match kind with
-    | `Simple -> Fifo_pool.create ~min:3 ~on_init_thread ~around_task ()
-    | `Ws_pool -> Ws_pool.create ~min:3 ~on_init_thread ~around_task ()
+    | `Simple -> Fifo_pool.create ~num_threads:3 ~on_init_thread ~around_task ()
+    | `Ws_pool -> Ws_pool.create ~num_threads:3 ~on_init_thread ~around_task ()
   in
 
   (* make all threads busy *)

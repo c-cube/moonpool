@@ -27,7 +27,7 @@ let run ~min () =
     let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "step" in
 
     let l1, l2 =
-      let@ pool = Ws_pool.with_ ~min () in
+      let@ pool = Ws_pool.with_ ~num_threads:min () in
       let@ () = Ws_pool.run_wait_block pool in
 
       let l1, l2 =

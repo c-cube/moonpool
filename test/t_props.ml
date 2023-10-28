@@ -7,8 +7,8 @@ let add_test t = tests := t :: !tests
 
 let with_pool ~kind () f =
   match kind with
-  | `Fifo_pool -> Fifo_pool.with_ ~min:4 ~per_domain:1 () f
-  | `Ws_pool -> Ws_pool.with_ ~min:4 ~per_domain:1 () f
+  | `Fifo_pool -> Fifo_pool.with_ () f
+  | `Ws_pool -> Ws_pool.with_ () f
 
 let () =
   add_test @@ fun ~kind ->

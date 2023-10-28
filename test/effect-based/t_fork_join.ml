@@ -5,7 +5,7 @@ let ( let@ ) = ( @@ )
 
 open! Moonpool
 
-let pool = Ws_pool.create ~min:4 ()
+let pool = Ws_pool.create ~num_threads:4 ()
 
 let () =
   let x =
@@ -270,7 +270,7 @@ end
 let t_eval =
   let arb = Q.set_stats [ "size", Evaluator.size ] Evaluator.arb in
   Q.Test.make ~name:"same eval" arb (fun e ->
-      let@ pool = Ws_pool.with_ ~min:4 () in
+      let@ pool = Ws_pool.with_ ~num_threads:4 () in
       (* Printf.eprintf "eval %s\n%!" (Evaluator.show e); *)
       let x = Evaluator.eval_seq e in
       let y = Evaluator.eval_fork_join ~pool e in
@@ -288,7 +288,7 @@ let t_for_nested ~min ~chunk_size () =
       let ref_l2 = List.map (List.map neg) ref_l1 in
 
       let l1, l2 =
-        let@ pool = Ws_pool.with_ ~min () in
+        let@ pool = Ws_pool.with_ ~num_threads:min () in
         let@ () = Ws_pool.run_wait_block pool in
         let l1 =
           Fork_join.map_list ~chunk_size (Fork_join.map_list ~chunk_size neg) l
@@ -310,7 +310,7 @@ let t_map ~chunk_size () =
   Q.Test.make ~name:"map1"
     Q.(small_list small_int |> Q.set_stats [ "len", List.length ])
     (fun l ->
-      let@ pool = Ws_pool.with_ ~min:4 () in
+      let@ pool = Ws_pool.with_ ~num_threads:4 () in
       let@ () = Ws_pool.run_wait_block pool in
 
       let a1 =

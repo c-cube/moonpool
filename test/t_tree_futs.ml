@@ -4,8 +4,8 @@ let ( let@ ) = ( @@ )
 
 let with_pool ~kind ~j () f =
   match kind with
-  | `Fifo_pool -> Fifo_pool.with_ ~min:j () f
-  | `Ws_pool -> Ws_pool.with_ ~min:j () f
+  | `Fifo_pool -> Fifo_pool.with_ ~num_threads:j () f
+  | `Ws_pool -> Ws_pool.with_ ~num_threads:j () f
 
 type 'a tree =
   | Leaf of 'a

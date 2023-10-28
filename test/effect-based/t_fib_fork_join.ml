@@ -27,13 +27,13 @@ let fib ~on x : int Fut.t =
 let () = assert (List.init 10 fib_direct = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 
 let fib_40 : int =
-  let pool = Ws_pool.create ~min:8 () in
+  let pool = Ws_pool.create ~num_threads:8 () in
   fib ~on:pool 40 |> Fut.wait_block_exn
 
 let () = Printf.printf "fib 40 = %d\n%!" fib_40
 
 let run_test () =
-  let pool = Ws_pool.create ~min:8 () in
+  let pool = Ws_pool.create ~num_threads:8 () in
 
   assert (
     List.init 10 (fib ~on:pool)

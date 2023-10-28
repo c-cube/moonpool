@@ -57,9 +57,13 @@ let () = assert (List.init 10 fib_direct = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 
 let create_pool ~psize ~kind () =
   match kind with
-  | "fifo" -> Fifo_pool.create ~min:psize ()
-  | "pool" -> Ws_pool.create ~min:psize ()
+  | "fifo" -> Fifo_pool.create ?num_threads:psize ()
+  | "pool" -> Ws_pool.create ?num_threads:psize ()
   | _ -> assert false
+
+let str_of_int_opt = function
+  | None -> "None"
+  | Some i -> Printf.sprintf "Some %d" i
 
 let run ~psize ~n ~seq ~dl ~fj ~await ~niter ~kind () : unit =
   let pool = lazy (create_pool ~kind ~psize ()) in
@@ -80,14 +84,16 @@ let run ~psize ~n ~seq ~dl ~fj ~await ~niter ~kind () : unit =
         Domainslib.Task.run pool (fun () ->
             Domainslib.Task.await pool @@ fib_dl ~pool n)
       ) else if fj then (
-        Printf.printf "compute fib %d using fork-join with pool size=%d\n%!" n
-          psize;
+        Printf.printf "compute fib %d using fork-join with pool size=%s\n%!" n
+          (str_of_int_opt psize);
         fib_fj ~on:(Lazy.force pool) n |> Fut.wait_block_exn
       ) else if await then (
-        Printf.printf "compute fib %d using await with pool size=%d\n%!" n psize;
+        Printf.printf "compute fib %d using await with pool size=%s\n%!" n
+          (str_of_int_opt psize);
         fib_await ~on:(Lazy.force pool) n |> Fut.wait_block_exn
       ) else (
-        Printf.printf "compute fib %d with pool size=%d\n%!" n psize;
+        Printf.printf "compute fib %d with pool size=%s\n%!" n
+          (str_of_int_opt psize);
         fib ~on:(Lazy.force pool) n |> Fut.wait_block_exn
       )
     in
@@ -103,7 +109,7 @@ let run ~psize ~n ~seq ~dl ~fj ~await ~niter ~kind () : unit =
 
 let () =
   let n = ref 40 in
-  let psize = ref 16 in
+  let psize = ref None in
   let seq = ref false in
   let niter = ref 3 in
   let kind = ref "pool" in
@@ -112,7 +118,7 @@ let () =
   let fj = ref false in
   let opts =
     [
-      "-psize", Arg.Set_int psize, " pool size";
+      "-psize", Arg.Int (fun i -> psize := Some i), " pool size";
       "-n", Arg.Set_int n, " fib <n>";
       "-seq", Arg.Set seq, " sequential";
       "-dl", Arg.Set dl, " domainslib";

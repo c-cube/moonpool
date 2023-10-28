@@ -25,7 +25,7 @@ let () = assert (List.init 10 fib_direct = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 let fib_40 : int lazy_t =
   lazy
     (let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "fib40" in
-     let pool = Fifo_pool.create ~min:8 () in
+     let pool = Fifo_pool.create ~num_threads:8 () in
      let r = fib ~on:pool 40 |> Fut.wait_block_exn in
      Ws_pool.shutdown pool;
      r)
@@ -49,12 +49,12 @@ let run_test ~pool () =
 
 let run_test_size ~size () =
   Printf.printf "test pool(%d)\n%!" size;
-  let@ pool = Ws_pool.with_ ~min:size () in
+  let@ pool = Ws_pool.with_ ~num_threads:size () in
   run_test ~pool ()
 
 let run_test_fifo ~size () =
   Printf.printf "test fifo(%d)\n%!" size;
-  let@ pool = Fifo_pool.with_ ~min:size () in
+  let@ pool = Fifo_pool.with_ ~num_threads:size () in
   run_test ~pool ()
 
 let setup_counter () =

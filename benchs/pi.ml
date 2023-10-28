@@ -21,14 +21,14 @@ let with_pool ~kind f =
   match kind with
   | "pool" ->
     if !j = 0 then
-      Ws_pool.with_ ~per_domain:1 f
+      Ws_pool.with_ f
     else
-      Ws_pool.with_ ~min:!j f
+      Ws_pool.with_ ~num_threads:!j f
   | "fifo" ->
     if !j = 0 then
-      Fifo_pool.with_ ~per_domain:1 f
+      Fifo_pool.with_ f
     else
-      Fifo_pool.with_ ~min:!j f
+      Fifo_pool.with_ ~num_threads:!j f
   | _ -> assert false
 
 (** Run in parallel using {!Fut.for_} *)
