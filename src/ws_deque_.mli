@@ -1,6 +1,10 @@
 (** Work-stealing deque.
 
-  Adapted from "Dynamic circular work stealing deque", Chase & Lev
+  Adapted from "Dynamic circular work stealing deque", Chase & Lev.
+
+  However note that this one is not dynamic in the sense that there
+  is no resizing. Instead we return [false] when [push] fails, which
+  keeps the implementation fairly lightweight.
   *)
 
 type 'a t

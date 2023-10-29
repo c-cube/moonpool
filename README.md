@@ -28,6 +28,17 @@ The user can create several thread pools (implementing the interface `Runner.t`)
 These pools use regular posix threads, but the threads are spread across
 multiple domains (on OCaml 5), which enables parallelism.
 
+Current we provide these pool implementations:
+- `Fifo_pool` is a thread pool that uses a blocking queue to schedule tasks,
+    which means they're picked in the same order they've been scheduled ("fifo").
+    This pool is simple and will behave fine for coarse-granularity concurrency,
+    but will slow down under heavy contention.
+- `Ws_pool` is a work-stealing pool, where each thread has its own local queue
+    in addition to a global queue of tasks. This is efficient for workloads
+    with many short tasks that spawn other tasks, but the order in which
+    tasks are run is less predictable. This is useful when throughput is
+    the important thing to optimize.
+
 The function `Runner.run_async pool task` schedules `task()` to run on one of
 the workers of `pool`, as soon as one is available. No result is returned by `run_async`.
 
@@ -158,6 +169,10 @@ val expected_sum : int = 5050
 On OCaml 5, again using effect handlers, the module `Fork_join`
 implements the [fork-join model](https://en.wikipedia.org/wiki/Fork%E2%80%93join_model).
 It must run on a pool (using [Runner.run_async] or inside a future via [Fut.spawn]).
+
+It is generally better to use the work-stealing pool for workloads that rely on
+fork-join for better performance, because fork-join will tend to spawn lots of
+shorter tasks.
 
 ```ocaml
 # let rec select_sort arr i len =
