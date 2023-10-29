@@ -16,7 +16,7 @@ module Lock = Lock
 module Immediate_runner = Immediate_runner
 module Pool = Fifo_pool
 module Runner = Runner
-module Thread_local_storage = Thread_local_storage
+module Thread_local_storage = Thread_local_storage_
 module Ws_pool = Ws_pool
 
 module Private = struct
