@@ -38,7 +38,7 @@ module Lock = Lock
 module Fut = Fut
 module Chan = Chan
 module Fork_join = Fork_join
-module Thread_local_storage = Thread_local_storage
+module Thread_local_storage = Thread_local_storage_
 
 (** A simple blocking queue.
 
