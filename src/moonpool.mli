@@ -23,6 +23,12 @@ val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
     to run the thread. This ensures that we don't always pick the same domain
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
+val run_async : Runner.t -> (unit -> unit) -> unit
+(** [run_async runner task] schedules the task to run
+  on the given runner. This means [task()] will be executed
+  at some point in the future, possibly in another thread.
+  @since NEXT_RELEASE *)
+
 val recommended_thread_count : unit -> int
 (** Number of threads recommended to saturate the CPU.
   For IO pools this makes little sense (you might want more threads than
