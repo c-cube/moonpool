@@ -60,8 +60,16 @@ let schedule_task_ (self : state) (w : worker_state option) (task : task) : unit
   (* Printf.printf "schedule task now (%d)\n%!" (Thread.id @@ Thread.self ()); *)
   match w with
   | Some w ->
-    WSQ.push w.q task;
-    try_wake_someone_ self
+    let pushed = WSQ.push w.q task in
+    if pushed then
+      try_wake_someone_ self
+    else (
+      (* overflow into main queue *)
+      Mutex.lock self.mutex;
+      Queue.push task self.main_q;
+      if self.n_waiting_nonzero then Condition.signal self.cond;
+      Mutex.unlock self.mutex
+    )
   | None ->
     if A.get self.active then (
       (* push into the main queue *)
@@ -202,6 +210,8 @@ type ('a, 'b) create_args =
   'a
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
+let dummy_task_ () = assert false
+
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
     ?around_task ?num_threads () : t =
@@ -221,7 +231,11 @@ let create ?(on_init_thread = default_thread_init_exit_)
   let workers : worker_state array =
     let dummy = Thread.self () in
     Array.init num_threads (fun i ->
-        { thread = dummy; q = WSQ.create (); rng = Random.State.make [| i |] })
+        {
+          thread = dummy;
+          q = WSQ.create ~dummy:dummy_task_ ();
+          rng = Random.State.make [| i |];
+        })
   in
 
   let pool =

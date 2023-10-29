@@ -2,22 +2,23 @@ module A = Moonpool.Atomic
 module D = Moonpool.Private.Ws_deque_
 
 let ( let@ ) = ( @@ )
+let dummy = -100
 
 let t_simple () =
-  let d = D.create () in
+  let d = D.create ~dummy () in
   assert (D.steal d = None);
   assert (D.pop d = None);
-  D.push d 1;
-  D.push d 2;
+  assert (D.push d 1);
+  assert (D.push d 2);
   assert (D.pop d = Some 2);
   assert (D.steal d = Some 1);
   assert (D.steal d = None);
   assert (D.pop d = None);
-  D.push d 3;
+  assert (D.push d 3);
   assert (D.pop d = Some 3);
-  D.push d 4;
-  D.push d 5;
-  D.push d 6;
+  assert (D.push d 4);
+  assert (D.push d 5);
+  assert (D.push d 6);
   assert (D.steal d = Some 4);
   assert (D.steal d = Some 5);
   assert (D.pop d = Some 6);
@@ -35,7 +36,7 @@ let t_heavy () =
 
   let active = A.make true in
 
-  let d = D.create () in
+  let d = D.create ~dummy () in
 
   let stealer_loop () =
     Trace.set_thread_name "stealer";
@@ -51,11 +52,13 @@ let t_heavy () =
     Trace.set_thread_name "producer";
     for _i = 1 to 100_000 do
       let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "main.outer" in
+
+      (* NOTE: we make sure to push less than 256 elements at once *)
       for j = 1 to 100 do
         ref_sum := !ref_sum + j;
-        D.push d j;
+        assert (D.push d j);
         ref_sum := !ref_sum + j;
-        D.push d j;
+        assert (D.push d j);
 
         Option.iter (fun x -> add_to_sum x) (D.pop d);
         Option.iter (fun x -> add_to_sum x) (D.pop d)
@@ -92,35 +95,8 @@ let t_heavy () =
   assert (ref_sum = sum);
   ()
 
-let t_many () =
-  print_endline "pushing many elements";
-  let d = D.create () in
-
-  let push_and_pop count =
-    for i = 1 to count do
-      (* if i mod 100_000 = 0 then Printf.printf "push %d\n%!" i; *)
-      D.push d i
-    done;
-    let n = ref 0 in
-
-    let continue = ref true in
-    while !continue do
-      match D.pop d with
-      | None -> continue := false
-      | Some _ -> incr n
-    done;
-    assert (!n = count)
-  in
-
-  push_and_pop 10_000;
-  push_and_pop 100_000;
-  push_and_pop 1_000_000;
-  print_endline "pushing many elements: ok";
-  ()
-
 let () =
   let@ () = Trace_tef.with_setup () in
   t_simple ();
   t_heavy ();
-  t_many ();
   ()
