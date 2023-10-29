@@ -2,6 +2,7 @@ let start_thread_on_some_domain f x =
   let did = Random.int (D_pool_.n_domains ()) in
   D_pool_.run_on_and_wait did (fun () -> Thread.create f x)
 
+let run_async = Runner.run_async
 let recommended_thread_count () = Domain_.recommended_number ()
 let spawn = Fut.spawn
 
