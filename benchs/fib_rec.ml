@@ -30,28 +30,27 @@ let fib_fj ~on x : int Fut.t =
   Fut.spawn ~on (fun () -> fib_rec x)
 
 let fib_await ~on x : int Fut.t =
-  let rec fib_rec x : int Fut.t =
+  let rec fib_rec x : int =
     if x <= !cutoff then
-      Fut.spawn ~on (fun () -> fib_direct x)
-    else
-      Fut.spawn ~on (fun () ->
-          let n1 = fib_rec (x - 1) in
-          let n2 = fib_rec (x - 2) in
-          let n1 = Fut.await n1 in
-          let n2 = Fut.await n2 in
-          n1 + n2)
+      fib_direct x
+    else (
+      let n1 = Fut.spawn ~on (fun () -> fib_rec (x - 1)) in
+      let n2 = fib_rec (x - 2) in
+      let n1 = Fut.await n1 in
+      n1 + n2
+    )
   in
-  fib_rec x
+  Fut.spawn ~on (fun () -> fib_rec x)
 
-let rec fib_dl ~pool x : int Domainslib.Task.promise =
+let rec fib_dl ~pool x : int =
   if x <= !cutoff then
-    Domainslib.Task.async pool (fun () -> fib_direct x)
-  else
-    Domainslib.Task.async pool (fun () ->
-        let t1 = fib_dl ~pool (x - 1) and t2 = fib_dl ~pool (x - 2) in
-        let t1 = Domainslib.Task.await pool t1 in
-        let t2 = Domainslib.Task.await pool t2 in
-        t1 + t2)
+    fib_direct x
+  else (
+    let t1 = Domainslib.Task.async pool (fun () -> fib_dl ~pool (x - 1)) in
+    let t2 = fib_dl ~pool (x - 2) in
+    let t1 = Domainslib.Task.await pool t1 in
+    t1 + t2
+  )
 
 let () = assert (List.init 10 fib_direct = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 
@@ -81,8 +80,7 @@ let run ~psize ~n ~seq ~dl ~fj ~await ~niter ~kind () : unit =
       ) else if dl then (
         Printf.printf "compute fib %d with domainslib\n%!" n;
         let (lazy pool) = dl_pool in
-        Domainslib.Task.run pool (fun () ->
-            Domainslib.Task.await pool @@ fib_dl ~pool n)
+        Domainslib.Task.run pool (fun () -> fib_dl ~pool n)
       ) else if fj then (
         Printf.printf "compute fib %d using fork-join with pool size=%s\n%!" n
           (str_of_int_opt psize);
