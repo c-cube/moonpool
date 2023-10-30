@@ -57,7 +57,6 @@ let[@inline] try_wake_someone_ (self : state) : unit =
 (** Run [task] as is, on the pool. *)
 let schedule_task_ (self : state) (w : worker_state option) (task : task) : unit
     =
-  (* Printf.printf "schedule task now (%d)\n%!" (Thread.id @@ Thread.self ()); *)
   match w with
   | Some w ->
     let pushed = WSQ.push w.q task in
@@ -84,7 +83,6 @@ let schedule_task_ (self : state) (w : worker_state option) (task : task) : unit
 
 (** Run this task, now. Must be called from a worker. *)
 let run_task_now_ (self : state) ~runner task : unit =
-  (* Printf.printf "run task now (%d)\n%!" (Thread.id @@ Thread.self ()); *)
   let (AT_pair (before_task, after_task)) = self.around_task in
   let _ctx = before_task runner in
   (* run the task now, catching errors *)
