@@ -61,31 +61,37 @@ let both f g : _ * _ =
   let open State_ in
   let st = A.make { suspension = None; left = St_none; right = St_none } in
 
-  let start_tasks ~run () : unit =
-    run (fun () ->
-        try
-          let res = f () in
-          set_left_ st (St_some res)
-        with e ->
-          let bt = Printexc.get_raw_backtrace () in
-          set_left_ st (St_fail (e, bt)));
+  let start_tasks ~run:_ ~run_batch () : unit =
+    let t1 () =
+      try
+        let res = f () in
+        set_left_ st (St_some res)
+      with e ->
+        let bt = Printexc.get_raw_backtrace () in
+        set_left_ st (St_fail (e, bt))
+    in
 
-    run (fun () ->
-        try
-          let res = g () in
-          set_right_ st (St_some res)
-        with e ->
-          let bt = Printexc.get_raw_backtrace () in
-          set_right_ st (St_fail (e, bt)))
+    let t2 () =
+      try
+        let res = g () in
+        set_right_ st (St_some res)
+      with e ->
+        let bt = Printexc.get_raw_backtrace () in
+        set_right_ st (St_fail (e, bt))
+    in
+
+    run_batch (fun yield ->
+        yield t1;
+        yield t2)
   in
 
   Suspend_.suspend
     {
       Suspend_.handle =
-        (fun ~run suspension ->
+        (fun ~run ~run_batch suspension ->
           (* nothing else is started, no race condition possible *)
           (A.get st).suspension <- Some suspension;
-          start_tasks ~run ());
+          start_tasks ~run ~run_batch ());
     };
   get_exn st
 
@@ -104,7 +110,7 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
         max 1 (1 + (n / D_pool_.n_domains ()))
     in
 
-    let start_tasks ~run (suspension : Suspend_.suspension) =
+    let start_tasks ~run:_ ~run_batch (suspension : Suspend_.suspension) =
       let task_for ~offset ~len_range =
         match f offset (offset + len_range - 1) with
         | () ->
@@ -120,23 +126,27 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
       in
 
       let i = ref 0 in
+      let batch = ref [] in
       while !i < n do
         let offset = !i in
 
         let len_range = min chunk_size (n - offset) in
         assert (offset + len_range <= n);
 
-        run (fun () -> task_for ~offset ~len_range);
+        batch := (fun () -> task_for ~offset ~len_range) :: !batch;
         i := !i + len_range
-      done
+      done;
+
+      (* schedule all tasks at once *)
+      run_batch (fun yield -> List.iter yield !batch)
     in
 
     Suspend_.suspend
       {
         Suspend_.handle =
-          (fun ~run suspension ->
+          (fun ~run ~run_batch suspension ->
             (* run tasks, then we'll resume [suspension] *)
-            start_tasks ~run suspension);
+            start_tasks ~run ~run_batch suspension);
       }
   )
 

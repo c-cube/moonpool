@@ -379,7 +379,7 @@ let await (fut : 'a t) : 'a =
     Suspend_.suspend
       {
         Suspend_.handle =
-          (fun ~run k ->
+          (fun ~run ~run_batch:_ k ->
             on_result fut (function
               | Ok _ -> run (fun () -> k (Ok ()))
               | Error (exn, bt) ->

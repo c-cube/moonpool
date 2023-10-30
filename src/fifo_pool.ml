@@ -30,7 +30,10 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
   let run_task task : unit =
     let _ctx = before_task runner in
     (* run the task now, catching errors *)
-    (try Suspend_.with_suspend task ~run:(fun task' -> schedule_ self task')
+    (try
+       Suspend_.with_suspend task
+         ~run:(fun task' -> schedule_ self task')
+         ~run_batch:(fun b -> schedule_batch_ self b)
      with e ->
        let bt = Printexc.get_raw_backtrace () in
        on_exn e bt);

@@ -7,8 +7,12 @@ type suspension = (unit, exn * Printexc.raw_backtrace) result -> unit
 (** A suspended computation *)
 
 type task = unit -> unit
+type 'a iter = ('a -> unit) -> unit
 
-type suspension_handler = { handle: run:(task -> unit) -> suspension -> unit }
+type suspension_handler = {
+  handle:
+    run:(task -> unit) -> run_batch:(task iter -> unit) -> suspension -> unit;
+}
 [@@unboxed]
 (** The handler that knows what to do with the suspended computation.
 
@@ -18,6 +22,8 @@ type suspension_handler = { handle: run:(task -> unit) -> suspension -> unit }
      eventually);
    - a [run] function that can be used to start tasks to perform some
     computation.
+  - a [run_batch] function that can be used to start multiple background
+    tasks at once
 
   This means that a fork-join primitive, for example, can use a single call
   to {!suspend} to:
@@ -51,10 +57,11 @@ val suspend : suspension_handler -> unit
 val prepare_for_await : unit -> Dla_.t
 (** Our stub for DLA. Unstable. *)
 
-val with_suspend : run:(task -> unit) -> (unit -> unit) -> unit
-(** [with_suspend ~run f] runs [f()] in an environment where [suspend]
+val with_suspend :
+  run:(task -> unit) -> run_batch:(task iter -> unit) -> (unit -> unit) -> unit
+(** [with_suspend ~run ~run_batch f] runs [f()] in an environment where [suspend]
     will work. If [f()] suspends with suspension handler [h],
-    this calls [h ~run k] where [k] is the suspension.
+    this calls [h ~run ~run_batch k] where [k] is the suspension.
 
     This will not do anything on OCaml 4.x.
 *)

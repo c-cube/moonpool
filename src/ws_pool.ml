@@ -81,6 +81,52 @@ let schedule_task_ (self : state) (w : worker_state option) (task : task) : unit
          longer permitted *)
       raise Shutdown
 
+let schedule_task_batch_ (self : state) (w : worker_state option)
+    (batch : task iter) : unit =
+  let local_q = Queue.create () in
+  batch (fun x -> Queue.push x local_q);
+
+  let transfer_into_main_q () =
+    if not (A.get self.active) then raise Shutdown;
+    (* push into the main queue *)
+    Mutex.lock self.mutex;
+    Queue.transfer local_q self.main_q;
+    if self.n_waiting_nonzero then Condition.signal self.cond;
+    Mutex.unlock self.mutex
+  in
+
+  let try_to_schedule_locally (w : worker_state) =
+    let continue = ref true in
+    while !continue do
+      match Queue.peek_opt local_q with
+      | Some task ->
+        let pushed = WSQ.push w.q task in
+        if pushed then
+          (* continue *)
+          ignore (Queue.pop local_q : task)
+        else
+          continue := false
+      | None -> continue := false
+    done
+  in
+
+  if not (Queue.is_empty local_q) then (
+    match w with
+    | Some w ->
+      try_to_schedule_locally w;
+      (* there might be overflow tasks *)
+      if not (Queue.is_empty local_q) then transfer_into_main_q ()
+    | None -> transfer_into_main_q ()
+  )
+
+let[@inline] run_async_ (self : state) (task : task) : unit =
+  let w = find_current_worker_ () in
+  schedule_task_ self w task
+
+let[@inline] run_async_batch_ (self : state) (b : task iter) : unit =
+  let w = find_current_worker_ () in
+  schedule_task_batch_ self w b
+
 (** Run this task, now. Must be called from a worker. *)
 let run_task_now_ (self : state) ~runner task : unit =
   let (AT_pair (before_task, after_task)) = self.around_task in
@@ -88,17 +134,13 @@ let run_task_now_ (self : state) ~runner task : unit =
   (* run the task now, catching errors *)
   (try
      (* run [task()] and handle [suspend] in it *)
-     Suspend_.with_suspend task ~run:(fun task' ->
-         let w = find_current_worker_ () in
-         schedule_task_ self w task')
+     Suspend_.with_suspend task
+       ~run:(fun task' -> run_async_ self task')
+       ~run_batch:(fun b -> run_async_batch_ self b)
    with e ->
      let bt = Printexc.get_raw_backtrace () in
      self.on_exn e bt);
   after_task runner _ctx
-
-let[@inline] run_async_ (self : state) (task : task) : unit =
-  let w = find_current_worker_ () in
-  schedule_task_ self w task
 
 (* TODO: function to schedule many tasks from the outside.
     - build a queue
@@ -254,6 +296,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
     Runner.For_runner_implementors.create
       ~shutdown:(fun ~wait () -> shutdown_ pool ~wait)
       ~run_async:(fun f -> run_async_ pool f)
+      ~run_async_batch:(fun f -> run_async_batch_ pool f)
       ~size:(fun () -> size_ pool)
       ~num_tasks:(fun () -> num_tasks_ pool)
       ()
