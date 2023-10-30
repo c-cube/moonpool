@@ -39,6 +39,16 @@ val run_async : t -> task -> unit
     worker threads/domains.
     @raise Shutdown if the runner was shut down before [run_async] was called. *)
 
+type 'a iter = ('a -> unit) -> unit
+
+val run_async_batch : t -> task iter -> unit
+(** [run_async_batch r batch] schedules all tasks from the batch
+  into [r].
+  It might be more efficient than calling {!run_async}
+  on each individual task.
+  @since NEXT_RELEASE
+  *)
+
 val run_wait_block : t -> (unit -> 'a) -> 'a
 (** [run_wait_block pool f] schedules [f] for later execution
     on the pool, like {!run_async}.
@@ -57,6 +67,7 @@ module For_runner_implementors : sig
     num_tasks:(unit -> int) ->
     shutdown:(wait:bool -> unit -> unit) ->
     run_async:(task -> unit) ->
+    ?run_async_batch:(task iter -> unit) ->
     unit ->
     t
   (** Create a new runner.
