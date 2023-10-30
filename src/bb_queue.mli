@@ -62,6 +62,11 @@ val transfer : 'a t -> 'a Queue.t -> unit
 
     @since 0.4 *)
 
+val transfer_into : 'a Queue.t -> 'a t -> unit
+(** [transfer q bq] transfers all items from [q] to [bq], atomically.
+    @raise Closed if [bq] is closed and [q] is not empty.
+    @since NEXT_RELEASE *)
+
 val close : _ t -> unit
 (** Close the queue, meaning there won't be any more [push] allowed. *)
 
