@@ -1,3 +1,5 @@
+module TLS = Thread_local_storage_
+
 type task = unit -> unit
 
 type t = {
@@ -34,4 +36,9 @@ let run_wait_block self (f : unit -> 'a) : 'a =
 module For_runner_implementors = struct
   let create ~size ~num_tasks ~shutdown ~run_async () : t =
     { size; num_tasks; shutdown; run_async }
+
+  let k_cur_runner : t option ref TLS.key = TLS.new_key (fun () -> ref None)
 end
+
+let[@inline] get_current_runner () : _ option =
+  !(TLS.get For_runner_implementors.k_cur_runner)
