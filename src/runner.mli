@@ -63,4 +63,11 @@ module For_runner_implementors : sig
 
       {b NOTE}: the runner should support DLA and {!Suspend_} on OCaml 5.x,
       so that {!Fork_join} and other 5.x features work properly. *)
+
+  val k_cur_runner : t option ref Thread_local_storage_.key
 end
+
+val get_current_runner : unit -> t option
+(** Access the current runner. This returns [Some r] if the call
+    happens on a thread that belongs in a runner.
+    @since NEXT_RELEASE *)
