@@ -153,6 +153,7 @@ let worker_run_self_tasks_ (self : state) ~runner w : unit =
 
 (** Main loop for a worker thread. *)
 let worker_thread_ (self : state) ~(runner : t) (w : worker_state) : unit =
+  TLS.get Runner.For_runner_implementors.k_cur_runner := Some runner;
   TLS.get k_worker_state := Some w;
 
   let rec main () : unit =

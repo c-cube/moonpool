@@ -1,3 +1,4 @@
+module TLS = Thread_local_storage_
 include Runner
 
 let ( let@ ) = ( @@ )
@@ -18,6 +19,7 @@ let schedule_ (self : state) (task : task) : unit =
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
 let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
+  TLS.get Runner.For_runner_implementors.k_cur_runner := Some runner;
   let (AT_pair (before_task, after_task)) = around_task in
 
   let run_task task : unit =
