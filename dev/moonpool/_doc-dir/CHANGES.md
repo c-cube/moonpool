@@ -1,4 +1,40 @@
 
+# 0.5
+
+## features
+
+- add `Bb_queue.transfer`
+ -add `Bb_queue.to_{iter,gen,seq}`
+- add `Fifo_pool`, a simple pool with a single blocking queue for
+    workloads with coarse granularity tasks that value
+    latency (e.g. a web server)
+- add a work-stealing pool for heavy compute workloads that
+    feature a lot of await/fork-join, with a lot of help
+    from Vesa Karvonen (@polytypic)
+- add `Fut.spawn_on_current_runner`
+- add `Runner.{spawn_on_current_runner, await}`
+- add a few more toplevel aliases in `Moonpool` itself
+- add `No_runner`: a runner that runs tasks synchronously in the caller
+- on shutdown, pools will finish running all present tasks before
+    closing. New tasks are immediately rejected.
+
+- use an optional dependency on `thread-local-storage` to
+    implement work stealing and `spawn_on_current_runner`
+
+## optimizations
+
+- use the main domain to spawn threads on it. This means we can really
+    use all cores, not all but one.
+- in `Fork_join.both`, only one of the two sides schedules a task,
+    the other runs in the current thread. This reduces scheduling overhead.
+- compare to domainslib in benchmarks. With the WS pool we're now slightly
+    ahead in terms of overhead on the recursive fib benchmark.
+
+## breaking
+
+- deprecate `Pool`, now an alias to `Fifo_pool`
+
+
 # 0.4
 
 - add `Fut.{reify_error,bind_reify_error}`
