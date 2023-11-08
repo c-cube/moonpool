@@ -4,7 +4,7 @@
 ## features
 
 - add `Bb_queue.transfer`
- -add `Bb_queue.to_{iter,gen,seq}`
+- add `Bb_queue.to_{iter,gen,seq}`
 - add `Fifo_pool`, a simple pool with a single blocking queue for
     workloads with coarse granularity tasks that value
     latency (e.g. a web server)
@@ -33,7 +33,9 @@
 ## breaking
 
 - deprecate `Pool`, now an alias to `Fifo_pool`
-
+- the `Fut.Infix_local` and `Fut.infix` are gone, replaced with
+    a simpler `Fut.Infix` module that tries to use the current runner
+    for intermediate tasks.
 
 # 0.4
 
