@@ -85,6 +85,15 @@ val spawn : on:Runner.t -> (unit -> 'a) -> 'a t
 (** [spaw ~on f] runs [f()] on the given runner [on], and return a future that will
       hold its result. *)
 
+val spawn_on_current_runner : (unit -> 'a) -> 'a t
+(** This must be run from inside a runner, and schedules
+    the new task on it as well.
+
+    See {!Runner.get_current_runner} to see how the runner is found.
+
+    @since NEXT_RELEASE
+    @raise Failure if run from outside a runner. *)
+
 val reify_error : 'a t -> 'a or_error t
 (** [reify_error fut] turns a failing future into a non-failing
     one  that contain [Error (exn, bt)]. A non-failing future
