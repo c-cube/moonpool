@@ -16,7 +16,7 @@ let rec fib ~on x : int Fut.t =
         Atomic.incr n_calls_fib_direct;
         fib_direct x)
   else
-    let open Fut.Infix_local in
+    let open Fut.Infix in
     let+ t1 = fib ~on (x - 1) and+ t2 = fib ~on (x - 2) in
     t1 + t2
 

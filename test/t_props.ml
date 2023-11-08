@@ -27,7 +27,7 @@ let () =
     Q.(small_list small_int)
     (fun l ->
       let@ pool = with_pool ~kind () in
-      let open Fut.Infix_local in
+      let open Fut.Infix in
       let l' =
         l
         |> List.map (fun x ->
