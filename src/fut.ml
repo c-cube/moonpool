@@ -123,7 +123,6 @@ let map ?on ~f fut : _ t =
          Error (e, bt))
     | Error e_bt -> Error e_bt
   in
-
   match peek fut with
   | Some r -> of_result (map_res r)
   | None ->
@@ -137,7 +136,17 @@ let map ?on ~f fut : _ t =
         match on with
         | None -> map_and_fulfill ()
         | Some on -> Runner.run_async on map_and_fulfill);
+    fut2
 
+let join (fut : 'a t t) : 'a t =
+  match peek fut with
+  | Some (Ok f) -> f
+  | Some (Error (e, bt)) -> fail e bt
+  | None ->
+    let fut2, promise = make () in
+    on_result fut (function
+      | Ok sub_fut -> on_result sub_fut (fulfill promise)
+      | Error _ as e -> fulfill promise e);
     fut2
 
 let bind ?on ~f fut : _ t =
@@ -175,7 +184,6 @@ let bind ?on ~f fut : _ t =
     fut2
 
 let bind_reify_error ?on ~f fut : _ t = bind ?on ~f (reify_error fut)
-let join ?on fut = bind ?on fut ~f:(fun x -> x)
 
 let update_ (st : 'a A.t) f : 'a =
   let rec loop () =

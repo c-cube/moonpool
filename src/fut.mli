@@ -120,7 +120,7 @@ val bind_reify_error : ?on:Runner.t -> f:('a or_error -> 'b t) -> 'a t -> 'b t
     @param on if provided, [f] runs on the given runner
     @since 0.4 *)
 
-val join : ?on:Runner.t -> 'a t t -> 'a t
+val join : 'a t t -> 'a t
 (** [join fut] is [fut >>= Fun.id]. It joins the inner layer of the future.
     @since 0.2 *)
 
