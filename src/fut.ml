@@ -113,8 +113,13 @@ let reify_error (f : 'a t) : 'a or_error t =
     on_result f (fun r -> fulfill promise (Ok r));
     fut
 
+let get_runner_ ?on () : Runner.t option =
+  match on with
+  | Some _ as r -> r
+  | None -> Runner.get_current_runner ()
+
 let map ?on ~f fut : _ t =
-  let map_res r =
+  let map_immediate_ r : _ result =
     match r with
     | Ok x ->
       (try Ok (f x)
@@ -123,19 +128,22 @@ let map ?on ~f fut : _ t =
          Error (e, bt))
     | Error e_bt -> Error e_bt
   in
-  match peek fut with
-  | Some r -> of_result (map_res r)
-  | None ->
-    let fut2, promise = make () in
-    on_result fut (fun r ->
-        let map_and_fulfill () =
-          let res = map_res r in
-          fulfill promise res
-        in
 
-        match on with
-        | None -> map_and_fulfill ()
-        | Some on -> Runner.run_async on map_and_fulfill);
+  match peek fut, get_runner_ ?on () with
+  | Some res, None -> of_result @@ map_immediate_ res
+  | Some res, Some runner ->
+    let fut2, promise = make () in
+    Runner.run_async runner (fun () -> fulfill promise @@ map_immediate_ res);
+    fut2
+  | None, None ->
+    let fut2, promise = make () in
+    on_result fut (fun res -> fulfill promise @@ map_immediate_ res);
+    fut2
+  | None, Some runner ->
+    let fut2, promise = make () in
+    on_result fut (fun res ->
+        Runner.run_async runner (fun () ->
+            fulfill promise @@ map_immediate_ res));
     fut2
 
 let join (fut : 'a t t) : 'a t =
@@ -160,32 +168,31 @@ let bind ?on ~f fut : _ t =
     | Error (e, bt) -> fail e bt
   in
 
-  let bind_and_fulfill r promise () =
+  let bind_and_fulfill (r : _ result) promise () : unit =
     let f_res_fut = apply_f_to_res r in
     (* forward result *)
     on_result f_res_fut (fun r -> fulfill promise r)
   in
 
-  match peek fut with
-  | Some r ->
-    (match on with
-    | None -> apply_f_to_res r
-    | Some on ->
-      let fut2, promise = make () in
-      Runner.run_async on (bind_and_fulfill r promise);
-      fut2)
-  | None ->
+  match peek fut, get_runner_ ?on () with
+  | Some res, Some runner ->
+    let fut2, promise = make () in
+    Runner.run_async runner (bind_and_fulfill res promise);
+    fut2
+  | Some res, None -> apply_f_to_res res
+  | None, Some runner ->
     let fut2, promise = make () in
     on_result fut (fun r ->
-        match on with
-        | None -> bind_and_fulfill r promise ()
-        | Some on -> Runner.run_async on (bind_and_fulfill r promise));
-
+        Runner.run_async runner (bind_and_fulfill r promise));
+    fut2
+  | None, None ->
+    let fut2, promise = make () in
+    on_result fut (fun res -> bind_and_fulfill res promise ());
     fut2
 
-let bind_reify_error ?on ~f fut : _ t = bind ?on ~f (reify_error fut)
+let[@inline] bind_reify_error ?on ~f fut : _ t = bind ?on ~f (reify_error fut)
 
-let update_ (st : 'a A.t) f : 'a =
+let update_atomic_ (st : 'a A.t) f : 'a =
   let rec loop () =
     let x = A.get st in
     let y = f x in
@@ -210,7 +217,7 @@ let both a b : _ t =
       | Error err -> fulfill_idempotent promise (Error err)
       | Ok x ->
         (match
-           update_ st (function
+           update_atomic_ st (function
              | `Neither -> `Left x
              | `Right y -> `Both (x, y)
              | _ -> assert false)
@@ -221,7 +228,7 @@ let both a b : _ t =
       | Error err -> fulfill_idempotent promise (Error err)
       | Ok y ->
         (match
-           update_ st (function
+           update_atomic_ st (function
              | `Left x -> `Both (x, y)
              | `Neither -> `Right y
              | _ -> assert false)
