@@ -5,6 +5,13 @@ let start_thread_on_some_domain f x =
 let run_async = Runner.run_async
 let recommended_thread_count () = Domain_.recommended_number ()
 let spawn = Fut.spawn
+let spawn_on_current_runner = Fut.spawn_on_current_runner
+
+[@@@ifge 5.0]
+
+let await = Fut.await
+
+[@@@endif]
 
 module Atomic = Atomic_
 module Blocking_queue = Bb_queue

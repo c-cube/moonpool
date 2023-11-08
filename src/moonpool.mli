@@ -40,6 +40,19 @@ val spawn : on:Runner.t -> (unit -> 'a) -> 'a Fut.t
     and returns a future result for it. See {!Fut.spawn}.
     @since NEXT_RELEASE *)
 
+val spawn_on_current_runner : (unit -> 'a) -> 'a Fut.t
+(** See {!Fut.spawn_on_current_runner}.
+    @since NEXT_RELEASE *)
+
+[@@@ifge 5.0]
+
+val await : 'a Fut.t -> 'a
+(** Await a future. See {!Fut.await}.
+    Only on OCaml >= 5.0.
+    @since NEXT_RELEASE *)
+
+[@@@endif]
+
 module Lock = Lock
 module Fut = Fut
 module Chan = Chan
