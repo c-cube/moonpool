@@ -91,7 +91,7 @@ val spawn_on_current_runner : (unit -> 'a) -> 'a t
 
     See {!Runner.get_current_runner} to see how the runner is found.
 
-    @since NEXT_RELEASE
+    @since 0.5
     @raise Failure if run from outside a runner. *)
 
 val reify_error : 'a t -> 'a or_error t
@@ -218,9 +218,9 @@ val wait_block_exn : 'a t -> 'a
     They were previously present as [module Infix_local] and [val infix],
     but are now simplified.
 
-    @since NEXT_RELEASE *)
+    @since 0.5 *)
 
-(** @since NEXT_RELEASE *)
+(** @since 0.5 *)
 module Infix : sig
   val ( >|= ) : 'a t -> ('a -> 'b) -> 'b t
   val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t

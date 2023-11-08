@@ -12,7 +12,7 @@
     have higher throughput but they're very unfair to some tasks; by
     contrast, here, older tasks have priority over younger tasks.
 
-    @since NEXT_RELEASE *)
+    @since 0.5 *)
 
 include module type of Runner
 

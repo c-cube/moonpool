@@ -27,29 +27,29 @@ val run_async : Runner.t -> (unit -> unit) -> unit
 (** [run_async runner task] schedules the task to run
   on the given runner. This means [task()] will be executed
   at some point in the future, possibly in another thread.
-  @since NEXT_RELEASE *)
+  @since 0.5 *)
 
 val recommended_thread_count : unit -> int
 (** Number of threads recommended to saturate the CPU.
   For IO pools this makes little sense (you might want more threads than
   this because many of them will be blocked most of the time).
-  @since NEXT_RELEASE *)
+  @since 0.5 *)
 
 val spawn : on:Runner.t -> (unit -> 'a) -> 'a Fut.t
 (** [spawn ~on f] runs [f()] on the runner (a thread pool typically)
     and returns a future result for it. See {!Fut.spawn}.
-    @since NEXT_RELEASE *)
+    @since 0.5 *)
 
 val spawn_on_current_runner : (unit -> 'a) -> 'a Fut.t
 (** See {!Fut.spawn_on_current_runner}.
-    @since NEXT_RELEASE *)
+    @since 0.5 *)
 
 [@@@ifge 5.0]
 
 val await : 'a Fut.t -> 'a
 (** Await a future. See {!Fut.await}.
     Only on OCaml >= 5.0.
-    @since NEXT_RELEASE *)
+    @since 0.5 *)
 
 [@@@endif]
 

@@ -70,4 +70,4 @@ end
 val get_current_runner : unit -> t option
 (** Access the current runner. This returns [Some r] if the call
     happens on a thread that belongs in a runner.
-    @since NEXT_RELEASE *)
+    @since 0.5 *)

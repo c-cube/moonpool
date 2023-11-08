@@ -11,7 +11,7 @@
     Another situation is when threads cannot be used at all (e.g. because you
     plan to call [Unix.fork] later).
 
-    @since NEXT_RELEASE
+    @since 0.5
 *)
 
 include module type of Runner
