@@ -15,19 +15,16 @@ let rec mk_tree ~pool n : _ tree Fut.t =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "mk-tree" in
   if n <= 1 then
     Fut.return (Leaf 1)
-  else
-    let open (val Fut.infix pool) in
-    let l =
-      Fut.spawn ~on:pool (fun () -> mk_tree ~pool (n - 1)) |> Fut.join ~on:pool
-    and r =
-      Fut.spawn ~on:pool (fun () -> mk_tree ~pool (n - 1)) |> Fut.join ~on:pool
-    in
+  else (
+    let l = Fut.spawn ~on:pool (fun () -> mk_tree ~pool (n - 1)) |> Fut.join
+    and r = Fut.spawn ~on:pool (fun () -> mk_tree ~pool (n - 1)) |> Fut.join in
 
     Fut.return @@ Node (l, r)
+  )
 
 let rec rev ~pool (t : 'a tree Fut.t) : 'a tree Fut.t =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "rev" in
-  let open (val Fut.infix pool) in
+  let open Fut.Infix in
   t >>= function
   | Leaf n -> Fut.return (Leaf n)
   | Node (l, r) ->
@@ -36,7 +33,7 @@ let rec rev ~pool (t : 'a tree Fut.t) : 'a tree Fut.t =
 
 let rec sum ~pool (t : int tree Fut.t) : int Fut.t =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "sum" in
-  let open (val Fut.infix pool) in
+  let open Fut.Infix in
   t >>= function
   | Leaf n -> Fut.return n
   | Node (l, r) ->
@@ -45,7 +42,7 @@ let rec sum ~pool (t : int tree Fut.t) : int Fut.t =
 
 let run ~pool n : (int * int) Fut.t =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "run" in
-  let open (val Fut.infix pool) in
+  let open Fut.Infix in
   let t = Fut.return n >>= mk_tree ~pool in
   let t' = rev ~pool t in
   let sum_t = sum ~pool t in

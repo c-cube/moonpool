@@ -19,9 +19,7 @@ let run ~pool () =
           0 l)
   in
 
-  let futs =
-    List.init n_tasks (fun _ -> Fut.spawn ~on:pool task |> Fut.join ~on:pool)
-  in
+  let futs = List.init n_tasks (fun _ -> Fut.spawn ~on:pool task |> Fut.join) in
 
   let lens = List.map Fut.wait_block_exn futs in
   Printf.printf "awaited %d items (%d times)\n%!" (List.hd lens) n_tasks;
