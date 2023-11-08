@@ -8,7 +8,7 @@ let rec fib x =
 
 let run ~psize ~n ~j () : _ Fut.t =
   Printf.printf "pool size=%d, n=%d, j=%d\n%!" psize n j;
-  let pool = Pool.create ~min:psize ~per_domain:0 () in
+  let pool = Ws_pool.create ~num_threads:psize () in
 
   (* TODO: a ppx for tracy so we can use instrumentation *)
   let loop () =

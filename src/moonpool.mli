@@ -1,21 +1,63 @@
 (** Moonpool
 
   A pool within a bigger pool (ie the ocean). Here, we're talking about
-  pools of [Thread.t] which live within a fixed pool of [Domain.t].
+  pools of [Thread.t] that are dispatched over several [Domain.t] to
+  enable parallelism.
+
+  We provide several implementations of pools
+  with distinct scheduling strategies, alongside some concurrency
+  primitives such as guarding locks ({!Lock.t}) and futures ({!Fut.t}).
 *)
 
-module Pool = Pool
+module Ws_pool = Ws_pool
+module Fifo_pool = Fifo_pool
 module Runner = Runner
+module Immediate_runner = Immediate_runner
+
+module Pool = Fifo_pool
+[@@deprecated "use Fifo_pool or Ws_pool to be more explicit"]
+(** Default pool. Please explicitly pick an implementation instead. *)
 
 val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
 (** Similar to {!Thread.create}, but it picks a background domain at random
     to run the thread. This ensures that we don't always pick the same domain
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
+val run_async : Runner.t -> (unit -> unit) -> unit
+(** [run_async runner task] schedules the task to run
+  on the given runner. This means [task()] will be executed
+  at some point in the future, possibly in another thread.
+  @since NEXT_RELEASE *)
+
+val recommended_thread_count : unit -> int
+(** Number of threads recommended to saturate the CPU.
+  For IO pools this makes little sense (you might want more threads than
+  this because many of them will be blocked most of the time).
+  @since NEXT_RELEASE *)
+
+val spawn : on:Runner.t -> (unit -> 'a) -> 'a Fut.t
+(** [spawn ~on f] runs [f()] on the runner (a thread pool typically)
+    and returns a future result for it. See {!Fut.spawn}.
+    @since NEXT_RELEASE *)
+
+val spawn_on_current_runner : (unit -> 'a) -> 'a Fut.t
+(** See {!Fut.spawn_on_current_runner}.
+    @since NEXT_RELEASE *)
+
+[@@@ifge 5.0]
+
+val await : 'a Fut.t -> 'a
+(** Await a future. See {!Fut.await}.
+    Only on OCaml >= 5.0.
+    @since NEXT_RELEASE *)
+
+[@@@endif]
+
 module Lock = Lock
 module Fut = Fut
 module Chan = Chan
 module Fork_join = Fork_join
+module Thread_local_storage = Thread_local_storage_
 
 (** A simple blocking queue.
 
@@ -141,12 +183,19 @@ module Atomic = Atomic_
     This is either a shim using [ref], on pre-OCaml 5, or the
     standard [Atomic] module on OCaml 5. *)
 
-(** {2 Suspensions} *)
+(**/**)
 
-module Suspend_ = Suspend_
-[@@alert unstable "this module is an implementation detail of moonpool for now"]
-(** Suspensions.
+module Private : sig
+  module Ws_deque_ = Ws_deque_
+
+  (** {2 Suspensions} *)
+
+  module Suspend_ = Suspend_
+  [@@alert
+    unstable "this module is an implementation detail of moonpool for now"]
+  (** Suspensions.
 
     This is only going to work on OCaml 5.x.
 
     {b NOTE}: this is not stable for now. *)
+end

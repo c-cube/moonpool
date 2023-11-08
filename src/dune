@@ -1,11 +1,14 @@
 (library
  (public_name moonpool)
  (name moonpool)
- (private_modules d_pool_)
+ (private_modules d_pool_ dla_)
  (preprocess
   (action
    (run %{project_root}/src/cpp/cpp.exe %{input-file})))
  (libraries threads either
+            (select thread_local_storage_.ml from
+             (thread-local-storage -> thread_local_storage_.stub.ml)
+             (-> thread_local_storage_.real.ml))
             (select dla_.ml from
              (domain-local-await -> dla_.real.ml)
              ( -> dla_.dummy.ml))))

@@ -1,9 +1,9 @@
 open Moonpool
 
 (* large pool, some of our tasks below are long lived *)
-let pool = Pool.create ~min:30 ()
+let pool = Ws_pool.create ~num_threads:30 ()
 
-open (val Fut.infix pool)
+open Fut.Infix
 
 type event =
   | E_int of int

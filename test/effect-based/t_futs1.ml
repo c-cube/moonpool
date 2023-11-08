@@ -2,7 +2,7 @@
 
 open! Moonpool
 
-let pool = Pool.create ~min:4 ()
+let pool = Ws_pool.create ~num_threads:4 ()
 
 let () =
   let fut = Array.init 10 (fun i -> Fut.spawn ~on:pool (fun () -> i)) in

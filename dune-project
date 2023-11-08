@@ -20,6 +20,7 @@
   dune
   (either (>= 1.0))
   (trace :with-test)
+  (trace-tef :with-test)
   (qcheck-core (and :with-test (>= 0.19)))
   (odoc :with-doc)
   (mdx
@@ -27,8 +28,9 @@
     (>= 1.9.0)
     :with-test)))
  (depopts
+   thread-local-storage
    (domain-local-await (>= 0.2)))
  (tags
-  (thread pool domain)))
+  (thread pool domain futures fork-join)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

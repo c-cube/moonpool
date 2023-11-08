@@ -1,5 +1,12 @@
 open Moonpool
 
+let ( let@ ) = ( @@ )
+
+let with_pool ~kind () f =
+  match kind with
+  | `Fifo_pool -> Fifo_pool.with_ ~num_threads:4 () f
+  | `Ws_pool -> Ws_pool.with_ ~num_threads:4 () f
+
 let rec fib x =
   if x <= 1 then
     1
@@ -8,11 +15,10 @@ let rec fib x =
 
 let () = assert (List.init 10 fib = [ 1; 1; 2; 3; 5; 8; 13; 21; 34; 55 ])
 
-let run_test () =
-  let pool = Pool.create ~min:4 () in
+let run_test ~pool () =
   let fibs = Array.init 30 (fun n -> Fut.spawn ~on:pool (fun () -> fib n)) in
   let res = Fut.join_array fibs |> Fut.wait_block in
-  Pool.shutdown pool;
+  Ws_pool.shutdown pool;
 
   assert (
     res
@@ -50,11 +56,23 @@ let run_test () =
           832040;
         |])
 
-let () =
+let run ~kind () =
   for _i = 1 to 4 do
-    run_test ()
+    let@ pool = with_pool ~kind () in
+    run_test ~pool ()
   done;
 
   (* now make sure we can do this with multiple pools in parallel *)
-  let jobs = Array.init 4 (fun _ -> Thread.create run_test ()) in
+  let jobs =
+    Array.init 4 (fun _ ->
+        Thread.create
+          (fun () ->
+            let@ pool = with_pool ~kind () in
+            run_test ~pool ())
+          ())
+  in
   Array.iter Thread.join jobs
+
+let () =
+  run ~kind:`Ws_pool ();
+  run ~kind:`Fifo_pool ()

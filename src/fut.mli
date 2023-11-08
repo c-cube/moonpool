@@ -85,6 +85,15 @@ val spawn : on:Runner.t -> (unit -> 'a) -> 'a t
 (** [spaw ~on f] runs [f()] on the given runner [on], and return a future that will
       hold its result. *)
 
+val spawn_on_current_runner : (unit -> 'a) -> 'a t
+(** This must be run from inside a runner, and schedules
+    the new task on it as well.
+
+    See {!Runner.get_current_runner} to see how the runner is found.
+
+    @since NEXT_RELEASE
+    @raise Failure if run from outside a runner. *)
+
 val reify_error : 'a t -> 'a or_error t
 (** [reify_error fut] turns a failing future into a non-failing
     one  that contain [Error (exn, bt)]. A non-failing future
@@ -111,7 +120,7 @@ val bind_reify_error : ?on:Runner.t -> f:('a or_error -> 'b t) -> 'a t -> 'b t
     @param on if provided, [f] runs on the given runner
     @since 0.4 *)
 
-val join : ?on:Runner.t -> 'a t t -> 'a t
+val join : 'a t t -> 'a t
 (** [join fut] is [fut >>= Fun.id]. It joins the inner layer of the future.
     @since 0.2 *)
 
@@ -200,7 +209,19 @@ val wait_block : 'a t -> 'a or_error
 val wait_block_exn : 'a t -> 'a
 (** Same as {!wait_block} but re-raises the exception if the future failed. *)
 
-module type INFIX = sig
+(** {2 Infix operators}
+
+    These combinators run on either the current pool (if present),
+    or on the same thread that just fulfilled the previous future
+    if not.
+
+    They were previously present as [module Infix_local] and [val infix],
+    but are now simplified.
+
+    @since NEXT_RELEASE *)
+
+(** @since NEXT_RELEASE *)
+module Infix : sig
   val ( >|= ) : 'a t -> ('a -> 'b) -> 'b t
   val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
   val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
@@ -209,17 +230,8 @@ module type INFIX = sig
   val ( and* ) : 'a t -> 'b t -> ('a * 'b) t
 end
 
-module Infix_local : INFIX
-(** Operators that run on the same thread as the first future. *)
+include module type of Infix
 
-include INFIX
-
-(** Make infix combinators, with intermediate computations running on the given pool. *)
-module Infix (_ : sig
-  val pool : Runner.t
-end) : INFIX
-
-val infix : Runner.t -> (module INFIX)
-(** [infix runner] makes a new infix module with intermediate computations
-      running on the given runner..
-    @since 0.2 *)
+module Infix_local = Infix
+[@@deprecated "Use Infix"]
+(** @deprecated use Infix instead *)

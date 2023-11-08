@@ -5,11 +5,11 @@ let ( let@ ) = ( @@ )
 
 open! Moonpool
 
-let pool = Pool.create ~min:4 ()
+let pool = Ws_pool.create ~num_threads:4 ()
 
 let () =
   let x =
-    Pool.run_wait_block pool (fun () ->
+    Ws_pool.run_wait_block pool (fun () ->
         let x, y =
           Fork_join.both
             (fun () ->
@@ -25,7 +25,7 @@ let () =
 
 let () =
   try
-    Pool.run_wait_block pool (fun () ->
+    Ws_pool.run_wait_block pool (fun () ->
         Fork_join.both_ignore
           (fun () -> Thread.delay 0.005)
           (fun () ->
@@ -36,21 +36,21 @@ let () =
 
 let () =
   let par_sum =
-    Pool.run_wait_block pool (fun () ->
+    Ws_pool.run_wait_block pool (fun () ->
         Fork_join.all_init 42 (fun i -> i * i) |> List.fold_left ( + ) 0)
   in
   let exp_sum = List.init 42 (fun x -> x * x) |> List.fold_left ( + ) 0 in
   assert (par_sum = exp_sum)
 
 let () =
-  Pool.run_wait_block pool (fun () ->
+  Ws_pool.run_wait_block pool (fun () ->
       Fork_join.for_ 0 (fun _ _ -> assert false));
   ()
 
 let () =
   let total_sum = Atomic.make 0 in
 
-  Pool.run_wait_block pool (fun () ->
+  Ws_pool.run_wait_block pool (fun () ->
       Fork_join.for_ ~chunk_size:5 100 (fun low high ->
           (* iterate on the range sequentially. The range should have 5 items or less. *)
           let local_sum = ref 0 in
@@ -63,7 +63,7 @@ let () =
 let () =
   let total_sum = Atomic.make 0 in
 
-  Pool.run_wait_block pool (fun () ->
+  Ws_pool.run_wait_block pool (fun () ->
       Fork_join.for_ ~chunk_size:1 100 (fun low high ->
           assert (low = high);
           ignore (Atomic.fetch_and_add total_sum low : int)));
@@ -270,7 +270,7 @@ end
 let t_eval =
   let arb = Q.set_stats [ "size", Evaluator.size ] Evaluator.arb in
   Q.Test.make ~name:"same eval" arb (fun e ->
-      let@ pool = Pool.with_ ~min:4 () in
+      let@ pool = Ws_pool.with_ ~num_threads:4 () in
       (* Printf.eprintf "eval %s\n%!" (Evaluator.show e); *)
       let x = Evaluator.eval_seq e in
       let y = Evaluator.eval_fork_join ~pool e in
@@ -288,8 +288,8 @@ let t_for_nested ~min ~chunk_size () =
       let ref_l2 = List.map (List.map neg) ref_l1 in
 
       let l1, l2 =
-        let@ pool = Pool.with_ ~min () in
-        let@ () = Pool.run_wait_block pool in
+        let@ pool = Ws_pool.with_ ~num_threads:min () in
+        let@ () = Ws_pool.run_wait_block pool in
         let l1 =
           Fork_join.map_list ~chunk_size (Fork_join.map_list ~chunk_size neg) l
         in
@@ -310,8 +310,8 @@ let t_map ~chunk_size () =
   Q.Test.make ~name:"map1"
     Q.(small_list small_int |> Q.set_stats [ "len", List.length ])
     (fun l ->
-      let@ pool = Pool.with_ ~min:4 () in
-      let@ () = Pool.run_wait_block pool in
+      let@ pool = Ws_pool.with_ ~num_threads:4 () in
+      let@ () = Ws_pool.run_wait_block pool in
 
       let a1 =
         Fork_join.map_list ~chunk_size string_of_int l |> Array.of_list

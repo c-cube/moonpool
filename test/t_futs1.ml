@@ -1,7 +1,7 @@
 open! Moonpool
 
-let pool = Pool.create ~min:4 ()
-let pool2 = Pool.create ~min:2 ()
+let pool = Ws_pool.create ~num_threads:4 ()
+let pool2 = Ws_pool.create ~num_threads:2 ()
 
 let () =
   let fut = Fut.return 1 in

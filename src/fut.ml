@@ -97,8 +97,13 @@ let spawn ~on f : _ t =
     fulfill promise res
   in
 
-  Pool.run_async on task;
+  Runner.run_async on task;
   fut
+
+let spawn_on_current_runner f : _ t =
+  match Runner.get_current_runner () with
+  | None -> failwith "Fut.spawn_on_current_runner: not running on a runner"
+  | Some on -> spawn ~on f
 
 let reify_error (f : 'a t) : 'a or_error t =
   match peek f with
@@ -108,8 +113,13 @@ let reify_error (f : 'a t) : 'a or_error t =
     on_result f (fun r -> fulfill promise (Ok r));
     fut
 
+let get_runner_ ?on () : Runner.t option =
+  match on with
+  | Some _ as r -> r
+  | None -> Runner.get_current_runner ()
+
 let map ?on ~f fut : _ t =
-  let map_res r =
+  let map_immediate_ r : _ result =
     match r with
     | Ok x ->
       (try Ok (f x)
@@ -119,20 +129,32 @@ let map ?on ~f fut : _ t =
     | Error e_bt -> Error e_bt
   in
 
+  match peek fut, get_runner_ ?on () with
+  | Some res, None -> of_result @@ map_immediate_ res
+  | Some res, Some runner ->
+    let fut2, promise = make () in
+    Runner.run_async runner (fun () -> fulfill promise @@ map_immediate_ res);
+    fut2
+  | None, None ->
+    let fut2, promise = make () in
+    on_result fut (fun res -> fulfill promise @@ map_immediate_ res);
+    fut2
+  | None, Some runner ->
+    let fut2, promise = make () in
+    on_result fut (fun res ->
+        Runner.run_async runner (fun () ->
+            fulfill promise @@ map_immediate_ res));
+    fut2
+
+let join (fut : 'a t t) : 'a t =
   match peek fut with
-  | Some r -> of_result (map_res r)
+  | Some (Ok f) -> f
+  | Some (Error (e, bt)) -> fail e bt
   | None ->
     let fut2, promise = make () in
-    on_result fut (fun r ->
-        let map_and_fulfill () =
-          let res = map_res r in
-          fulfill promise res
-        in
-
-        match on with
-        | None -> map_and_fulfill ()
-        | Some on -> Pool.run_async on map_and_fulfill);
-
+    on_result fut (function
+      | Ok sub_fut -> on_result sub_fut (fulfill promise)
+      | Error _ as e -> fulfill promise e);
     fut2
 
 let bind ?on ~f fut : _ t =
@@ -146,33 +168,31 @@ let bind ?on ~f fut : _ t =
     | Error (e, bt) -> fail e bt
   in
 
-  let bind_and_fulfill r promise () =
+  let bind_and_fulfill (r : _ result) promise () : unit =
     let f_res_fut = apply_f_to_res r in
     (* forward result *)
     on_result f_res_fut (fun r -> fulfill promise r)
   in
 
-  match peek fut with
-  | Some r ->
-    (match on with
-    | None -> apply_f_to_res r
-    | Some on ->
-      let fut2, promise = make () in
-      Pool.run_async on (bind_and_fulfill r promise);
-      fut2)
-  | None ->
+  match peek fut, get_runner_ ?on () with
+  | Some res, Some runner ->
+    let fut2, promise = make () in
+    Runner.run_async runner (bind_and_fulfill res promise);
+    fut2
+  | Some res, None -> apply_f_to_res res
+  | None, Some runner ->
     let fut2, promise = make () in
     on_result fut (fun r ->
-        match on with
-        | None -> bind_and_fulfill r promise ()
-        | Some on -> Pool.run_async on (bind_and_fulfill r promise));
-
+        Runner.run_async runner (bind_and_fulfill r promise));
+    fut2
+  | None, None ->
+    let fut2, promise = make () in
+    on_result fut (fun res -> bind_and_fulfill res promise ());
     fut2
 
-let bind_reify_error ?on ~f fut : _ t = bind ?on ~f (reify_error fut)
-let join ?on fut = bind ?on fut ~f:(fun x -> x)
+let[@inline] bind_reify_error ?on ~f fut : _ t = bind ?on ~f (reify_error fut)
 
-let update_ (st : 'a A.t) f : 'a =
+let update_atomic_ (st : 'a A.t) f : 'a =
   let rec loop () =
     let x = A.get st in
     let y = f x in
@@ -197,7 +217,7 @@ let both a b : _ t =
       | Error err -> fulfill_idempotent promise (Error err)
       | Ok x ->
         (match
-           update_ st (function
+           update_atomic_ st (function
              | `Neither -> `Left x
              | `Right y -> `Both (x, y)
              | _ -> assert false)
@@ -208,7 +228,7 @@ let both a b : _ t =
       | Error err -> fulfill_idempotent promise (Error err)
       | Ok y ->
         (match
-           update_ st (function
+           update_atomic_ st (function
              | `Left x -> `Both (x, y)
              | `Neither -> `Right y
              | _ -> assert false)
@@ -381,9 +401,7 @@ let await (fut : 'a t) : 'a =
         Suspend_.handle =
           (fun ~run k ->
             on_result fut (function
-              | Ok _ ->
-                (* run without handler, we're already in a deep effect *)
-                run ~with_handler:false (fun () -> k (Ok ()))
+              | Ok _ -> run (fun () -> k (Ok ()))
               | Error (exn, bt) ->
                 (* fail continuation immediately *)
                 k (Error (exn, bt))));
@@ -393,41 +411,14 @@ let await (fut : 'a t) : 'a =
 
 [@@@endif]
 
-module type INFIX = sig
-  val ( >|= ) : 'a t -> ('a -> 'b) -> 'b t
-  val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
-  val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
-  val ( and+ ) : 'a t -> 'b t -> ('a * 'b) t
-  val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
-  val ( and* ) : 'a t -> 'b t -> ('a * 'b) t
-end
-
-module Infix_ (X : sig
-  val pool : Pool.t option
-end) : INFIX = struct
-  let[@inline] ( >|= ) x f = map ?on:X.pool ~f x
-  let[@inline] ( >>= ) x f = bind ?on:X.pool ~f x
+module Infix = struct
+  let[@inline] ( >|= ) x f = map ~f x
+  let[@inline] ( >>= ) x f = bind ~f x
   let ( let+ ) = ( >|= )
   let ( let* ) = ( >>= )
   let ( and+ ) = both
   let ( and* ) = both
 end
 
-module Infix_local = Infix_ (struct
-  let pool = None
-end)
-
-include Infix_local
-
-module Infix (X : sig
-  val pool : Pool.t
-end) =
-Infix_ (struct
-  let pool = Some X.pool
-end)
-
-let[@inline] infix pool : (module INFIX) =
-  let module M = Infix (struct
-    let pool = pool
-  end) in
-  (module M)
+include Infix
+module Infix_local = Infix [@@deprecated "use Infix"]

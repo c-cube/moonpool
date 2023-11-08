@@ -8,9 +8,7 @@ type suspension = (unit, exn * Printexc.raw_backtrace) result -> unit
 
 type task = unit -> unit
 
-type suspension_handler = {
-  handle: run:(with_handler:bool -> task -> unit) -> suspension -> unit;
-}
+type suspension_handler = { handle: run:(task -> unit) -> suspension -> unit }
 [@@unboxed]
 (** The handler that knows what to do with the suspended computation.
 
@@ -50,8 +48,10 @@ val suspend : suspension_handler -> unit
 
 [@@@endif]
 
-val with_suspend :
-  run:(with_handler:bool -> task -> unit) -> (unit -> unit) -> unit
+val prepare_for_await : unit -> Dla_.t
+(** Our stub for DLA. Unstable. *)
+
+val with_suspend : run:(task -> unit) -> (unit -> unit) -> unit
 (** [with_suspend ~run f] runs [f()] in an environment where [suspend]
     will work. If [f()] suspends with suspension handler [h],
     this calls [h ~run k] where [k] is the suspension.

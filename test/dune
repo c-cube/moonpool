@@ -1,6 +1,7 @@
 (tests
  (names
   t_fib
+  t_ws_pool_confusion
   t_bench1
   t_fib_rec
   t_futs1
@@ -8,10 +9,14 @@
   t_props
   t_chan_train
   t_resource
+  t_unfair
+  t_ws_deque
   t_bounded_queue)
  (libraries
   moonpool
   qcheck-core
   qcheck-core.runner
   ;tracy-client.trace
+  unix
+  trace-tef
   trace))
