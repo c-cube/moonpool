@@ -9,7 +9,7 @@ on:
 jobs:
   run:
     name: build
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: true
       matrix:
