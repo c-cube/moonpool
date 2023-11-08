@@ -411,41 +411,14 @@ let await (fut : 'a t) : 'a =
 
 [@@@endif]
 
-module type INFIX = sig
-  val ( >|= ) : 'a t -> ('a -> 'b) -> 'b t
-  val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
-  val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
-  val ( and+ ) : 'a t -> 'b t -> ('a * 'b) t
-  val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
-  val ( and* ) : 'a t -> 'b t -> ('a * 'b) t
-end
-
-module Infix_ (X : sig
-  val pool : Runner.t option
-end) : INFIX = struct
-  let[@inline] ( >|= ) x f = map ?on:X.pool ~f x
-  let[@inline] ( >>= ) x f = bind ?on:X.pool ~f x
+module Infix = struct
+  let[@inline] ( >|= ) x f = map ~f x
+  let[@inline] ( >>= ) x f = bind ~f x
   let ( let+ ) = ( >|= )
   let ( let* ) = ( >>= )
   let ( and+ ) = both
   let ( and* ) = both
 end
 
-module Infix_local = Infix_ (struct
-  let pool = None
-end)
-
-include Infix_local
-
-module Infix (X : sig
-  val pool : Runner.t
-end) =
-Infix_ (struct
-  let pool = Some X.pool
-end)
-
-let[@inline] infix pool : (module INFIX) =
-  let module M = Infix (struct
-    let pool = pool
-  end) in
-  (module M)
+include Infix
+module Infix_local = Infix [@@deprecated "use Infix"]
