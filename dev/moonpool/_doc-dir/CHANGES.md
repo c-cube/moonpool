@@ -4,7 +4,7 @@
 ## features
 
 - add `Bb_queue.transfer`
- -add `Bb_queue.to_{iter,gen,seq}`
+- add `Bb_queue.to_{iter,gen,seq}`
 - add `Fifo_pool`, a simple pool with a single blocking queue for
     workloads with coarse granularity tasks that value
     latency (e.g. a web server)
