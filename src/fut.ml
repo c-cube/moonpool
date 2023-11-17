@@ -330,6 +330,8 @@ let join_list (l : _ t list) : _ list t =
   | [ x ] -> map ?on:None x ~f:(fun x -> [ x ])
   | _ -> join_container_ ~len:List.length ~map:List.map ~iter:List.iter l
 
+let[@inline] map_list ~f l : _ list t = List.map f l |> join_list
+
 let wait_array (a : _ t array) : unit t =
   join_container_ a ~iter:Array.iter ~len:Array.length ~map:(fun _f _ -> ())
 

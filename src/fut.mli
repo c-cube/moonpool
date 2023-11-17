@@ -144,6 +144,10 @@ val join_array : 'a t array -> 'a array t
 val join_list : 'a t list -> 'a list t
 (** Wait for all the futures in the list. Fails if any future fails. *)
 
+val map_list : f:('a -> 'b t) -> 'a list -> 'b list t
+(** [map_list ~f l] is like [join_list @@ List.map f l].
+    @since NEXT_RELEASE *)
+
 val wait_array : _ t array -> unit t
 (** [wait_array arr] waits for all futures in [arr] to resolve. It discards
       the individual results of futures in [arr]. It fails if any future fails. *)
