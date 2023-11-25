@@ -1,4 +1,9 @@
 
+# 0.5.1
+
+- fix `Ws_pool`: workers would exit before processing
+    all remaining tasks upon shutdown
+
 # 0.5
 
 ## features
