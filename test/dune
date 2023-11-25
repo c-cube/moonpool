@@ -11,6 +11,7 @@
   t_resource
   t_unfair
   t_ws_deque
+  t_ws_wait
   t_bounded_queue)
  (libraries
   moonpool
