@@ -144,13 +144,36 @@ val join_array : 'a t array -> 'a array t
 val join_list : 'a t list -> 'a list t
 (** Wait for all the futures in the list. Fails if any future fails. *)
 
+module Advanced : sig
+  val barrier_on_abstract_container_of_futures :
+    iter:(('a t -> unit) -> 'cont -> unit) ->
+    len:('cont -> int) ->
+    aggregate_results:(('a t -> 'a) -> 'cont -> 'res) ->
+    'cont ->
+    'res t
+  (** [barrier_on_abstract_container_of_futures ~iter ~aggregate_results ~len cont] takes a
+    container of futures ([cont]), with [len] elements,
+    and returns a future result of type [res]
+    (possibly another type of container).
+
+    This waits for all futures in [cont: 'cont] to be done
+    (futures obtained via [iter <some function> cont]). If they
+    all succeed, their results are aggregated into a new
+    result of type ['res] via [aggregate_results <some function> cont].
+
+    {b NOTE}: the behavior is not specified if [iter f cont] (for a function f)
+    doesn't call [f] on exactly [len cont] elements.
+
+    @since NEXT_RELEASE *)
+end
+
 val map_list : f:('a -> 'b t) -> 'a list -> 'b list t
 (** [map_list ~f l] is like [join_list @@ List.map f l].
     @since NEXT_RELEASE *)
 
 val wait_array : _ t array -> unit t
 (** [wait_array arr] waits for all futures in [arr] to resolve. It discards
-      the individual results of futures in [arr]. It fails if any future fails. *)
+    the individual results of futures in [arr]. It fails if any future fails. *)
 
 val wait_list : _ t list -> unit t
 (** [wait_list l] waits for all futures in [l] to resolve. It discards
