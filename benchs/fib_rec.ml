@@ -1,4 +1,7 @@
 open Moonpool
+module Trace = Trace_core
+
+let ( let@ ) = ( @@ )
 
 let rec fib_direct x =
   if x <= 1 then
@@ -10,7 +13,7 @@ let cutoff = ref 20
 
 let rec fib ~on x : int Fut.t =
   if x <= !cutoff then
-    Fut.spawn ~on (fun () -> fib_direct x)
+    Fut.spawn ~name:"fib" ~on (fun () -> fib_direct x)
   else
     let open Fut.Infix in
     let+ t1 = fib ~on (x - 1) and+ t2 = fib ~on (x - 2) in
@@ -27,14 +30,14 @@ let fib_fj ~on x : int Fut.t =
       n1 + n2
     )
   in
-  Fut.spawn ~on (fun () -> fib_rec x)
+  Fut.spawn ~name:"fib" ~on (fun () -> fib_rec x)
 
 let fib_await ~on x : int Fut.t =
   let rec fib_rec x : int Fut.t =
     if x <= !cutoff then
-      Fut.spawn ~on (fun () -> fib_direct x)
+      Fut.spawn ~name:"fib" ~on (fun () -> fib_direct x)
     else
-      Fut.spawn ~on (fun () ->
+      Fut.spawn ~name:"fib" ~on (fun () ->
           let n1 = fib_rec (x - 1) in
           let n2 = fib_rec (x - 2) in
           let n1 = Fut.await n1 in
@@ -66,6 +69,7 @@ let str_of_int_opt = function
   | Some i -> Printf.sprintf "Some %d" i
 
 let run ~psize ~n ~seq ~dl ~fj ~await ~niter ~kind () : unit =
+  let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "fib.run" in
   let pool = lazy (create_pool ~kind ~psize ()) in
   let dl_pool =
     lazy
@@ -108,6 +112,7 @@ let run ~psize ~n ~seq ~dl ~fj ~await ~niter ~kind () : unit =
     Ws_pool.shutdown (Lazy.force pool)
 
 let () =
+  let@ () = Trace_tef.with_setup () in
   let n = ref 40 in
   let psize = ref None in
   let seq = ref false in

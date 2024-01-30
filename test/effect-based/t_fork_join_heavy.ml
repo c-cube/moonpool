@@ -33,10 +33,12 @@ let run ~min () =
       let l1, l2 =
         Fork_join.both
           (fun () ->
+            let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "fj.left" in
             Fork_join.map_list ~chunk_size
               (Fork_join.map_list ~chunk_size neg)
               l)
           (fun () ->
+            let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "fj.right" in
             Fork_join.map_list ~chunk_size
               (Fork_join.map_list ~chunk_size neg)
               ref_l1)
