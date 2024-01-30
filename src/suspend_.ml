@@ -56,7 +56,7 @@ let prepare_for_await () : Dla_.t =
 [@@@ocaml.alert "+unstable"]
 [@@@else_]
 
-let[@inline] with_suspend ~run:_ f = f ()
+let[@inline] with_suspend ~name:_ ~run:_ f = f ()
 let[@inline] prepare_for_await () = { Dla_.release = ignore; await = ignore }
 
 [@@@endif]
