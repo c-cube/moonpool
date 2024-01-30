@@ -5,16 +5,16 @@ type 'a waiter = 'a or_error -> unit
 
 type 'a state =
   | Done of 'a or_error
-  | Waiting of 'a waiter list
+  | Waiting of { waiters: 'a waiter list }
 
 type 'a t = { st: 'a state A.t } [@@unboxed]
 type 'a promise = 'a t
 
 let make () =
-  let fut = { st = A.make (Waiting []) } in
+  let fut = { st = A.make (Waiting { waiters = [] }) } in
   fut, fut
 
-let of_result x : _ t = { st = A.make (Done x) }
+let[@inline] of_result x : _ t = { st = A.make (Done x) }
 let[@inline] return x : _ t = of_result (Ok x)
 let[@inline] fail e bt : _ t = of_result (Error (e, bt))
 
@@ -53,9 +53,8 @@ let on_result (self : _ t) (f : _ waiter) : unit =
     | Done x ->
       f x;
       false
-    | Waiting l ->
-      let must_retry = not (A.compare_and_set self.st st (Waiting (f :: l))) in
-      must_retry
+    | Waiting { waiters = l } ->
+      not (A.compare_and_set self.st st (Waiting { waiters = f :: l }))
   do
     Domain_.relax ()
   done
@@ -63,28 +62,31 @@ let on_result (self : _ t) (f : _ waiter) : unit =
 exception Already_fulfilled
 
 let fulfill (self : _ t) (r : _ result) : unit =
+  let fs = ref [] in
   while
     let st = A.get self.st in
     match st with
     | Done _ -> raise Already_fulfilled
-    | Waiting l ->
+    | Waiting { waiters = l } ->
       let did_swap = A.compare_and_set self.st st (Done r) in
       if did_swap then (
         (* success, now call all the waiters *)
-        List.iter (fun f -> try f r with _ -> ()) l;
+        fs := l;
         false
       ) else
         true
   do
     Domain_.relax ()
-  done
+  done;
+  List.iter (fun f -> try f r with _ -> ()) !fs;
+  ()
 
 let[@inline] fulfill_idempotent self r =
   try fulfill self r with Already_fulfilled -> ()
 
 (* ### combinators ### *)
 
-let spawn ~on f : _ t =
+let spawn ?name ~on f : _ t =
   let fut, promise = make () in
 
   let task () =
@@ -97,13 +99,13 @@ let spawn ~on f : _ t =
     fulfill promise res
   in
 
-  Runner.run_async on task;
+  Runner.run_async ?name on task;
   fut
 
-let spawn_on_current_runner f : _ t =
+let spawn_on_current_runner ?name f : _ t =
   match Runner.get_current_runner () with
   | None -> failwith "Fut.spawn_on_current_runner: not running on a runner"
-  | Some on -> spawn ~on f
+  | Some on -> spawn ?name ~on f
 
 let reify_error (f : 'a t) : 'a or_error t =
   match peek f with
@@ -413,9 +415,11 @@ let await (fut : 'a t) : 'a =
     Suspend_.suspend
       {
         Suspend_.handle =
-          (fun ~run k ->
+          (fun ~name ~run k ->
             on_result fut (function
-              | Ok _ -> run (fun () -> k (Ok ()))
+              | Ok _ ->
+                (* schedule continuation with the same name *)
+                run ~name (fun () -> k (Ok ()))
               | Error (exn, bt) ->
                 (* fail continuation immediately *)
                 k (Error (exn, bt))));

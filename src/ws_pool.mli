@@ -53,7 +53,3 @@ val with_ : (unit -> (t -> 'a) -> 'a, _) create_args
 
     Most parameters are the same as in {!create}.
     @since 0.3 *)
-
-val run : t -> (unit -> unit) -> unit
-  [@@deprecated "use run_async"]
-(** deprecated alias to {!run_async} *)

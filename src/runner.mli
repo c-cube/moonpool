@@ -33,13 +33,16 @@ val shutdown_without_waiting : t -> unit
 
 exception Shutdown
 
-val run_async : t -> task -> unit
+val run_async : ?name:string -> t -> task -> unit
 (** [run_async pool f] schedules [f] for later execution on the runner
     in one of the threads. [f()] will run on one of the runner's
     worker threads/domains.
+    @param name if provided and [Trace] is present in dependencies, a span
+    will be created when the task starts, and will stop when the task is over.
+    (since NEXT_RELEASE)
     @raise Shutdown if the runner was shut down before [run_async] was called. *)
 
-val run_wait_block : t -> (unit -> 'a) -> 'a
+val run_wait_block : ?name:string -> t -> (unit -> 'a) -> 'a
 (** [run_wait_block pool f] schedules [f] for later execution
     on the pool, like {!run_async}.
     It then blocks the current thread until [f()] is done executing,
@@ -47,7 +50,10 @@ val run_wait_block : t -> (unit -> 'a) -> 'a
     will raise it as well.
 
     {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}
-      about the required discipline to avoid deadlocks). *)
+      about the required discipline to avoid deadlocks).
+    @raise Shutdown if the runner was already shut down *)
+
+(** {2 Implementing runners} *)
 
 (** This module is specifically intended for users who implement their
     own runners. Regular users of Moonpool should not need to look at it. *)
@@ -56,7 +62,7 @@ module For_runner_implementors : sig
     size:(unit -> int) ->
     num_tasks:(unit -> int) ->
     shutdown:(wait:bool -> unit -> unit) ->
-    run_async:(task -> unit) ->
+    run_async:(name:string -> task -> unit) ->
     unit ->
     t
   (** Create a new runner.
@@ -65,6 +71,10 @@ module For_runner_implementors : sig
       so that {!Fork_join} and other 5.x features work properly. *)
 
   val k_cur_runner : t option ref Thread_local_storage_.key
+  (** Key that should be used by each runner to store itself in TLS
+      on every thread it controls, so that tasks running on these threads
+      can access the runner. This is necessary for {!get_current_runner}
+      to work. *)
 end
 
 val get_current_runner : unit -> t option

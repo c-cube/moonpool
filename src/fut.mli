@@ -81,11 +81,11 @@ val is_done : _ t -> bool
 
 (** {2 Combinators} *)
 
-val spawn : on:Runner.t -> (unit -> 'a) -> 'a t
+val spawn : ?name:string -> on:Runner.t -> (unit -> 'a) -> 'a t
 (** [spaw ~on f] runs [f()] on the given runner [on], and return a future that will
       hold its result. *)
 
-val spawn_on_current_runner : (unit -> 'a) -> 'a t
+val spawn_on_current_runner : ?name:string -> (unit -> 'a) -> 'a t
 (** This must be run from inside a runner, and schedules
     the new task on it as well.
 
