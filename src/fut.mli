@@ -26,8 +26,9 @@ type 'a promise
 (** A promise, which can be fulfilled exactly once to set
       the corresponding future *)
 
-val make : unit -> 'a t * 'a promise
-(** Make a new future with the associated promise *)
+val make : ?name:string -> unit -> 'a t * 'a promise
+(** Make a new future with the associated promise.
+    @param name name for the future, used for tracing. since NEXT_RELEASE. *)
 
 val on_result : 'a t -> ('a or_error -> unit) -> unit
 (** [on_result fut f] registers [f] to be called in the future

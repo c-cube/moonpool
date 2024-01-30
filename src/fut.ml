@@ -7,14 +7,18 @@ type 'a state =
   | Done of 'a or_error
   | Waiting of { waiters: 'a waiter list }
 
-type 'a t = { st: 'a state A.t } [@@unboxed]
+type 'a t = {
+  st: 'a state A.t;
+  name: string;
+}
+
 type 'a promise = 'a t
 
-let make () =
-  let fut = { st = A.make (Waiting { waiters = [] }) } in
+let make ?(name = "") () =
+  let fut = { st = A.make (Waiting { waiters = [] }); name } in
   fut, fut
 
-let[@inline] of_result x : _ t = { st = A.make (Done x) }
+let[@inline] of_result x : _ t = { st = A.make (Done x); name = "" }
 let[@inline] return x : _ t = of_result (Ok x)
 let[@inline] fail e bt : _ t = of_result (Error (e, bt))
 
@@ -115,7 +119,7 @@ let reify_error (f : 'a t) : 'a or_error t =
     on_result f (fun r -> fulfill promise (Ok r));
     fut
 
-let get_runner_ ?on () : Runner.t option =
+let[@inline] get_runner_ ?on () : Runner.t option =
   match on with
   | Some _ as r -> r
   | None -> Runner.get_current_runner ()
@@ -131,20 +135,22 @@ let map ?on ~f fut : _ t =
     | Error e_bt -> Error e_bt
   in
 
+  let name = fut.name in
   match peek fut, get_runner_ ?on () with
   | Some res, None -> of_result @@ map_immediate_ res
   | Some res, Some runner ->
-    let fut2, promise = make () in
-    Runner.run_async runner (fun () -> fulfill promise @@ map_immediate_ res);
+    let fut2, promise = make ~name () in
+    Runner.run_async ~name runner (fun () ->
+        fulfill promise @@ map_immediate_ res);
     fut2
   | None, None ->
-    let fut2, promise = make () in
+    let fut2, promise = make ~name () in
     on_result fut (fun res -> fulfill promise @@ map_immediate_ res);
     fut2
   | None, Some runner ->
-    let fut2, promise = make () in
+    let fut2, promise = make ~name () in
     on_result fut (fun res ->
-        Runner.run_async runner (fun () ->
+        Runner.run_async ~name runner (fun () ->
             fulfill promise @@ map_immediate_ res));
     fut2
 
@@ -153,7 +159,7 @@ let join (fut : 'a t t) : 'a t =
   | Some (Ok f) -> f
   | Some (Error (e, bt)) -> fail e bt
   | None ->
-    let fut2, promise = make () in
+    let fut2, promise = make ~name:fut.name () in
     on_result fut (function
       | Ok sub_fut -> on_result sub_fut (fulfill promise)
       | Error _ as e -> fulfill promise e);
@@ -176,19 +182,20 @@ let bind ?on ~f fut : _ t =
     on_result f_res_fut (fun r -> fulfill promise r)
   in
 
+  let name = fut.name in
   match peek fut, get_runner_ ?on () with
   | Some res, Some runner ->
-    let fut2, promise = make () in
-    Runner.run_async runner (bind_and_fulfill res promise);
+    let fut2, promise = make ~name () in
+    Runner.run_async ~name runner (bind_and_fulfill res promise);
     fut2
   | Some res, None -> apply_f_to_res res
   | None, Some runner ->
-    let fut2, promise = make () in
+    let fut2, promise = make ~name () in
     on_result fut (fun r ->
-        Runner.run_async runner (bind_and_fulfill r promise));
+        Runner.run_async ~name runner (bind_and_fulfill r promise));
     fut2
   | None, None ->
-    let fut2, promise = make () in
+    let fut2, promise = make ~name () in
     on_result fut (fun res -> bind_and_fulfill res promise ());
     fut2
 
@@ -212,7 +219,7 @@ let both a b : _ t =
   | Some (Ok x), Some (Ok y) -> return (x, y)
   | Some (Error (e, bt)), _ | _, Some (Error (e, bt)) -> fail e bt
   | _ ->
-    let fut, promise = make () in
+    let fut, promise = make ~name:a.name () in
 
     let st = A.make `Neither in
     on_result a (function
@@ -245,7 +252,7 @@ let choose a b : _ t =
   | _, Some (Ok y) -> return (Either.Right y)
   | Some (Error (e, bt)), Some (Error _) -> fail e bt
   | _ ->
-    let fut, promise = make () in
+    let fut, promise = make ~name:a.name () in
 
     let one_failure = A.make false in
     on_result a (function
@@ -268,7 +275,7 @@ let choose_same a b : _ t =
   | _, Some (Ok y) -> return y
   | Some (Error (e, bt)), Some (Error _) -> fail e bt
   | _ ->
-    let fut, promise = make () in
+    let fut, promise = make ~name:a.name () in
 
     let one_failure = A.make false in
     on_result a (function
