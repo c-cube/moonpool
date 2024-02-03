@@ -58,6 +58,6 @@ let with_suspend ~on_suspend ~(run : name:string -> task -> unit)
 [@@@ocaml.alert "+unstable"]
 [@@@else_]
 
-let[@inline] with_suspend ~name:_ ~on_suspend:_ ~run:_ f = f ()
+let[@inline] with_suspend ~on_suspend:_ ~run:_ ~resume:_ f = f ()
 
 [@@@endif]
