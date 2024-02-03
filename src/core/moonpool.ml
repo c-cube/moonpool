@@ -21,7 +21,6 @@ module Fifo_pool = Fifo_pool
 module Fut = Fut
 module Lock = Lock
 module Immediate_runner = Immediate_runner
-module Pool = Fifo_pool
 module Runner = Runner
 module Thread_local_storage = Thread_local_storage_
 module Ws_pool = Ws_pool
