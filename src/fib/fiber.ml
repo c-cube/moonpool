@@ -144,8 +144,6 @@ let add_child_ ~protect (self : _ t) (child : _ t) =
     ()
   done
 
-exception Cancelled of Exn_bt.t
-
 (** Key to access the current fiber. *)
 let k_current_fiber : any option Task_local_storage.key =
   Task_local_storage.new_key ~init:(fun () -> None) ()
