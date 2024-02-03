@@ -37,6 +37,5 @@ let with_suspend ~name ~on_suspend ~(run : name:string -> task -> unit)
 [@@@else_]
 
 let[@inline] with_suspend ~name:_ ~on_suspend:_ ~run:_ f = f ()
-let[@inline] prepare_for_await () = { Dla_.release = ignore; await = ignore }
 
 [@@@endif]

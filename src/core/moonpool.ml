@@ -18,7 +18,6 @@ module Blocking_queue = Bb_queue
 module Bounded_queue = Bounded_queue
 module Chan = Chan
 module Fifo_pool = Fifo_pool
-module Fork_join = Fork_join
 module Fut = Fut
 module Lock = Lock
 module Immediate_runner = Immediate_runner
@@ -30,4 +29,6 @@ module Ws_pool = Ws_pool
 module Private = struct
   module Ws_deque_ = Ws_deque_
   module Suspend_ = Suspend_
+
+  let num_domains = Domain_pool_.n_domains
 end
