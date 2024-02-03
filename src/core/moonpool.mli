@@ -14,10 +14,6 @@ module Fifo_pool = Fifo_pool
 module Runner = Runner
 module Immediate_runner = Immediate_runner
 
-module Pool = Fifo_pool
-[@@deprecated "use Fifo_pool or Ws_pool to be more explicit"]
-(** Default pool. Please explicitly pick an implementation instead. *)
-
 val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
 (** Similar to {!Thread.create}, but it picks a background domain at random
     to run the thread. This ensures that we don't always pick the same domain
