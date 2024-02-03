@@ -1,11 +1,23 @@
-
 (tests
-  (names t_fib1 t_futs1 t_many t_fib_fork_join
-         t_fib_fork_join_all t_sort t_fork_join t_fork_join_heavy)
-  (preprocess (action
+ (names
+  t_fib1
+  t_futs1
+  t_many
+  t_fib_fork_join
+  t_fib_fork_join_all
+  t_sort
+  t_fork_join
+  t_fork_join_heavy)
+ (preprocess
+  (action
    (run %{project_root}/src/cpp/cpp.exe %{input-file})))
-  (enabled_if (>= %{ocaml_version} 5.0))
-  (libraries moonpool trace trace-tef
-             qcheck-core qcheck-core.runner
-             ;tracy-client.trace
-             ))
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (libraries
+  moonpool
+  trace
+  trace-tef
+  qcheck-core
+  qcheck-core.runner
+  ;tracy-client.trace
+  ))
