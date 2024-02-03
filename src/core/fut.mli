@@ -17,7 +17,7 @@
     the runner [pool] (once [fut] resolves successfully with a value).
 *)
 
-type 'a or_error = ('a, exn * Printexc.raw_backtrace) result
+type 'a or_error = ('a, Exn_bt.t) result
 
 type 'a t
 (** A future with a result of type ['a]. *)
@@ -50,6 +50,10 @@ val return : 'a -> 'a t
 
 val fail : exn -> Printexc.raw_backtrace -> _ t
 (** Already settled future, with a failure *)
+
+val fail_exn_bt : Exn_bt.t -> _ t
+(** Fail from a bundle of exception and backtrace
+    @since NEXT_RELEASE *)
 
 val of_result : 'a or_error -> 'a t
 

@@ -1,6 +1,6 @@
 module A = Atomic_
 
-type 'a or_error = ('a, exn * Printexc.raw_backtrace) result
+type 'a or_error = ('a, Exn_bt.t) result
 type 'a waiter = 'a or_error -> unit
 
 type 'a state =
@@ -25,6 +25,7 @@ let make ?(name = "") () =
 let[@inline] of_result x : _ t = { st = A.make (Done x) }
 let[@inline] return x : _ t = of_result (Ok x)
 let[@inline] fail e bt : _ t = of_result (Error (e, bt))
+let[@inline] fail_exn_bt ebt = of_result (Error ebt)
 
 let[@inline] is_resolved self : bool =
   match A.get self.st with
