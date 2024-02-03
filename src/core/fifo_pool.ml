@@ -87,7 +87,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
     | None -> AT_pair (ignore, fun _ _ -> ())
   in
 
-  let num_domains = D_pool_.n_domains () in
+  let num_domains = Domain_pool_.n_domains () in
 
   (* number of threads to run *)
   let num_threads = Util_pool_.num_threads ?num_threads () in
@@ -136,7 +136,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
       (* now run the main loop *)
       Fun.protect run ~finally:(fun () ->
           (* on termination, decrease refcount of underlying domain *)
-          D_pool_.decr_on dom_idx);
+          Domain_pool_.decr_on dom_idx);
       on_exit_thread ~dom_id:dom_idx ~t_id ()
     in
 
@@ -148,7 +148,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
       Bb_queue.push receive_threads (i, thread)
     in
 
-    D_pool_.run_on dom_idx create_thread_in_domain
+    Domain_pool_.run_on dom_idx create_thread_in_domain
   in
 
   (* start all threads, placing them on the domains
