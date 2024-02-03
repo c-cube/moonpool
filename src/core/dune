@@ -3,7 +3,7 @@
  (name moonpool)
  (libraries moonpool.private)
  (flags :standard -open Moonpool_private)
- (private_modules d_pool_)
+ (private_modules domain_pool_)
  (preprocess
   (action
    (run %{project_root}/src/cpp/cpp.exe %{input-file}))))
