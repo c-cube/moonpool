@@ -204,7 +204,8 @@ val for_list : on:Runner.t -> 'a list -> ('a -> unit) -> unit t
 
 val await : 'a t -> 'a
 (** [await fut] suspends the current tasks until [fut] is fulfilled, then
-    resumes the task on this same runner.
+    resumes the task on this same runner (but possibly on a different
+    thread/domain).
 
     @since 0.3
 

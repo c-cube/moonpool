@@ -1,5 +1,28 @@
 (** Mutex-protected resource.
 
+    This lock is a synchronous concurrency primitive, as a thin wrapper
+    around {!Mutex} that encourages proper management of the critical
+    section in RAII style:
+
+    {[
+      let (let@) = (@@)
+
+
+      …
+      let compute_foo =
+        (* enter critical section *)
+        let@ x = Lock.with_ protected_resource in
+        use_x;
+        return_foo ()
+        (* exit critical section *)
+      in
+      …
+    ]}
+
+    This lock does not work well with {!Fut.await}. A critical section
+    that contains a call to [await] might cause deadlocks, or lock starvation,
+    because it will hold onto the lock while it goes to sleep.
+
     @since 0.3 *)
 
 type 'a t
