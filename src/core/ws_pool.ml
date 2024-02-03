@@ -130,7 +130,10 @@ let run_task_now_ (self : state) ~runner (w : worker_state) ~name ~ls task :
     schedule_task_ self w ~name ~ls:[||] task'
   in
 
-  let resume ~ls k r = schedule_task_ self (Some w) ~name ~ls (fun () -> k r) in
+  let resume ~ls k r =
+    let w = find_current_worker_ () in
+    schedule_task_ self w ~name ~ls (fun () -> k r)
+  in
 
   (* run the task now, catching errors *)
   (try
