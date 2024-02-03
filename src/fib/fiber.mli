@@ -9,10 +9,6 @@
       of structured concurrency
 *)
 
-(**/**)
-
-(**/**)
-
 type 'a t
 (** A fiber returning a value of type ['a]. *)
 
@@ -47,10 +43,6 @@ val check_if_cancelled : unit -> unit
 val yield : unit -> unit
 (** Yield control to the scheduler from the current fiber.
     @raise Failure if not run from inside a fiber. *)
-
-exception Cancelled of Exn_bt.t
-(** Exception for fibers that are cancelled. Polling points such
-    as {!yield} and {!await} will raise this if the fiber has been cancelled. *)
 
 val with_cancel_callback : _ t -> cancel_callback -> (unit -> 'a) -> 'a
 (** [with_cancel_callback fib cb (fun () -> <e>)] evaluates [e]
