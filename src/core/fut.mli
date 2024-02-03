@@ -84,6 +84,14 @@ val is_done : _ t -> bool
 (** Is the future resolved? This is the same as [peek fut |> Option.is_some].
     @since 0.2 *)
 
+val is_success : _ t -> bool
+(** Checks if the future is resolved with [Ok _] as a result.
+    @since NEXT_RELEASE *)
+
+val is_failed : _ t -> bool
+(** Checks if the future is resolved with [Error _] as a result.
+    @since NEXT_RELEASE *)
+
 (** {2 Combinators} *)
 
 val spawn : ?name:string -> on:Runner.t -> (unit -> 'a) -> 'a t
@@ -268,3 +276,12 @@ include module type of Infix
 module Infix_local = Infix
 [@@deprecated "Use Infix"]
 (** @deprecated use Infix instead *)
+
+(**/**)
+
+module Private_ : sig
+  val unsafe_promise_of_fut : 'a t -> 'a promise
+  (** please do not use *)
+end
+
+(**/**)

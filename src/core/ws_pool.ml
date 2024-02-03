@@ -1,3 +1,4 @@
+open Types_
 module WSQ = Ws_deque_
 module A = Atomic_
 module TLS = Thread_local_storage_
@@ -13,16 +14,18 @@ module Id = struct
   let equal : t -> t -> bool = ( == )
 end
 
-type task_with_name = {
+type task_full = {
   f: task;
   name: string;
+  ls: task_ls;
 }
 
 type worker_state = {
   pool_id_: Id.t;  (** Unique per pool *)
   mutable thread: Thread.t;
-  q: task_with_name WSQ.t;  (** Work stealing queue *)
+  q: task_full WSQ.t;  (** Work stealing queue *)
   mutable cur_span: int64;
+  cur_ls: task_ls ref;  (** Task storage *)
   rng: Random.State.t;
 }
 (** State for a given worker. Only this worker is
@@ -35,7 +38,7 @@ type state = {
   id_: Id.t;
   active: bool A.t;  (** Becomes [false] when the pool is shutdown. *)
   workers: worker_state array;  (** Fixed set of workers. *)
-  main_q: task_with_name Queue.t;
+  main_q: task_full Queue.t;
       (** Main queue for tasks coming from the outside *)
   mutable n_waiting: int; (* protected by mutex *)
   mutable n_waiting_nonzero: bool;  (** [n_waiting > 0] *)
@@ -72,10 +75,10 @@ let[@inline] try_wake_someone_ (self : state) : unit =
   )
 
 (** Run [task] as is, on the pool. *)
-let schedule_task_ (self : state) ~name (w : worker_state option) (f : task) :
-    unit =
+let schedule_task_ (self : state) ~name ~ls (w : worker_state option) (f : task)
+    : unit =
   (* Printf.printf "schedule task now (%d)\n%!" (Thread.id @@ Thread.self ()); *)
-  let task = { f; name } in
+  let task = { f; name; ls } in
   match w with
   | Some w when Id.equal self.id_ w.pool_id_ ->
     (* we're on this same pool, schedule in the worker's state. Otherwise
@@ -104,9 +107,11 @@ let schedule_task_ (self : state) ~name (w : worker_state option) (f : task) :
       raise Shutdown
 
 (** Run this task, now. Must be called from a worker. *)
-let run_task_now_ (self : state) ~runner (w : worker_state) ~name task : unit =
+let run_task_now_ (self : state) ~runner (w : worker_state) ~name ~ls task :
+    unit =
   (* Printf.printf "run task now (%d)\n%!" (Thread.id @@ Thread.self ()); *)
   let (AT_pair (before_task, after_task)) = self.around_task in
+  w.cur_ls := ls;
   let _ctx = before_task runner in
 
   w.cur_span <- Tracing_.enter_span name;
@@ -115,25 +120,32 @@ let run_task_now_ (self : state) ~runner (w : worker_state) ~name task : unit =
     w.cur_span <- Tracing_.dummy_span
   in
 
+  let on_suspend () =
+    exit_span_ ();
+    !(w.cur_ls)
+  in
+
   let run_another_task ~name task' =
     let w = find_current_worker_ () in
-    schedule_task_ self w ~name task'
+    schedule_task_ self w ~name ~ls:[||] task'
   in
+
+  let resume ~ls k r = schedule_task_ self (Some w) ~name ~ls (fun () -> k r) in
 
   (* run the task now, catching errors *)
   (try
      (* run [task()] and handle [suspend] in it *)
-     Suspend_.with_suspend task ~name ~run:run_another_task
-       ~on_suspend:exit_span_
+     Suspend_.with_suspend task ~run:run_another_task ~resume ~on_suspend
    with e ->
      let bt = Printexc.get_raw_backtrace () in
      self.on_exn e bt);
   exit_span_ ();
-  after_task runner _ctx
+  after_task runner _ctx;
+  w.cur_ls := [||]
 
 let[@inline] run_async_ (self : state) ~name (f : task) : unit =
   let w = find_current_worker_ () in
-  schedule_task_ self w ~name f
+  schedule_task_ self w ~name ~ls:[||] f
 
 (* TODO: function to schedule many tasks from the outside.
     - build a queue
@@ -150,11 +162,11 @@ let[@inline] wait_ (self : state) : unit =
   self.n_waiting <- self.n_waiting - 1;
   if self.n_waiting = 0 then self.n_waiting_nonzero <- false
 
-exception Got_task of task_with_name
+exception Got_task of task_full
 
 (** Try to steal a task *)
-let try_to_steal_work_once_ (self : state) (w : worker_state) :
-    task_with_name option =
+let try_to_steal_work_once_ (self : state) (w : worker_state) : task_full option
+    =
   let init = Random.State.int w.rng (Array.length self.workers) in
 
   try
@@ -179,7 +191,7 @@ let worker_run_self_tasks_ (self : state) ~runner w : unit =
     match WSQ.pop w.q with
     | Some task ->
       try_wake_someone_ self;
-      run_task_now_ self ~runner w ~name:task.name task.f
+      run_task_now_ self ~runner w ~name:task.name ~ls:task.ls task.f
     | None -> continue := false
   done
 
@@ -192,7 +204,7 @@ let worker_thread_ (self : state) ~(runner : t) (w : worker_state) : unit =
     worker_run_self_tasks_ self ~runner w;
     try_steal ()
   and run_task task : unit =
-    run_task_now_ self ~runner w ~name:task.name task.f;
+    run_task_now_ self ~runner w ~name:task.name ~ls:task.ls task.f;
     main ()
   and try_steal () =
     match try_to_steal_work_once_ self w with
@@ -249,7 +261,7 @@ type ('a, 'b) create_args =
   'a
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
-let dummy_task_ = { f = ignore; name = "DUMMY_TASK" }
+let dummy_task_ = { f = ignore; ls = [||]; name = "DUMMY_TASK" }
 
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
@@ -277,6 +289,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
           cur_span = Tracing_.dummy_span;
           q = WSQ.create ~dummy:dummy_task_ ();
           rng = Random.State.make [| i |];
+          cur_ls = ref [||];
         })
   in
 
@@ -318,6 +331,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
       let thread = Thread.self () in
       let t_id = Thread.id thread in
       on_init_thread ~dom_id:dom_idx ~t_id ();
+      TLS.set k_ls_values (Some w.cur_ls);
 
       (* set thread name *)
       Option.iter

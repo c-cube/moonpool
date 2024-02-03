@@ -42,6 +42,16 @@ let[@inline] is_done self : bool =
   | Done _ -> true
   | Waiting _ -> false
 
+let[@inline] is_success self =
+  match A.get self.st with
+  | Done (Ok _) -> true
+  | _ -> false
+
+let[@inline] is_failed self =
+  match A.get self.st with
+  | Done (Error _) -> true
+  | _ -> false
+
 exception Not_ready
 
 let[@inline] get_or_fail self =
@@ -427,14 +437,14 @@ let await (fut : 'a t) : 'a =
     Suspend_.suspend
       {
         Suspend_.handle =
-          (fun ~name ~run k ->
+          (fun ~ls ~run:_ ~resume k ->
             on_result fut (function
               | Ok _ ->
                 (* schedule continuation with the same name *)
-                run ~name (fun () -> k (Ok ()))
+                resume ~ls k (Ok ())
               | Error (exn, bt) ->
                 (* fail continuation immediately *)
-                k (Error (exn, bt))));
+                resume ~ls k (Error (exn, bt))));
       };
     (* un-suspended: we should have a result! *)
     get_or_fail_exn fut
@@ -452,3 +462,7 @@ end
 
 include Infix
 module Infix_local = Infix [@@deprecated "use Infix"]
+
+module Private_ = struct
+  let[@inline] unsafe_promise_of_fut x = x
+end

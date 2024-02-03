@@ -59,6 +59,7 @@ val await : 'a Fut.t -> 'a
 module Lock = Lock
 module Fut = Fut
 module Chan = Chan
+module Task_local_storage = Task_local_storage
 module Thread_local_storage = Thread_local_storage_
 
 (** A simple blocking queue.
@@ -187,8 +188,10 @@ module Atomic = Atomic_
 
 (**/**)
 
+(** Private internals, with no stability guarantees *)
 module Private : sig
   module Ws_deque_ = Ws_deque_
+  (** A deque for work stealing, fixed size. *)
 
   (** {2 Suspensions} *)
 

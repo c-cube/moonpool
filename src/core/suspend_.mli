@@ -3,13 +3,20 @@
    This module is an implementation detail of Moonpool and should
    not be used outside of it, except by experts to implement {!Runner}. *)
 
-type suspension = (unit, exn * Printexc.raw_backtrace) result -> unit
+open Types_
+
+type suspension = unit Exn_bt.result -> unit
 (** A suspended computation *)
 
 type task = unit -> unit
 
 type suspension_handler = {
-  handle: name:string -> run:(name:string -> task -> unit) -> suspension -> unit;
+  handle:
+    ls:task_ls ->
+    run:(name:string -> task -> unit) ->
+    resume:(ls:task_ls -> suspension -> unit Exn_bt.result -> unit) ->
+    suspension ->
+    unit;
 }
 [@@unboxed]
 (** The handler that knows what to do with the suspended computation.
@@ -40,8 +47,15 @@ type _ Effect.t +=
         (** The effect used to suspend the current thread and pass it, suspended,
     to the handler. The handler will ensure that the suspension is resumed later
     once some computation has been done. *)
+  | Yield : unit Effect.t
+        (** The effect used to interrupt the current computation and immediately re-schedule
+      it on the same runner. *)
 
 [@@@ocaml.alert "+unstable"]
+
+val yield : unit -> unit
+(** Interrupt current computation, and re-schedule it at the end of the
+    runner's job queue. *)
 
 val suspend : suspension_handler -> unit
 (** [suspend h] jumps back to the nearest {!with_suspend}
@@ -52,17 +66,24 @@ val suspend : suspension_handler -> unit
 [@@@endif]
 
 val with_suspend :
-  name:string ->
-  on_suspend:(unit -> unit) ->
+  on_suspend:(unit -> task_ls) ->
   run:(name:string -> task -> unit) ->
+  resume:(ls:task_ls -> suspension -> unit Exn_bt.result -> unit) ->
   (unit -> unit) ->
   unit
-(** [with_suspend ~run f] runs [f()] in an environment where [suspend]
-    will work. If [f()] suspends with suspension handler [h],
-    this calls [h ~run k] where [k] is the suspension.
-    The suspension should always run in a new task, via [run].
+(** [with_suspend ~name ~on_suspend ~run ~resume f]
+    runs [f()] in an environment where [suspend]
+    will work (on OCaml 5) or do nothing (on OCaml 4.xx).
+
+    If [f()] suspends with suspension handler [h],
+    this calls [h ~run ~resume k] where [k] is the suspension.
+    The suspension should always be passed exactly once to
+    [resume]. [run] should be used to start other tasks.
 
     @param on_suspend called when [f()] suspends itself.
+    @param name used for tracing, if not [""].
+    @param run used to schedule new tasks
+    @param resume run the suspension. Must be called exactly once.
 
     This will not do anything on OCaml 4.x.
 *)

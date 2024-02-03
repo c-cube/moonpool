@@ -23,6 +23,7 @@ module Fut = Fut
 module Lock = Lock
 module Immediate_runner = Immediate_runner
 module Runner = Runner
+module Task_local_storage = Task_local_storage
 module Thread_local_storage = Thread_local_storage_
 module Ws_pool = Ws_pool
 

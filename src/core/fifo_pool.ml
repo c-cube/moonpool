@@ -1,16 +1,17 @@
-module TLS = Thread_local_storage_
+open Types_
 include Runner
 
 let ( let@ ) = ( @@ )
 
-type task_with_name = {
+type task_full = {
   f: unit -> unit;
   name: string;
+  ls: task_ls;
 }
 
 type state = {
   threads: Thread.t array;
-  q: task_with_name Bb_queue.t;  (** Queue for tasks. *)
+  q: task_full Bb_queue.t;  (** Queue for tasks. *)
 }
 (** internal state *)
 
@@ -18,13 +19,16 @@ let[@inline] size_ (self : state) = Array.length self.threads
 let[@inline] num_tasks_ (self : state) : int = Bb_queue.size self.q
 
 (** Run [task] as is, on the pool. *)
-let schedule_ (self : state) (task : task_with_name) : unit =
+let schedule_ (self : state) (task : task_full) : unit =
   try Bb_queue.push self.q task with Bb_queue.Closed -> raise Shutdown
 
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
 let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
+  let cur_ls : task_ls ref = ref [||] in
+  TLS.set Types_.k_ls_values (Some cur_ls);
   TLS.get Runner.For_runner_implementors.k_cur_runner := Some runner;
+
   let (AT_pair (before_task, after_task)) = around_task in
 
   let cur_span = ref Tracing_.dummy_span in
@@ -34,20 +38,32 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
     cur_span := Tracing_.dummy_span
   in
 
-  let run_another_task ~name task' = schedule_ self { f = task'; name } in
+  let on_suspend () =
+    exit_span_ ();
+    !cur_ls
+  in
 
-  let run_task (task : task_with_name) : unit =
+  let run_another_task ~name task' =
+    schedule_ self { f = task'; name; ls = [||] }
+  in
+
+  let run_task (task : task_full) : unit =
+    cur_ls := task.ls;
     let _ctx = before_task runner in
     cur_span := Tracing_.enter_span task.name;
-    (* run the task now, catching errors *)
-    (try
-       Suspend_.with_suspend task.f ~name:task.name ~run:run_another_task
-         ~on_suspend:exit_span_
+
+    let resume ~ls k res =
+      schedule_ self { f = (fun () -> k res); name = task.name; ls }
+    in
+
+    (* run the task now, catching errors, handling effects *)
+    (try Suspend_.with_suspend task.f ~run:run_another_task ~resume ~on_suspend
      with e ->
        let bt = Printexc.get_raw_backtrace () in
        on_exn e bt);
     exit_span_ ();
-    after_task runner _ctx
+    after_task runner _ctx;
+    cur_ls := [||]
   in
 
   let main_loop () =
@@ -100,7 +116,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
     { threads = Array.make num_threads dummy; q = Bb_queue.create () }
   in
 
-  let run_async ~name f = schedule_ pool { f; name } in
+  let run_async ~name f = schedule_ pool { f; name; ls = [||] } in
 
   let runner =
     Runner.For_runner_implementors.create
