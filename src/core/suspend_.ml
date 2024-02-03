@@ -9,8 +9,6 @@ type suspension_handler = {
 [@@@ifge 5.0]
 [@@@ocaml.alert "-unstable"]
 
-module A = Atomic_
-
 type _ Effect.t += Suspend : suspension_handler -> unit Effect.t
 
 let[@inline] suspend h = Effect.perform (Suspend h)
@@ -34,24 +32,6 @@ let with_suspend ~name ~on_suspend ~(run : name:string -> task -> unit)
   in
 
   E.try_with f () { E.effc }
-
-(* DLA interop *)
-let prepare_for_await () : Dla_.t =
-  (* current state *)
-  let st : (string * (name:string -> task -> unit) * suspension) option A.t =
-    A.make None
-  in
-
-  let release () : unit =
-    match A.exchange st None with
-    | None -> ()
-    | Some (name, run, k) -> run ~name (fun () -> k (Ok ()))
-  and await () : unit =
-    suspend { handle = (fun ~name ~run k -> A.set st (Some (name, run, k))) }
-  in
-
-  let t = { Dla_.release; await } in
-  t
 
 [@@@ocaml.alert "+unstable"]
 [@@@else_]
