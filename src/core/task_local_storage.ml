@@ -1,5 +1,5 @@
 open Types_
-module A = Atomic
+module A = Atomic_
 
 type 'a key = 'a ls_key
 
