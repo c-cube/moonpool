@@ -204,7 +204,8 @@ module Private : sig
 
     {b NOTE}: this is not stable for now. *)
 
-  module Domain = Domain_
+  module Domain_ = Domain_
+  (** Utils for domains *)
 
   val num_domains : unit -> int
   (** Number of domains in the backing domain pool *)
