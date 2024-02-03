@@ -1,6 +1,7 @@
 (* compute Pi *)
 
 open Moonpool
+module FJ = Moonpool_forkjoin
 
 let ( let@ ) = ( @@ )
 let j = ref 0
@@ -76,7 +77,7 @@ let run_fork_join ~kind num_steps : float =
   let global_sum = Lock.create 0. in
 
   Ws_pool.run_wait_block ~name:"pi.fj" pool (fun () ->
-      Fork_join.for_
+      FJ.for_
         ~chunk_size:(3 + (num_steps / num_tasks))
         num_steps
         (fun low high ->

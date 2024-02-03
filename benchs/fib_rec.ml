@@ -1,5 +1,6 @@
 open Moonpool
 module Trace = Trace_core
+module FJ = Moonpool_forkjoin
 
 let ( let@ ) = ( @@ )
 
@@ -25,7 +26,7 @@ let fib_fj ~on x : int Fut.t =
       fib_direct x
     else (
       let n1, n2 =
-        Fork_join.both (fun () -> fib_rec (x - 1)) (fun () -> fib_rec (x - 2))
+        FJ.both (fun () -> fib_rec (x - 1)) (fun () -> fib_rec (x - 2))
       in
       n1 + n2
     )

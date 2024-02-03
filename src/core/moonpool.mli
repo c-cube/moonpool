@@ -62,7 +62,6 @@ val await : 'a Fut.t -> 'a
 module Lock = Lock
 module Fut = Fut
 module Chan = Chan
-module Fork_join = Fork_join
 module Thread_local_storage = Thread_local_storage_
 
 (** A simple blocking queue.
@@ -204,4 +203,9 @@ module Private : sig
     This is only going to work on OCaml 5.x.
 
     {b NOTE}: this is not stable for now. *)
+
+  module Domain = Domain_
+
+  val num_domains : unit -> int
+  (** Number of domains in the backing domain pool *)
 end

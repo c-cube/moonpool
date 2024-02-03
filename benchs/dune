@@ -3,4 +3,4 @@
  (preprocess
   (action
    (run %{project_root}/src/cpp/cpp.exe %{input-file})))
- (libraries moonpool unix trace trace-tef domainslib))
+ (libraries moonpool moonpool.forkjoin unix trace trace-tef domainslib))
