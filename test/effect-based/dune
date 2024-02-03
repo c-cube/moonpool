@@ -15,6 +15,7 @@
   (>= %{ocaml_version} 5.0))
  (libraries
   moonpool
+  moonpool.forkjoin
   trace
   trace-tef
   qcheck-core

@@ -4,6 +4,7 @@ let spf = Printf.sprintf
 let ( let@ ) = ( @@ )
 
 open! Moonpool
+module FJ = Moonpool_forkjoin
 
 let pool = Ws_pool.create ~num_threads:4 ()
 
@@ -11,7 +12,7 @@ let () =
   let x =
     Ws_pool.run_wait_block pool (fun () ->
         let x, y =
-          Fork_join.both
+          FJ.both
             (fun () ->
               Thread.delay 0.005;
               1)
@@ -26,7 +27,7 @@ let () =
 let () =
   try
     Ws_pool.run_wait_block pool (fun () ->
-        Fork_join.both_ignore
+        FJ.both_ignore
           (fun () -> Thread.delay 0.005)
           (fun () ->
             Thread.delay 0.02;
@@ -37,21 +38,20 @@ let () =
 let () =
   let par_sum =
     Ws_pool.run_wait_block pool (fun () ->
-        Fork_join.all_init 42 (fun i -> i * i) |> List.fold_left ( + ) 0)
+        FJ.all_init 42 (fun i -> i * i) |> List.fold_left ( + ) 0)
   in
   let exp_sum = List.init 42 (fun x -> x * x) |> List.fold_left ( + ) 0 in
   assert (par_sum = exp_sum)
 
 let () =
-  Ws_pool.run_wait_block pool (fun () ->
-      Fork_join.for_ 0 (fun _ _ -> assert false));
+  Ws_pool.run_wait_block pool (fun () -> FJ.for_ 0 (fun _ _ -> assert false));
   ()
 
 let () =
   let total_sum = Atomic.make 0 in
 
   Ws_pool.run_wait_block pool (fun () ->
-      Fork_join.for_ ~chunk_size:5 100 (fun low high ->
+      FJ.for_ ~chunk_size:5 100 (fun low high ->
           (* iterate on the range sequentially. The range should have 5 items or less. *)
           let local_sum = ref 0 in
           for i = low to high do
@@ -64,7 +64,7 @@ let () =
   let total_sum = Atomic.make 0 in
 
   Ws_pool.run_wait_block pool (fun () ->
-      Fork_join.for_ ~chunk_size:1 100 (fun low high ->
+      FJ.for_ ~chunk_size:1 100 (fun low high ->
           assert (low = high);
           ignore (Atomic.fetch_and_add total_sum low : int)));
   assert (Atomic.get total_sum = 4950)
@@ -82,7 +82,7 @@ let rec fib_fork_join n =
     fib_direct n
   else (
     let a, b =
-      Fork_join.both
+      FJ.both
         (fun () -> fib_fork_join (n - 1))
         (fun () -> fib_fork_join (n - 2))
     in
@@ -254,13 +254,13 @@ module Evaluator = struct
       | Ret x -> x
       | Comp_fib n -> fib_fork_join n
       | Add (a, b) ->
-        let a, b = Fork_join.both (fun () -> eval a) (fun () -> eval b) in
+        let a, b = FJ.both (fun () -> eval a) (fun () -> eval b) in
         a + b
       | Pipe (a, f) -> eval a |> apply_fun_seq f
       | Map_arr (chunk_size, f, a, r) ->
         let tasks = List.map (fun x () -> eval x) a in
-        Fork_join.all_list ~chunk_size tasks
-        |> Fork_join.map_list ~chunk_size (apply_fun_seq f)
+        FJ.all_list ~chunk_size tasks
+        |> FJ.map_list ~chunk_size (apply_fun_seq f)
         |> eval_reducer r
     in
 
@@ -290,12 +290,8 @@ let t_for_nested ~min ~chunk_size () =
       let l1, l2 =
         let@ pool = Ws_pool.with_ ~num_threads:min () in
         let@ () = Ws_pool.run_wait_block pool in
-        let l1 =
-          Fork_join.map_list ~chunk_size (Fork_join.map_list ~chunk_size neg) l
-        in
-        let l2 =
-          Fork_join.map_list ~chunk_size (Fork_join.map_list ~chunk_size neg) l1
-        in
+        let l1 = FJ.map_list ~chunk_size (FJ.map_list ~chunk_size neg) l in
+        let l2 = FJ.map_list ~chunk_size (FJ.map_list ~chunk_size neg) l1 in
         l1, l2
       in
 
@@ -313,12 +309,8 @@ let t_map ~chunk_size () =
       let@ pool = Ws_pool.with_ ~num_threads:4 () in
       let@ () = Ws_pool.run_wait_block pool in
 
-      let a1 =
-        Fork_join.map_list ~chunk_size string_of_int l |> Array.of_list
-      in
-      let a2 =
-        Fork_join.map_array ~chunk_size string_of_int @@ Array.of_list l
-      in
+      let a1 = FJ.map_list ~chunk_size string_of_int l |> Array.of_list in
+      let a2 = FJ.map_array ~chunk_size string_of_int @@ Array.of_list l in
 
       if a1 <> a2 then Q.Test.fail_reportf "a1=%s, a2=%s" (ppa a1) (ppa a2);
       true)

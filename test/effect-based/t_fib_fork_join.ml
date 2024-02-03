@@ -1,6 +1,7 @@
 [@@@ifge 5.0]
 
 open Moonpool
+module FJ = Moonpool_forkjoin
 
 let rec fib_direct x =
   if x <= 1 then
@@ -14,7 +15,7 @@ let fib ~on x : int Fut.t =
       fib_direct x
     else (
       let n1, n2 =
-        Fork_join.both (fun () -> fib_rec (x - 1)) (fun () -> fib_rec (x - 2))
+        FJ.both (fun () -> fib_rec (x - 1)) (fun () -> fib_rec (x - 2))
       in
       n1 + n2
     )
