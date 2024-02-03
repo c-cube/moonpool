@@ -34,6 +34,7 @@ module Private = struct
   module Ws_deque_ = Ws_deque_
   module Suspend_ = Suspend_
   module Domain_ = Domain_
+  module Tracing_ = Tracing_
 
   let num_domains = Domain_pool_.n_domains
 end

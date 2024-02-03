@@ -222,6 +222,8 @@ module Private : sig
   module Domain_ = Domain_
   (** Utils for domains *)
 
+  module Tracing_ = Tracing_
+
   val num_domains : unit -> int
   (** Number of domains in the backing domain pool *)
 end
