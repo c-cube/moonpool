@@ -5,8 +5,8 @@
  (public_name moonpool.forkjoin)
  (synopsis "Fork-join parallelism for moonpool")
  (flags :standard -open Moonpool)
- (preprocess
-  (action
-   (run %{project_root}/src/cpp/cpp.exe %{input-file})))
+ (optional)
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
  (libraries
    moonpool moonpool.private))

@@ -4,8 +4,6 @@
 
     @since 0.3 *)
 
-[@@@ifge 5.0]
-
 val both : (unit -> 'a) -> (unit -> 'b) -> 'a * 'b
 (** [both f g] runs [f()] and [g()], potentially in parallel,
     and returns their result when both are done.
@@ -105,5 +103,3 @@ val map_list : ?chunk_size:int -> ('a -> 'b) -> 'a list -> 'b list
 (** [map_list f l] is like [List.map f l], but runs in parallel.
     @since 0.3
     {b NOTE} this is only available on OCaml 5. *)
-
-[@@@endif]
