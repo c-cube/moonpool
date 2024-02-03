@@ -13,6 +13,7 @@ module Ws_pool = Ws_pool
 module Fifo_pool = Fifo_pool
 module Runner = Runner
 module Immediate_runner = Immediate_runner
+module Exn_bt = Exn_bt
 
 val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
 (** Similar to {!Thread.create}, but it picks a background domain at random

@@ -17,6 +17,7 @@ module Atomic = Atomic_
 module Blocking_queue = Bb_queue
 module Bounded_queue = Bounded_queue
 module Chan = Chan
+module Exn_bt = Exn_bt
 module Fifo_pool = Fifo_pool
 module Fut = Fut
 module Lock = Lock
