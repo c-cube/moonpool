@@ -1,5 +1,3 @@
-[@@@ifge 5.0]
-
 module A = Moonpool.Atomic
 module Suspend_ = Moonpool.Private.Suspend_
 module Domain_ = Moonpool_private.Domain_
@@ -218,5 +216,3 @@ let map_list ?chunk_size f (l : _ list) : _ list =
       match res.(i) with
       | None -> assert false
       | Some x -> x)
-
-[@@@endif]
