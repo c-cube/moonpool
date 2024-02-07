@@ -1,4 +1,5 @@
 open Types_
+module A = Atomic_
 
 type suspension = unit Exn_bt.result -> unit
 type task = unit -> unit
@@ -55,9 +56,27 @@ let with_suspend ~on_suspend ~(run : name:string -> task -> unit)
 
   E.try_with f () { E.effc }
 
+(* DLA interop *)
+let prepare_for_await () : Dla_.t =
+  (* current state *)
+  let st : (_ * _ * suspension) option A.t = A.make None in
+
+  let release () : unit =
+    match A.exchange st None with
+    | None -> ()
+    | Some (ls, resume, k) -> resume ~ls k @@ Ok ()
+  and await () : unit =
+    suspend
+      { handle = (fun ~ls ~run:_ ~resume k -> A.set st (Some (ls, resume, k))) }
+  in
+
+  let t = { Dla_.release; await } in
+  t
+
 [@@@ocaml.alert "+unstable"]
 [@@@else_]
 
 let[@inline] with_suspend ~on_suspend:_ ~run:_ ~resume:_ f = f ()
+let[@inline] prepare_for_await () = { Dla_.release = ignore; await = ignore }
 
 [@@@endif]

@@ -76,7 +76,11 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
     done
   in
 
-  try main_loop () with Bb_queue.Closed -> ()
+  try
+    (* handle domain-local await *)
+    Dla_.using ~prepare_for_await:Suspend_.prepare_for_await
+      ~while_running:main_loop
+  with Bb_queue.Closed -> ()
 
 let default_thread_init_exit_ ~dom_id:_ ~t_id:_ () = ()
 
