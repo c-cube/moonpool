@@ -169,10 +169,11 @@ let create ?(on_init_thread = default_thread_init_exit_)
 
   runner
 
-let with_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads () f
-    =
+let with_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
+    ?name () f =
   let pool =
-    create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads ()
+    create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
+      ?name ()
   in
   let@ () = Fun.protect ~finally:(fun () -> shutdown pool) in
   f pool
