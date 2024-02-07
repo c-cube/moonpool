@@ -78,11 +78,12 @@ type ('a, 'b) create_args =
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
   ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
   ?num_threads:int ->
+  ?name:string ->
   'a
 
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
-    ?around_task ?num_threads () : t =
+    ?around_task ?num_threads ?name () : t =
   (* wrapper *)
   let around_task =
     match around_task with
@@ -127,6 +128,12 @@ let create ?(on_init_thread = default_thread_init_exit_)
       let thread = Thread.self () in
       let t_id = Thread.id thread in
       on_init_thread ~dom_id:dom_idx ~t_id ();
+
+      (* set thread name *)
+      Option.iter
+        (fun name ->
+          Tracing_.set_thread_name (Printf.sprintf "%s.worker.%d" name i))
+        name;
 
       let run () = worker_thread_ pool runner ~on_exn ~around_task in
 

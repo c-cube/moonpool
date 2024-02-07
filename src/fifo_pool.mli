@@ -22,6 +22,7 @@ type ('a, 'b) create_args =
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
   ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
   ?num_threads:int ->
+  ?name:string ->
   'a
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
@@ -35,6 +36,7 @@ val create : (unit -> t, _) create_args
      @param on_exit_thread called at the end of each worker thread in the pool.
      @param around_task a pair of [before, after] functions
      ran around each task. See {!Pool.create_args}.
+     @param name name for the pool, used in tracing (since NEXT_RELEASE)
   *)
 
 val with_ : (unit -> (t -> 'a) -> 'a, _) create_args
