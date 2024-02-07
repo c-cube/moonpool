@@ -26,8 +26,9 @@ type 'a promise
 (** A promise, which can be fulfilled exactly once to set
       the corresponding future *)
 
-val make : unit -> 'a t * 'a promise
-(** Make a new future with the associated promise *)
+val make : ?name:string -> unit -> 'a t * 'a promise
+(** Make a new future with the associated promise.
+    @param name name for the future, used for tracing. since NEXT_RELEASE. *)
 
 val on_result : 'a t -> ('a or_error -> unit) -> unit
 (** [on_result fut f] registers [f] to be called in the future
@@ -81,11 +82,11 @@ val is_done : _ t -> bool
 
 (** {2 Combinators} *)
 
-val spawn : on:Runner.t -> (unit -> 'a) -> 'a t
+val spawn : ?name:string -> on:Runner.t -> (unit -> 'a) -> 'a t
 (** [spaw ~on f] runs [f()] on the given runner [on], and return a future that will
       hold its result. *)
 
-val spawn_on_current_runner : (unit -> 'a) -> 'a t
+val spawn_on_current_runner : ?name:string -> (unit -> 'a) -> 'a t
 (** This must be run from inside a runner, and schedules
     the new task on it as well.
 

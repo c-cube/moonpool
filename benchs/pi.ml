@@ -7,6 +7,7 @@ let j = ref 0
 let spf = Printf.sprintf
 
 let run_sequential (num_steps : int) : float =
+  let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "pi.seq" in
   let step = 1. /. float num_steps in
   let sum = ref 0. in
   for i = 0 to num_steps - 1 do
@@ -42,6 +43,11 @@ let run_par1 ~kind (num_steps : int) : float =
 
   (* one chunk of the work *)
   let run_task _idx_task : unit =
+    let@ _sp =
+      Trace.with_span ~__FILE__ ~__LINE__ "pi.slice" ~data:(fun () ->
+          [ "i", `Int _idx_task ])
+    in
+
     let sum = ref 0. in
     let i = ref 0 in
     while !i < num_steps do
@@ -69,7 +75,7 @@ let run_fork_join ~kind num_steps : float =
   let step = 1. /. float num_steps in
   let global_sum = Lock.create 0. in
 
-  Ws_pool.run_wait_block pool (fun () ->
+  Ws_pool.run_wait_block ~name:"pi.fj" pool (fun () ->
       Fork_join.for_
         ~chunk_size:(3 + (num_steps / num_tasks))
         num_steps
@@ -99,6 +105,9 @@ type mode =
 
 let () =
   let@ () = Trace_tef.with_setup () in
+  Trace.set_thread_name "main";
+  let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "main" in
+
   let mode = ref Sequential in
   let n = ref 1000 in
   let time = ref false in

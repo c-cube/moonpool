@@ -8,12 +8,15 @@ type suspension = (unit, exn * Printexc.raw_backtrace) result -> unit
 
 type task = unit -> unit
 
-type suspension_handler = { handle: run:(task -> unit) -> suspension -> unit }
+type suspension_handler = {
+  handle: name:string -> run:(name:string -> task -> unit) -> suspension -> unit;
+}
 [@@unboxed]
 (** The handler that knows what to do with the suspended computation.
 
-   The handler is given two things:
+   The handler is given a few things:
 
+   - the name (if any) of the current computation
    - the suspended computation (which can be resumed with a result
      eventually);
    - a [run] function that can be used to start tasks to perform some
@@ -51,10 +54,18 @@ val suspend : suspension_handler -> unit
 val prepare_for_await : unit -> Dla_.t
 (** Our stub for DLA. Unstable. *)
 
-val with_suspend : run:(task -> unit) -> (unit -> unit) -> unit
+val with_suspend :
+  name:string ->
+  on_suspend:(unit -> unit) ->
+  run:(name:string -> task -> unit) ->
+  (unit -> unit) ->
+  unit
 (** [with_suspend ~run f] runs [f()] in an environment where [suspend]
     will work. If [f()] suspends with suspension handler [h],
     this calls [h ~run k] where [k] is the suspension.
+    The suspension should always run in a new task, via [run].
+
+    @param on_suspend called when [f()] suspends itself.
 
     This will not do anything on OCaml 4.x.
 *)

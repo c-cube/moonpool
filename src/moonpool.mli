@@ -23,10 +23,13 @@ val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
     to run the thread. This ensures that we don't always pick the same domain
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
-val run_async : Runner.t -> (unit -> unit) -> unit
+val run_async : ?name:string -> Runner.t -> (unit -> unit) -> unit
 (** [run_async runner task] schedules the task to run
   on the given runner. This means [task()] will be executed
   at some point in the future, possibly in another thread.
+  @param name if provided and [Trace] is present in dependencies, a span
+    will be created when the task starts, and will stop when the task is over.
+    (since NEXT_RELEASE)
   @since 0.5 *)
 
 val recommended_thread_count : unit -> int
@@ -35,13 +38,16 @@ val recommended_thread_count : unit -> int
   this because many of them will be blocked most of the time).
   @since 0.5 *)
 
-val spawn : on:Runner.t -> (unit -> 'a) -> 'a Fut.t
+val spawn : ?name:string -> on:Runner.t -> (unit -> 'a) -> 'a Fut.t
 (** [spawn ~on f] runs [f()] on the runner (a thread pool typically)
     and returns a future result for it. See {!Fut.spawn}.
+    @param name if provided and [Trace] is present in dependencies,
+      a span will be created for the future. (since NEXT_RELEASE)
     @since 0.5 *)
 
-val spawn_on_current_runner : (unit -> 'a) -> 'a Fut.t
+val spawn_on_current_runner : ?name:string -> (unit -> 'a) -> 'a Fut.t
 (** See {!Fut.spawn_on_current_runner}.
+    @param name see {!spawn}. since NEXT_RELEASE.
     @since 0.5 *)
 
 [@@@ifge 5.0]

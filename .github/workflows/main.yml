@@ -39,4 +39,6 @@ jobs:
         if: matrix.ocaml-compiler == '5.0'
       - run: opam exec -- dune build @install @runtest
         if: matrix.ocaml-compiler == '5.0'
+      - run: opam install trace thread-local-storage
+      - run: opam exec -- dune build @install
 
