@@ -65,6 +65,9 @@ val suspend : suspension_handler -> unit
 
 [@@@endif]
 
+val prepare_for_await : unit -> Dla_.t
+(** Our stub for DLA. Unstable. *)
+
 val with_suspend :
   on_suspend:(unit -> task_ls) ->
   run:(name:string -> task -> unit) ->
