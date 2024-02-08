@@ -44,8 +44,9 @@ let get (type a) ((module K) : a key) : a =
 
 let set (type a) ((module K) : a key) (v : a) : unit =
   let cur = get_cur_ () in
-  if K.offset >= Array.length !cur then resize_ cur K.offset;
-  !cur.(K.offset) <- K.V v
+  if K.offset >= Array.length !cur then resize_ cur (K.offset + 1);
+  !cur.(K.offset) <- K.V v;
+  ()
 
 let with_value key x f =
   let old = get key in
