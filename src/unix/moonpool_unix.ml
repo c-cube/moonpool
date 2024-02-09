@@ -13,6 +13,8 @@ module Fut = Moonpool.Fut
 module Cancel_handle = Cancel_handle
 module IO_in = IO_in
 module IO_out = IO_out
+module TCP_client = TCP_client
+module TCP_server = TCP_server
 include IO_unix
 
 let run_after_s = Ev_loop.run_after_s

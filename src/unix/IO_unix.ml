@@ -48,3 +48,15 @@ let write fd buf i len : unit =
     i := !i + n;
     len := !len - n
   done
+
+(** Sleep for the given amount of seconds *)
+let sleep_s (f : float) : unit =
+  if f > 0. then
+    Moonpool.Private.Suspend_.suspend
+      {
+        handle =
+          (fun ~ls ~run:_ ~resume sus ->
+            let cancel = Cancel_handle.dummy in
+            Ev_loop.run_after_s f cancel (fun _cancel ->
+                resume ~ls sus @@ Ok ()));
+      }
