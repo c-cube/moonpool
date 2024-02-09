@@ -267,11 +267,14 @@ You are assuming that, if pool P1 has 5000 tasks, and pool P2 has 10 other tasks
 This works for OCaml >= 4.08.
 - On OCaml 4.xx, there are no domains, so this is just a library for regular thread pools
     with not actual parallelism (except for threads that call C code that releases the runtime lock, that is).
+    C calls that do release the runtime lock (e.g. to call [Z3](https://github.com/Z3Prover/z3), hash a file, etc.)
+    will still run in parallel.
 - on OCaml 5.xx, there is a fixed pool of domains (using the recommended domain count).
-    These domains do not do much by themselves, but we schedule new threads on them, and group
-    threads from each domain into pools.
+    These domains do not do much by themselves, but we schedule new threads on them, and form pools
+    of threads that contain threads from each domain.
     Each domain might thus have multiple threads that belong to distinct pools (and several threads from
-    the same pool, too — this is useful for threads blocking on IO).
+    the same pool, too — this is useful for threads blocking on IO); Each pool will have threads
+    running on distinct domains, which enables parallelism.
 
     A useful analogy is that each domain is a bit like a CPU core, and `Thread.t` is a logical thread running on a core.
     Multiple threads have to share a single core and do not run in parallel on it[^2].
@@ -290,4 +293,4 @@ MIT license.
 $ opam install moonpool
 ```
 
-[^2]: let's not talk about hyperthreading.
+[^2]: ignoring hyperthreading for the sake of the analogy.
