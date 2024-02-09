@@ -168,7 +168,7 @@ val expected_sum : int = 5050
 
 On OCaml 5, again using effect handlers, the module `Fork_join`
 implements the [fork-join model](https://en.wikipedia.org/wiki/Fork%E2%80%93join_model).
-It must run on a pool (using [Runner.run_async] or inside a future via [Fut.spawn]).
+It must run on a pool (using `Runner.run_async` or inside a future via `Fut.spawn`).
 
 It is generally better to use the work-stealing pool for workloads that rely on
 fork-join for better performance, because fork-join will tend to spawn lots of
