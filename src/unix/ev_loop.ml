@@ -202,14 +202,18 @@ module Ev_loop = struct
 
     let delay = run_timer_ self.timer in
     let delay = Option.value delay ~default:10. in
+    Printf.printf "delay: %f\n%!" delay;
 
     (* run [select] *)
     let reads, writes = IO_tbl.prepare_select self.io_tbl in
     A.set self.in_blocking_section true;
+    Printf.printf "ENTER (%d read, %d write)\n%!" (List.length reads)
+      (List.length writes);
     let reads, writes, _ =
       let@ _sp = Tracing_.with_span "moonpool-unix.select" in
       Unix.select (self.pipe_read :: reads) writes [] delay
     in
+    Printf.printf "EXIT\n%!";
     A.set self.in_blocking_section false;
 
     drain_pipe_ self;

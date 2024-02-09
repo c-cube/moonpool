@@ -149,6 +149,7 @@ let k_current_fiber : any option Task_local_storage.key =
   Task_local_storage.new_key ~init:(fun () -> None) ()
 
 let spawn_ ?name ~on (f : _ -> 'a) : 'a t =
+  Printf.printf "spawn fiber\n%!";
   let id = Handle.generate_fresh () in
   let res, _promise = Fut.make ?name () in
   let fib =
@@ -162,8 +163,10 @@ let spawn_ ?name ~on (f : _ -> 'a) : 'a t =
 
   let run () =
     (* make sure the fiber is accessible from inside itself *)
+    Printf.printf "run fiber 0\n%!";
     Task_local_storage.set k_current_fiber (Some (Any fib));
     try
+      Printf.printf "run fiber\n%!";
       let res = f () in
       resolve_ok_ fib res
     with exn ->
