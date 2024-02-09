@@ -42,12 +42,12 @@ val spawn : ?name:string -> on:Runner.t -> (unit -> 'a) -> 'a Fut.t
 (** [spawn ~on f] runs [f()] on the runner (a thread pool typically)
     and returns a future result for it. See {!Fut.spawn}.
     @param name if provided and [Trace] is present in dependencies,
-      a span will be created for the future. (since NEXT_RELEASE)
+      a span will be created for the future. (since 0.6)
     @since 0.5 *)
 
 val spawn_on_current_runner : ?name:string -> (unit -> 'a) -> 'a Fut.t
 (** See {!Fut.spawn_on_current_runner}.
-    @param name see {!spawn}. since NEXT_RELEASE.
+    @param name see {!spawn}. since 0.6.
     @since 0.5 *)
 
 [@@@ifge 5.0]

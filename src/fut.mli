@@ -165,12 +165,12 @@ module Advanced : sig
     {b NOTE}: the behavior is not specified if [iter f cont] (for a function f)
     doesn't call [f] on exactly [len cont] elements.
 
-    @since NEXT_RELEASE *)
+    @since 0.5.1 *)
 end
 
 val map_list : f:('a -> 'b t) -> 'a list -> 'b list t
 (** [map_list ~f l] is like [join_list @@ List.map f l].
-    @since NEXT_RELEASE *)
+    @since 0.5.1 *)
 
 val wait_array : _ t array -> unit t
 (** [wait_array arr] waits for all futures in [arr] to resolve. It discards
