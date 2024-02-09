@@ -7,6 +7,7 @@ let ( let@ ) = ( @@ )
 let ppl = Q.Print.(list @@ list int)
 
 open! Moonpool
+module FJ = Moonpool_forkjoin
 
 let run ~min () =
   let@ _sp =
@@ -31,17 +32,13 @@ let run ~min () =
       let@ () = Ws_pool.run_wait_block pool in
 
       let l1, l2 =
-        Fork_join.both
+        FJ.both
           (fun () ->
             let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "fj.left" in
-            Fork_join.map_list ~chunk_size
-              (Fork_join.map_list ~chunk_size neg)
-              l)
+            FJ.map_list ~chunk_size (FJ.map_list ~chunk_size neg) l)
           (fun () ->
             let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "fj.right" in
-            Fork_join.map_list ~chunk_size
-              (Fork_join.map_list ~chunk_size neg)
-              ref_l1)
+            FJ.map_list ~chunk_size (FJ.map_list ~chunk_size neg) ref_l1)
       in
       l1, l2
     in

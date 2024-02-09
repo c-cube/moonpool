@@ -2,4 +2,5 @@
 
 (executable
  (name cpp)
- (modes (best exe)))
+ (modes
+  (best exe)))

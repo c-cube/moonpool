@@ -2,6 +2,8 @@
 
 open Moonpool
 
+let ( let@ ) = ( @@ )
+
 let rec fib_direct x =
   if x <= 1 then
     1
@@ -18,7 +20,7 @@ let fib ~on x : int Fut.t =
       Fut.await t1 + Fut.await t2
     )
   in
-  Fut.spawn ~on (fun () -> fib_rec x)
+  Fut.spawn ~name:"fib" ~on (fun () -> fib_rec x)
 
 (* NOTE: for tracy support
    let () = Tracy_client_trace.setup ()
@@ -46,9 +48,13 @@ let run_test () =
 
   assert (res = Ok (Array.make 3 fib_40))
 
-let () =
+let main () =
   (* now make sure we can do this with multiple pools in parallel *)
   let jobs = Array.init 2 (fun _ -> Thread.create run_test ()) in
   Array.iter Thread.join jobs
+
+let () =
+  let@ () = Trace_tef.with_setup () in
+  main ()
 
 [@@@endif]

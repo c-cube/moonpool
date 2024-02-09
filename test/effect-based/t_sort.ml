@@ -1,6 +1,7 @@
 [@@@ifge 5.0]
 
 open Moonpool
+module FJ = Moonpool_forkjoin
 
 let rec select_sort arr i len =
   if len >= 2 then (
@@ -54,7 +55,7 @@ let rec quicksort arr i len : unit =
       )
     done;
 
-    Fork_join.both_ignore
+    FJ.both_ignore
       (fun () -> quicksort arr i (!low - i))
       (fun () -> quicksort arr !low (len - (!low - i)))
   )

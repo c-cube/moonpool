@@ -19,7 +19,8 @@ In addition, some concurrency and parallelism primitives are provided:
     On OCaml 5 (meaning there's actual domains and effects, not just threads),
     a `Fut.await` primitive is provided. It's simpler and more powerful
     than the monadic combinators.
-- `Moonpool.Fork_join` provides the fork-join parallelism primitives
+- `Moonpool_forkjoin`, in the library `moonpool.forkjoin`
+    provides the fork-join parallelism primitives
     to use within tasks running in the pool.
 
 ## Usage
@@ -166,7 +167,8 @@ val expected_sum : int = 5050
 
 ### Fork-join
 
-On OCaml 5, again using effect handlers, the module `Fork_join`
+On OCaml 5, again using effect handlers, the sublibrary `moonpool.forkjoin`
+provides a module `Moonpool_forkjoin`
 implements the [fork-join model](https://en.wikipedia.org/wiki/Fork%E2%80%93join_model).
 It must run on a pool (using [Runner.run_async] or inside a future via [Fut.spawn]).
 
@@ -211,7 +213,7 @@ val select_sort : 'a array -> int -> int -> unit = <fun>
         )
       done;
 
-      Moonpool.Fork_join.both_ignore
+      Moonpool_forkjoin.both_ignore
         (fun () -> quicksort arr i (!low - i))
         (fun () -> quicksort arr !low (len - (!low - i)))
     );;

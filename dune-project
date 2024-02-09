@@ -29,8 +29,8 @@
     :with-test)))
  (depopts
    (trace (>= 0.6))
-   thread-local-storage
-   (domain-local-await (>= 0.2)))
+   (mtime (>= 2.0))
+   thread-local-storage)
  (tags
   (thread pool domain futures fork-join)))
 
