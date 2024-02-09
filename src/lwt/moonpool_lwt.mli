@@ -33,11 +33,40 @@ val get_runner : unit -> Moonpool.Runner.t
     Must be run from within a fiber.
     @raise Failure if not run within a fiber *)
 
+(** {2 IO} *)
+
+(** IO using the Lwt event loop.
+
+    These IO operations work on non-blocking file descriptors
+    and rely on a [Lwt_engine] event loop being active (meaning,
+    [Lwt_main.run] is currently running in some thread).
+
+    Calling these functions must be done from a moonpool runner and
+    will suspend the current task/fut/fiber if the FD is not ready.
+*)
 module IO : sig
   val read : Unix.file_descr -> bytes -> int -> int -> int
   val write_once : Unix.file_descr -> bytes -> int -> int -> int
   val write : Unix.file_descr -> bytes -> int -> int -> unit
   val sleep_s : float -> unit
+end
+
+module IO_in = IO_in
+module IO_out = IO_out
+
+module TCP_server : sig
+  type t = Lwt_io.server
+
+  val establish :
+    ?backlog:(* ?server_fd:Unix.file_descr -> *)
+             int ->
+    ?no_close:bool ->
+    runner:Moonpool.Runner.t ->
+    Unix.sockaddr ->
+    (Unix.sockaddr -> IO_in.t -> IO_out.t -> unit) ->
+    t
+
+  val shutdown : t -> unit
 end
 
 (** {2 Helpers on the lwt side} *)
