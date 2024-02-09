@@ -55,7 +55,7 @@ let () =
 
   let opts =
     [
-      "-p", Arg.Set_int port, " port"; "j", Arg.Set_int j, " number of threads";
+      "-p", Arg.Set_int port, " port"; "-j", Arg.Set_int j, " number of threads";
     ]
     |> Arg.align
   in
