@@ -69,6 +69,11 @@ module TCP_server : sig
   val shutdown : t -> unit
 end
 
+module TCP_client : sig
+  val with_connect : Unix.sockaddr -> (IO_in.t -> IO_out.t -> 'a) -> 'a
+  (** Open a connection. *)
+end
+
 (** {2 Helpers on the lwt side} *)
 
 val detach_in_runner : runner:Moonpool.Runner.t -> (unit -> 'a) -> 'a Lwt.t
