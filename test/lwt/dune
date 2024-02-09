@@ -1,0 +1,3 @@
+(executables
+ (names echo_server)
+ (libraries moonpool moonpool-lwt lwt lwt.unix trace.core trace-tef))
