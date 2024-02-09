@@ -36,6 +36,7 @@
 (package
   (name moonpool-lwt)
   (synopsis "Event loop for moonpool based on Lwt-engine")
+  (allow_empty)  ; on < 5.0
   (depends
     (moonpool (= :version))
     (ocaml (>= 5.0))

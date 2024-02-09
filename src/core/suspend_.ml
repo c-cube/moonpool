@@ -16,6 +16,8 @@ type suspension_handler = {
 
 [@@@ocaml.alert "-unstable"]
 
+module A = Atomic_
+
 type _ Effect.t +=
   | Suspend : suspension_handler -> unit Effect.t
   | Yield : unit Effect.t
