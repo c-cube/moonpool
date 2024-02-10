@@ -107,8 +107,8 @@ let await_lwt (fut : _ Lwt.t) =
     M.Private.Suspend_.suspend
       {
         handle =
-          (fun ~ls ~run:_ ~resume sus ->
-            let on_lwt_done _ = resume ~ls sus @@ Ok () in
+          (fun ~run:_ ~resume sus ->
+            let on_lwt_done _ = resume sus @@ Ok () in
             Perform_action_in_lwt.(
               schedule Action.(On_termination (fut, on_lwt_done))));
       };

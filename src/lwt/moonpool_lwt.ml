@@ -48,12 +48,12 @@ module TCP_client = struct
         Moonpool.Private.Suspend_.suspend
           {
             handle =
-              (fun ~ls ~run:_ ~resume sus ->
+              (fun ~run:_ ~resume sus ->
                 Perform_action_in_lwt.schedule
                 @@ Action.Wait_writable
                      ( sock,
                        fun ev ->
-                         resume ~ls sus @@ Ok ();
+                         resume sus @@ Ok ();
                          Lwt_engine.stop_event ev ));
           };
         true
