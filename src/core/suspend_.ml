@@ -1,4 +1,3 @@
-open Types_
 module A = Atomic_
 
 type suspension = unit Exn_bt.result -> unit
