@@ -8,13 +8,14 @@ open Types_
 type suspension = unit Exn_bt.result -> unit
 (** A suspended computation *)
 
+[@@@ifge 5.0]
+
 type task = unit -> unit
 
 type suspension_handler = {
   handle:
-    ls:task_ls ->
     run:(name:string -> task -> unit) ->
-    resume:(ls:task_ls -> suspension -> unit Exn_bt.result -> unit) ->
+    resume:(suspension -> unit Exn_bt.result -> unit) ->
     suspension ->
     unit;
 }
@@ -28,6 +29,8 @@ type suspension_handler = {
      eventually);
    - a [run] function that can be used to start tasks to perform some
     computation.
+   - a [resume] function to resume the suspended computation. This
+    must be called exactly once, in all situations.
 
   This means that a fork-join primitive, for example, can use a single call
   to {!suspend} to:
@@ -37,9 +40,9 @@ type suspension_handler = {
       runs in parallel with the other calls. The calls must coordinate so
       that, once they are all done, the suspended caller is resumed with the
       aggregated result of the computation.
+    - use [resume] exactly
 *)
 
-[@@@ifge 5.0]
 [@@@ocaml.alert "-unstable"]
 
 type _ Effect.t +=
@@ -63,30 +66,29 @@ val suspend : suspension_handler -> unit
     and a task runner function.
 *)
 
+type with_suspend_handler =
+  | WSH : {
+      on_suspend: unit -> 'state;
+          (** on_suspend called when [f()] suspends itself. *)
+      run: 'state -> name:string -> task -> unit;
+          (** run used to schedule new tasks *)
+      resume: 'state -> suspension -> unit Exn_bt.result -> unit;
+          (** resume run the suspension. Must be called exactly once. *)
+    }
+      -> with_suspend_handler
+
+val with_suspend : with_suspend_handler -> (unit -> unit) -> unit
+(** [with_suspend wsh f]
+    runs [f()] in an environment where [suspend] will work.
+
+    If [f()] suspends with suspension handler [h],
+    this calls [wsh.on_suspend()] to capture the current state [st].
+    Then [h.handle ~st ~run ~resume k] is called, where [k] is the suspension.
+    The suspension should always be passed exactly once to
+    [resume]. [run] should be used to start other tasks.
+*)
+
 [@@@endif]
 
 val prepare_for_await : unit -> Dla_.t
 (** Our stub for DLA. Unstable. *)
-
-val with_suspend :
-  on_suspend:(unit -> task_ls) ->
-  run:(name:string -> task -> unit) ->
-  resume:(ls:task_ls -> suspension -> unit Exn_bt.result -> unit) ->
-  (unit -> unit) ->
-  unit
-(** [with_suspend ~name ~on_suspend ~run ~resume f]
-    runs [f()] in an environment where [suspend]
-    will work (on OCaml 5) or do nothing (on OCaml 4.xx).
-
-    If [f()] suspends with suspension handler [h],
-    this calls [h ~run ~resume k] where [k] is the suspension.
-    The suspension should always be passed exactly once to
-    [resume]. [run] should be used to start other tasks.
-
-    @param on_suspend called when [f()] suspends itself.
-    @param name used for tracing, if not [""].
-    @param run used to schedule new tasks
-    @param resume run the suspension. Must be called exactly once.
-
-    This will not do anything on OCaml 4.x.
-*)

@@ -20,6 +20,8 @@ type task_full = {
   ls: task_ls;
 }
 
+type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
+
 type worker_state = {
   pool_id_: Id.t;  (** Unique per pool *)
   mutable thread: Thread.t;
@@ -31,8 +33,6 @@ type worker_state = {
 (** State for a given worker. Only this worker is
     allowed to push into the queue, but other workers
     can come and steal from it if they're idle. *)
-
-type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
 type state = {
   id_: Id.t;
@@ -125,12 +125,13 @@ let run_task_now_ (self : state) ~runner (w : worker_state) ~name ~ls task :
     !(w.cur_ls)
   in
 
-  let run_another_task ~name task' =
+  let run_another_task ls ~name task' =
     let w = find_current_worker_ () in
-    schedule_task_ self w ~name ~ls:[||] task'
+    let ls' = Array.copy ls in
+    schedule_task_ self w ~name ~ls:ls' task'
   in
 
-  let resume ~ls k r =
+  let resume ls k r =
     let w = find_current_worker_ () in
     schedule_task_ self w ~name ~ls (fun () -> k r)
   in
@@ -138,10 +139,19 @@ let run_task_now_ (self : state) ~runner (w : worker_state) ~name ~ls task :
   (* run the task now, catching errors *)
   (try
      (* run [task()] and handle [suspend] in it *)
-     Suspend_.with_suspend task ~run:run_another_task ~resume ~on_suspend
+[@@@ifge 5.0]
+     Suspend_.with_suspend (WSH {
+       on_suspend;
+       run=run_another_task;
+       resume;
+     }) task
+[@@@else_]
+     task ()
+[@@@endif]
    with e ->
      let bt = Printexc.get_raw_backtrace () in
      self.on_exn e bt);
+
   exit_span_ ();
   after_task runner _ctx;
   w.cur_ls := [||]

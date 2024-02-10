@@ -43,8 +43,9 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
     !cur_ls
   in
 
-  let run_another_task ~name task' =
-    schedule_ self { f = task'; name; ls = [||] }
+  let run_another_task ls ~name task' =
+    let ls' = Array.copy ls in
+    schedule_ self { f = task'; name; ls = ls' }
   in
 
   let run_task (task : task_full) : unit =
@@ -52,12 +53,21 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
     let _ctx = before_task runner in
     cur_span := Tracing_.enter_span task.name;
 
-    let resume ~ls k res =
+    let resume ls k res =
       schedule_ self { f = (fun () -> k res); name = task.name; ls }
     in
 
     (* run the task now, catching errors, handling effects *)
-    (try Suspend_.with_suspend task.f ~run:run_another_task ~resume ~on_suspend
+    (try
+[@@@ifge 5.0]
+      Suspend_.with_suspend (WSH {
+        run=run_another_task;
+        resume;
+        on_suspend;
+      }) task.f
+[@@@else_]
+      task.f()
+[@@@endif]
      with e ->
        let bt = Printexc.get_raw_backtrace () in
        on_exn e bt);

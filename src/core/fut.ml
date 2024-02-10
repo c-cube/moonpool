@@ -437,11 +437,11 @@ let await (fut : 'a t) : 'a =
     Suspend_.suspend
       {
         Suspend_.handle =
-          (fun ~ls ~run:_ ~resume k ->
+          (fun ~run:_ ~resume k ->
             on_result fut (function
               | Ok _ ->
                 (* schedule continuation with the same name *)
-                resume ~ls k (Ok ())
+                resume k (Ok ())
               | Error (exn, bt) ->
                 (* fail continuation immediately *)
                 k (Error (exn, bt))));

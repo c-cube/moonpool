@@ -48,7 +48,7 @@ module State_ = struct
       Suspend_.suspend
         {
           Suspend_.handle =
-            (fun ~ls ~run:_ ~resume suspension ->
+            (fun ~run:_ ~resume suspension ->
               while
                 let old_st = A.get self in
                 match old_st with
@@ -59,7 +59,7 @@ module State_ = struct
                 | Left_solved left ->
                   (* other thread is done, no risk of race condition *)
                   A.set self (Both_solved (left, right));
-                  resume ~ls suspension (Ok ());
+                  resume suspension (Ok ());
                   false
                 | Right_solved _ | Both_solved _ -> assert false
               do
@@ -113,19 +113,19 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
         max 1 (1 + (n / Moonpool.Private.num_domains ()))
     in
 
-    let start_tasks ~ls ~run ~resume (suspension : Suspend_.suspension) =
+    let start_tasks ~run ~resume (suspension : Suspend_.suspension) =
       let task_for ~offset ~len_range =
         match f offset (offset + len_range - 1) with
         | () ->
           if A.fetch_and_add missing (-len_range) = len_range then
             (* all tasks done successfully *)
-            resume ~ls suspension (Ok ())
+            resume suspension (Ok ())
         | exception exn ->
           let bt = Printexc.get_raw_backtrace () in
           if not (A.exchange has_failed true) then
             (* first one to fail, and [missing] must be >= 2
                because we're not decreasing it. *)
-            resume ~ls suspension (Error (exn, bt))
+            resume suspension (Error (exn, bt))
       in
 
       let i = ref 0 in
@@ -143,9 +143,9 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
     Suspend_.suspend
       {
         Suspend_.handle =
-          (fun ~ls ~run ~resume suspension ->
+          (fun ~run ~resume suspension ->
             (* run tasks, then we'll resume [suspension] *)
-            start_tasks ~run ~ls ~resume suspension);
+            start_tasks ~run ~resume suspension);
       }
   )
 
