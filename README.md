@@ -174,6 +174,9 @@ It is generally better to use the work-stealing pool for workloads that rely on
 fork-join for better performance, because fork-join will tend to spawn lots of
 shorter tasks.
 
+Here is an simple example of a parallel sort.
+It uses selection sort for small slices, like this:
+
 ```ocaml
 # let rec select_sort arr i len =
     if len >= 2 then ( 
@@ -187,7 +190,11 @@ shorter tasks.
       select_sort arr (i+1) (len-1)
     );;
 val select_sort : 'a array -> int -> int -> unit = <fun>
+```
 
+And a parallel quicksort for larger slices:
+
+```ocaml
 # let rec quicksort arr i len : unit =
     if len <= 10 then select_sort arr i len
     else (
@@ -195,6 +202,7 @@ val select_sort : 'a array -> int -> int -> unit = <fun>
       let low = ref (i - 1) in
       let high = ref (i + len) in
 
+      (* partition the array slice *)
       while !low < !high do
         incr low;
         decr high;
@@ -211,6 +219,7 @@ val select_sort : 'a array -> int -> int -> unit = <fun>
         )
       done;
 
+      (* sort lower half and upper half in parallel *)
       Moonpool.Fork_join.both_ignore
         (fun () -> quicksort arr i (!low - i))
         (fun () -> quicksort arr !low (len - (!low - i)))
@@ -237,8 +246,8 @@ val arr : int array =
     142; 255; 72; 85; 95; 93; 73; 202|]
 # Moonpool.Fut.spawn ~on:pool
     (fun () -> quicksort arr 0 (Array.length arr))
-    |> Moonpool.Fut.wait_block_exn
-    ;;
+  |> Moonpool.Fut.wait_block_exn
+  ;;
 - : unit = ()
 # arr;;
 - : int array =
@@ -246,6 +255,12 @@ val arr : int array =
   106; 109; 111; 121; 126; 132; 135; 142; 147; 161; 182; 186; 192; 196; 202;
   204; 220; 231; 243; 247; 255|]
 ```
+
+Note that the sort had to be started in a task (via `Moonpool.Fut.spawn`)
+so that fork-join would run on the thread pool.
+This is necessary even for the initial iteration because fork-join
+relies on OCaml 5's effects, meaning that the computation needs to run
+inside an effect handler provided by the thread pool.
 
 ### More intuition
 
