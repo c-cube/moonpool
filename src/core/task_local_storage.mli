@@ -8,6 +8,9 @@
     @since NEXT_RELEASE
 *)
 
+type storage
+(** Underlying storage for a task *)
+
 type 'a key
 (** A key used to access a particular (typed) storage slot on every task. *)
 
@@ -41,3 +44,18 @@ val with_value : 'a key -> 'a -> (unit -> 'b) -> 'b
 (** [with_value k v f] sets [k] to [v] for the duration of the call
     to [f()]. When [f()] returns (or fails), [k] is restored
     to its old value. *)
+
+(**/**)
+
+module Private_ : sig
+  module Storage : sig
+    type t = storage
+
+    val k_storage : t ref option Thread_local_storage_.key
+    val create : unit -> t
+    val copy : t -> t
+    val dummy : t
+  end
+end
+
+(**/**)

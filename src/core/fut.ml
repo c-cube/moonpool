@@ -105,7 +105,7 @@ let[@inline] fulfill_idempotent self r =
 
 (* ### combinators ### *)
 
-let spawn ?name ~on f : _ t =
+let spawn ?name ?ls ~on f : _ t =
   let fut, promise = make () in
 
   let task () =
@@ -118,13 +118,13 @@ let spawn ?name ~on f : _ t =
     fulfill promise res
   in
 
-  Runner.run_async ?name on task;
+  Runner.run_async ?name ?ls on task;
   fut
 
-let spawn_on_current_runner ?name f : _ t =
+let spawn_on_current_runner ?name ?ls f : _ t =
   match Runner.get_current_runner () with
   | None -> failwith "Fut.spawn_on_current_runner: not running on a runner"
-  | Some on -> spawn ?name ~on f
+  | Some on -> spawn ?name ?ls ~on f
 
 let reify_error (f : 'a t) : 'a or_error t =
   match peek f with

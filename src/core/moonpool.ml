@@ -1,8 +1,11 @@
+exception Shutdown = Runner.Shutdown
+
 let start_thread_on_some_domain f x =
   let did = Random.int (Domain_pool_.n_domains ()) in
   Domain_pool_.run_on_and_wait did (fun () -> Thread.create f x)
 
 let run_async = Runner.run_async
+let run_wait_block = Runner.run_wait_block
 let recommended_thread_count () = Domain_.recommended_number ()
 let spawn = Fut.spawn
 let spawn_on_current_runner = Fut.spawn_on_current_runner

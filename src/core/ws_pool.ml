@@ -1,10 +1,10 @@
-open Types_
 module WSQ = Ws_deque_
 module A = Atomic_
 module TLS = Thread_local_storage_
 include Runner
 
 let ( let@ ) = ( @@ )
+let k_storage = Task_local_storage.Private_.Storage.k_storage
 
 module Id = struct
   type t = unit ref
@@ -17,7 +17,7 @@ end
 type task_full = {
   f: task;
   name: string;
-  ls: task_ls;
+  ls: Task_local_storage.storage;
 }
 
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
@@ -27,7 +27,7 @@ type worker_state = {
   mutable thread: Thread.t;
   q: task_full WSQ.t;  (** Work stealing queue *)
   mutable cur_span: int64;
-  cur_ls: task_ls ref;  (** Task storage *)
+  cur_ls: Task_local_storage.storage ref;  (** Task storage *)
   rng: Random.State.t;
 }
 (** State for a given worker. Only this worker is
@@ -127,7 +127,7 @@ let run_task_now_ (self : state) ~runner (w : worker_state) ~name ~ls task :
 
   let run_another_task ls ~name task' =
     let w = find_current_worker_ () in
-    let ls' = Array.copy ls in
+    let ls' = Task_local_storage.Private_.Storage.copy ls in
     schedule_task_ self w ~name ~ls:ls' task'
   in
 
@@ -154,11 +154,11 @@ let run_task_now_ (self : state) ~runner (w : worker_state) ~name ~ls task :
 
   exit_span_ ();
   after_task runner _ctx;
-  w.cur_ls := [||]
+  w.cur_ls := Task_local_storage.Private_.Storage.dummy
 
-let[@inline] run_async_ (self : state) ~name (f : task) : unit =
+let[@inline] run_async_ (self : state) ~name ~ls (f : task) : unit =
   let w = find_current_worker_ () in
-  schedule_task_ self w ~name ~ls:[||] f
+  schedule_task_ self w ~name ~ls f
 
 (* TODO: function to schedule many tasks from the outside.
     - build a queue
@@ -276,7 +276,7 @@ type ('a, 'b) create_args =
   'a
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
-let dummy_task_ = { f = ignore; ls = [||]; name = "DUMMY_TASK" }
+let dummy_task_ = { f = ignore; ls = Task_local_storage.Private_.Storage.dummy ; name = "DUMMY_TASK" }
 
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
@@ -304,7 +304,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
           cur_span = Tracing_.dummy_span;
           q = WSQ.create ~dummy:dummy_task_ ();
           rng = Random.State.make [| i |];
-          cur_ls = ref [||];
+          cur_ls = ref Task_local_storage.Private_.Storage.dummy;
         })
   in
 
@@ -326,7 +326,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
   let runner =
     Runner.For_runner_implementors.create
       ~shutdown:(fun ~wait () -> shutdown_ pool ~wait)
-      ~run_async:(fun ~name f -> run_async_ pool ~name f)
+      ~run_async:(fun ~name ~ls f -> run_async_ pool ~name ~ls f)
       ~size:(fun () -> size_ pool)
       ~num_tasks:(fun () -> num_tasks_ pool)
       ()
@@ -346,7 +346,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
       let thread = Thread.self () in
       let t_id = Thread.id thread in
       on_init_thread ~dom_id:dom_idx ~t_id ();
-      TLS.set k_ls_values (Some w.cur_ls);
+      TLS.set k_storage (Some w.cur_ls);
 
       (* set thread name *)
       Option.iter

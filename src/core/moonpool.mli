@@ -15,12 +15,22 @@ module Runner = Runner
 module Immediate_runner = Immediate_runner
 module Exn_bt = Exn_bt
 
+exception Shutdown
+(** Exception raised when trying to run tasks on
+    runners that have been shut down.
+    @since NEXT_RELEASE *)
+
 val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
 (** Similar to {!Thread.create}, but it picks a background domain at random
     to run the thread. This ensures that we don't always pick the same domain
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
-val run_async : ?name:string -> Runner.t -> (unit -> unit) -> unit
+val run_async :
+  ?name:string ->
+  ?ls:Task_local_storage.storage ->
+  Runner.t ->
+  (unit -> unit) ->
+  unit
 (** [run_async runner task] schedules the task to run
   on the given runner. This means [task()] will be executed
   at some point in the future, possibly in another thread.
@@ -29,20 +39,43 @@ val run_async : ?name:string -> Runner.t -> (unit -> unit) -> unit
     (since NEXT_RELEASE)
   @since 0.5 *)
 
+val run_wait_block :
+  ?name:string ->
+  ?ls:Task_local_storage.storage ->
+  Runner.t ->
+  (unit -> 'a) ->
+  'a
+(** [run_wait_block runner f] schedules [f] for later execution
+    on the runner, like {!run_async}.
+    It then blocks the current thread until [f()] is done executing,
+    and returns its result. If [f()] raises an exception, then [run_wait_block pool f]
+    will raise it as well.
+
+    {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}
+      about the required discipline to avoid deadlocks).
+    @raise Shutdown if the runner was already shut down
+    @since NEXT_RELEASE *)
+
 val recommended_thread_count : unit -> int
 (** Number of threads recommended to saturate the CPU.
   For IO pools this makes little sense (you might want more threads than
   this because many of them will be blocked most of the time).
   @since 0.5 *)
 
-val spawn : ?name:string -> on:Runner.t -> (unit -> 'a) -> 'a Fut.t
+val spawn :
+  ?name:string ->
+  ?ls:Task_local_storage.storage ->
+  on:Runner.t ->
+  (unit -> 'a) ->
+  'a Fut.t
 (** [spawn ~on f] runs [f()] on the runner (a thread pool typically)
     and returns a future result for it. See {!Fut.spawn}.
     @param name if provided and [Trace] is present in dependencies,
       a span will be created for the future. (since 0.6)
     @since 0.5 *)
 
-val spawn_on_current_runner : ?name:string -> (unit -> 'a) -> 'a Fut.t
+val spawn_on_current_runner :
+  ?name:string -> ?ls:Task_local_storage.storage -> (unit -> 'a) -> 'a Fut.t
 (** See {!Fut.spawn_on_current_runner}.
     @param name see {!spawn}. since 0.6.
     @since 0.5 *)
