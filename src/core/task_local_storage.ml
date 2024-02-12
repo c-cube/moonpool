@@ -21,7 +21,7 @@ type ls_value += Dummy
 (** Resize array of TLS values *)
 let[@inline never] resize_ (cur : ls_value array ref) n =
   let len = Array.length !cur in
-  let new_ls = Array.make (max n (len * 2)) Dummy in
+  let new_ls = Array.make (max n ((len * 2) + 2)) Dummy in
   Array.blit !cur 0 new_ls 0 len;
   cur := new_ls
 
