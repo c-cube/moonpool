@@ -5,6 +5,8 @@ type 'a key = 'a ls_key
 
 let key_count_ = A.make 0
 
+type storage = task_ls
+
 let new_key (type t) ~init () : t key =
   let offset = A.fetch_and_add key_count_ 1 in
   (module struct
@@ -55,3 +57,14 @@ let with_value key x f =
   let old = get key in
   set key x;
   Fun.protect ~finally:(fun () -> set key old) f
+
+module Private_ = struct
+  module Storage = struct
+    type t = storage
+
+    let k_storage = k_ls_values
+    let[@inline] create () = [||]
+    let copy = Array.copy
+    let dummy = [||]
+  end
+end

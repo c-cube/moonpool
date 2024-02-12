@@ -2,11 +2,12 @@ open Types_
 include Runner
 
 let ( let@ ) = ( @@ )
+let k_storage = Task_local_storage.Private_.Storage.k_storage
 
 type task_full = {
   f: unit -> unit;
   name: string;
-  ls: task_ls;
+  ls: Task_local_storage.storage;
 }
 
 type state = {
@@ -25,8 +26,8 @@ let schedule_ (self : state) (task : task_full) : unit =
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
 let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
-  let cur_ls : task_ls ref = ref [||] in
-  TLS.set Types_.k_ls_values (Some cur_ls);
+  let cur_ls : Task_local_storage.storage ref = ref Task_local_storage.Private_.Storage.dummy in
+  TLS.set k_storage (Some cur_ls);
   TLS.get Runner.For_runner_implementors.k_cur_runner := Some runner;
 
   let (AT_pair (before_task, after_task)) = around_task in
@@ -44,7 +45,7 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
   in
 
   let run_another_task ls ~name task' =
-    let ls' = Array.copy ls in
+    let ls' = Task_local_storage.Private_.Storage.copy ls in
     schedule_ self { f = task'; name; ls = ls' }
   in
 
@@ -73,7 +74,7 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
        on_exn e bt);
     exit_span_ ();
     after_task runner _ctx;
-    cur_ls := [||]
+    cur_ls := Task_local_storage.Private_.Storage.dummy
   in
 
   let main_loop () =
@@ -130,7 +131,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
     { threads = Array.make num_threads dummy; q = Bb_queue.create () }
   in
 
-  let run_async ~name f = schedule_ pool { f; name; ls = [||] } in
+  let run_async ~name ~ls f = schedule_ pool { f; name; ls } in
 
   let runner =
     Runner.For_runner_implementors.create
