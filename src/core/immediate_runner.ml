@@ -1,11 +1,13 @@
 open Types_
 include Runner
 
+(* convenient alias *)
 let k_ls = Task_local_storage.Private_.Storage.k_storage
 
 let run_async_ ~name ~ls f =
   let cur_ls = ref ls in
   TLS.set k_ls (Some cur_ls);
+  cur_ls := ls;
   let sp = Tracing_.enter_span name in
   try
     let x = f () in
