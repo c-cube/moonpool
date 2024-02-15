@@ -148,9 +148,9 @@ let add_child_ ~protect (self : _ t) (child : _ t) =
 let k_current_fiber : any option Task_local_storage.key =
   Task_local_storage.new_key ~init:(fun () -> None) ()
 
-let spawn_ ?name ~on (f : _ -> 'a) : 'a t =
+let spawn_ ~on (f : _ -> 'a) : 'a t =
   let id = Handle.generate_fresh () in
-  let res, _promise = Fut.make ?name () in
+  let res, _promise = Fut.make () in
   let fib =
     {
       state = A.make @@ Alive { children = FM.empty; on_cancel = [] };
@@ -172,17 +172,17 @@ let spawn_ ?name ~on (f : _ -> 'a) : 'a t =
       resolve_as_failed_ fib ebt
   in
 
-  Runner.run_async on ?name run;
+  Runner.run_async on run;
 
   fib
 
-let[@inline] spawn_top ?name ~on f : _ t = spawn_ ?name ~on f
+let[@inline] spawn_top ~on f : _ t = spawn_ ~on f
 
-let spawn_link ?name ~protect f : _ t =
+let spawn_link ~protect f : _ t =
   match Task_local_storage.get k_current_fiber with
   | None -> failwith "Fiber.spawn_link: must be run from inside a fiber."
   | Some (Any parent) ->
-    let child = spawn_ ?name ~on:parent.runner f in
+    let child = spawn_ ~on:parent.runner f in
     add_child_ ~protect parent child;
     child
 

@@ -14,7 +14,7 @@ type task = unit -> unit
 
 type suspension_handler = {
   handle:
-    run:(name:string -> task -> unit) ->
+    run:(task -> unit) ->
     resume:(suspension -> unit Exn_bt.result -> unit) ->
     suspension ->
     unit;
@@ -24,7 +24,6 @@ type suspension_handler = {
 
    The handler is given a few things:
 
-   - the name (if any) of the current computation
    - the suspended computation (which can be resumed with a result
      eventually);
    - a [run] function that can be used to start tasks to perform some
@@ -70,8 +69,7 @@ type with_suspend_handler =
   | WSH : {
       on_suspend: unit -> 'state;
           (** on_suspend called when [f()] suspends itself. *)
-      run: 'state -> name:string -> task -> unit;
-          (** run used to schedule new tasks *)
+      run: 'state -> task -> unit;  (** run used to schedule new tasks *)
       resume: 'state -> suspension -> unit Exn_bt.result -> unit;
           (** resume run the suspension. Must be called exactly once. *)
     }

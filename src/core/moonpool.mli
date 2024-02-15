@@ -26,25 +26,14 @@ val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
 val run_async :
-  ?name:string ->
-  ?ls:Task_local_storage.storage ->
-  Runner.t ->
-  (unit -> unit) ->
-  unit
+  ?ls:Task_local_storage.storage -> Runner.t -> (unit -> unit) -> unit
 (** [run_async runner task] schedules the task to run
   on the given runner. This means [task()] will be executed
   at some point in the future, possibly in another thread.
-  @param name if provided and [Trace] is present in dependencies, a span
-    will be created when the task starts, and will stop when the task is over.
-    (since NEXT_RELEASE)
   @since 0.5 *)
 
 val run_wait_block :
-  ?name:string ->
-  ?ls:Task_local_storage.storage ->
-  Runner.t ->
-  (unit -> 'a) ->
-  'a
+  ?ls:Task_local_storage.storage -> Runner.t -> (unit -> 'a) -> 'a
 (** [run_wait_block runner f] schedules [f] for later execution
     on the runner, like {!run_async}.
     It then blocks the current thread until [f()] is done executing,
@@ -63,21 +52,14 @@ val recommended_thread_count : unit -> int
   @since 0.5 *)
 
 val spawn :
-  ?name:string ->
-  ?ls:Task_local_storage.storage ->
-  on:Runner.t ->
-  (unit -> 'a) ->
-  'a Fut.t
+  ?ls:Task_local_storage.storage -> on:Runner.t -> (unit -> 'a) -> 'a Fut.t
 (** [spawn ~on f] runs [f()] on the runner (a thread pool typically)
     and returns a future result for it. See {!Fut.spawn}.
-    @param name if provided and [Trace] is present in dependencies,
-      a span will be created for the future. (since 0.6)
     @since 0.5 *)
 
 val spawn_on_current_runner :
-  ?name:string -> ?ls:Task_local_storage.storage -> (unit -> 'a) -> 'a Fut.t
+  ?ls:Task_local_storage.storage -> (unit -> 'a) -> 'a Fut.t
 (** See {!Fut.spawn_on_current_runner}.
-    @param name see {!spawn}. since 0.6.
     @since 0.5 *)
 
 [@@@ifge 5.0]

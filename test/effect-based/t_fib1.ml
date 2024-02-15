@@ -20,7 +20,7 @@ let fib ~on x : int Fut.t =
       Fut.await t1 + Fut.await t2
     )
   in
-  Fut.spawn ~name:"fib" ~on (fun () -> fib_rec x)
+  Fut.spawn ~on (fun () -> fib_rec x)
 
 (* NOTE: for tracy support
    let () = Tracy_client_trace.setup ()

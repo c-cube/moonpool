@@ -16,7 +16,6 @@ end
 
 type task_full = {
   f: task;
-  name: string;
   ls: Task_local_storage.storage;
 }
 
@@ -26,7 +25,6 @@ type worker_state = {
   pool_id_: Id.t;  (** Unique per pool *)
   mutable thread: Thread.t;
   q: task_full WSQ.t;  (** Work stealing queue *)
-  mutable cur_span: int64;
   cur_ls: Task_local_storage.storage ref;  (** Task storage *)
   rng: Random.State.t;
 }
@@ -75,10 +73,10 @@ let[@inline] try_wake_someone_ (self : state) : unit =
   )
 
 (** Run [task] as is, on the pool. *)
-let schedule_task_ (self : state) ~name ~ls (w : worker_state option) (f : task)
+let schedule_task_ (self : state) ~ls (w : worker_state option) (f : task)
     : unit =
   (* Printf.printf "schedule task now (%d)\n%!" (Thread.id @@ Thread.self ()); *)
-  let task = { f; name; ls } in
+  let task = { f; ls } in
   match w with
   | Some w when Id.equal self.id_ w.pool_id_ ->
     (* we're on this same pool, schedule in the worker's state. Otherwise
@@ -107,33 +105,26 @@ let schedule_task_ (self : state) ~name ~ls (w : worker_state option) (f : task)
       raise Shutdown
 
 (** Run this task, now. Must be called from a worker. *)
-let run_task_now_ (self : state) ~runner (w : worker_state) ~name ~ls task :
+let run_task_now_ (self : state) ~runner (w : worker_state) ~ls task :
     unit =
   (* Printf.printf "run task now (%d)\n%!" (Thread.id @@ Thread.self ()); *)
   let (AT_pair (before_task, after_task)) = self.around_task in
   w.cur_ls := ls;
   let _ctx = before_task runner in
 
-  w.cur_span <- Tracing_.enter_span name;
-  let[@inline] exit_span_ () =
-    Tracing_.exit_span w.cur_span;
-    w.cur_span <- Tracing_.dummy_span
-  in
-
-  let on_suspend () =
-    exit_span_ ();
+  let[@inline] on_suspend () =
     !(w.cur_ls)
   in
 
-  let run_another_task ls ~name task' =
+  let run_another_task ls task' =
     let w = find_current_worker_ () in
     let ls' = Task_local_storage.Private_.Storage.copy ls in
-    schedule_task_ self w ~name ~ls:ls' task'
+    schedule_task_ self w ~ls:ls' task'
   in
 
   let resume ls k r =
     let w = find_current_worker_ () in
-    schedule_task_ self w ~name ~ls (fun () -> k r)
+    schedule_task_ self w ~ls (fun () -> k r)
   in
 
   (* run the task now, catching errors *)
@@ -152,13 +143,12 @@ let run_task_now_ (self : state) ~runner (w : worker_state) ~name ~ls task :
      let bt = Printexc.get_raw_backtrace () in
      self.on_exn e bt);
 
-  exit_span_ ();
   after_task runner _ctx;
   w.cur_ls := Task_local_storage.Private_.Storage.dummy
 
-let[@inline] run_async_ (self : state) ~name ~ls (f : task) : unit =
+let[@inline] run_async_ (self : state) ~ls (f : task) : unit =
   let w = find_current_worker_ () in
-  schedule_task_ self w ~name ~ls f
+  schedule_task_ self w ~ls f
 
 (* TODO: function to schedule many tasks from the outside.
     - build a queue
@@ -204,7 +194,7 @@ let worker_run_self_tasks_ (self : state) ~runner w : unit =
     match WSQ.pop w.q with
     | Some task ->
       try_wake_someone_ self;
-      run_task_now_ self ~runner w ~name:task.name ~ls:task.ls task.f
+      run_task_now_ self ~runner w ~ls:task.ls task.f
     | None -> continue := false
   done
 
@@ -217,7 +207,7 @@ let worker_thread_ (self : state) ~(runner : t) (w : worker_state) : unit =
     worker_run_self_tasks_ self ~runner w;
     try_steal ()
   and run_task task : unit =
-    run_task_now_ self ~runner w ~name:task.name ~ls:task.ls task.f;
+    run_task_now_ self ~runner w ~ls:task.ls task.f;
     main ()
   and try_steal () =
     match try_to_steal_work_once_ self w with
@@ -276,7 +266,7 @@ type ('a, 'b) create_args =
   'a
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
-let dummy_task_ = { f = ignore; ls = Task_local_storage.Private_.Storage.dummy ; name = "DUMMY_TASK" }
+let dummy_task_ = { f = ignore; ls = Task_local_storage.Private_.Storage.dummy ; }
 
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
@@ -301,7 +291,6 @@ let create ?(on_init_thread = default_thread_init_exit_)
         {
           pool_id_;
           thread = dummy;
-          cur_span = Tracing_.dummy_span;
           q = WSQ.create ~dummy:dummy_task_ ();
           rng = Random.State.make [| i |];
           cur_ls = ref Task_local_storage.Private_.Storage.dummy;
@@ -326,7 +315,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
   let runner =
     Runner.For_runner_implementors.create
       ~shutdown:(fun ~wait () -> shutdown_ pool ~wait)
-      ~run_async:(fun ~name ~ls f -> run_async_ pool ~name ~ls f)
+      ~run_async:(fun ~ls f -> run_async_ pool ~ls f)
       ~size:(fun () -> size_ pool)
       ~num_tasks:(fun () -> num_tasks_ pool)
       ()

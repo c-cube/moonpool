@@ -76,7 +76,7 @@ let run_fork_join ~kind num_steps : float =
   let step = 1. /. float num_steps in
   let global_sum = Lock.create 0. in
 
-  Ws_pool.run_wait_block ~name:"pi.fj" pool (fun () ->
+  Ws_pool.run_wait_block pool (fun () ->
       FJ.for_
         ~chunk_size:(3 + (num_steps / num_tasks))
         num_steps

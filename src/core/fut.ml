@@ -5,21 +5,13 @@ type 'a waiter = 'a or_error -> unit
 
 type 'a state =
   | Done of 'a or_error
-  | Waiting of {
-      waiters: 'a waiter list;
-      name: string;
-    }
+  | Waiting of { waiters: 'a waiter list }
 
 type 'a t = { st: 'a state A.t } [@@unboxed]
 type 'a promise = 'a t
 
-let[@inline] get_name_ (self : _ t) =
-  match A.get self.st with
-  | Done _ -> ""
-  | Waiting { name; _ } -> name
-
-let make ?(name = "") () =
-  let fut = { st = A.make (Waiting { waiters = []; name }) } in
+let make () =
+  let fut = { st = A.make (Waiting { waiters = [] }) } in
   fut, fut
 
 let[@inline] of_result x : _ t = { st = A.make (Done x) }
@@ -72,8 +64,8 @@ let on_result (self : _ t) (f : _ waiter) : unit =
     | Done x ->
       f x;
       false
-    | Waiting { waiters = l; name } ->
-      not (A.compare_and_set self.st st (Waiting { waiters = f :: l; name }))
+    | Waiting { waiters = l } ->
+      not (A.compare_and_set self.st st (Waiting { waiters = f :: l }))
   do
     Domain_.relax ()
   done
@@ -86,7 +78,7 @@ let fulfill (self : _ t) (r : _ result) : unit =
     let st = A.get self.st in
     match st with
     | Done _ -> raise Already_fulfilled
-    | Waiting { waiters = l; name = _ } ->
+    | Waiting { waiters = l } ->
       let did_swap = A.compare_and_set self.st st (Done r) in
       if did_swap then (
         (* success, now call all the waiters *)
@@ -105,7 +97,7 @@ let[@inline] fulfill_idempotent self r =
 
 (* ### combinators ### *)
 
-let spawn ?name ?ls ~on f : _ t =
+let spawn ?ls ~on f : _ t =
   let fut, promise = make () in
 
   let task () =
@@ -118,13 +110,13 @@ let spawn ?name ?ls ~on f : _ t =
     fulfill promise res
   in
 
-  Runner.run_async ?name ?ls on task;
+  Runner.run_async ?ls on task;
   fut
 
-let spawn_on_current_runner ?name ?ls f : _ t =
+let spawn_on_current_runner ?ls f : _ t =
   match Runner.get_current_runner () with
   | None -> failwith "Fut.spawn_on_current_runner: not running on a runner"
-  | Some on -> spawn ?name ?ls ~on f
+  | Some on -> spawn ?ls ~on f
 
 let reify_error (f : 'a t) : 'a or_error t =
   match peek f with
@@ -150,22 +142,20 @@ let map ?on ~f fut : _ t =
     | Error e_bt -> Error e_bt
   in
 
-  let name = get_name_ fut in
   match peek fut, get_runner_ ?on () with
   | Some res, None -> of_result @@ map_immediate_ res
   | Some res, Some runner ->
-    let fut2, promise = make ~name () in
-    Runner.run_async ~name runner (fun () ->
-        fulfill promise @@ map_immediate_ res);
+    let fut2, promise = make () in
+    Runner.run_async runner (fun () -> fulfill promise @@ map_immediate_ res);
     fut2
   | None, None ->
-    let fut2, promise = make ~name () in
+    let fut2, promise = make () in
     on_result fut (fun res -> fulfill promise @@ map_immediate_ res);
     fut2
   | None, Some runner ->
-    let fut2, promise = make ~name () in
+    let fut2, promise = make () in
     on_result fut (fun res ->
-        Runner.run_async ~name runner (fun () ->
+        Runner.run_async runner (fun () ->
             fulfill promise @@ map_immediate_ res));
     fut2
 
@@ -174,7 +164,7 @@ let join (fut : 'a t t) : 'a t =
   | Some (Ok f) -> f
   | Some (Error (e, bt)) -> fail e bt
   | None ->
-    let fut2, promise = make ~name:(get_name_ fut) () in
+    let fut2, promise = make () in
     on_result fut (function
       | Ok sub_fut -> on_result sub_fut (fulfill promise)
       | Error _ as e -> fulfill promise e);
@@ -197,20 +187,19 @@ let bind ?on ~f fut : _ t =
     on_result f_res_fut (fun r -> fulfill promise r)
   in
 
-  let name = get_name_ fut in
   match peek fut, get_runner_ ?on () with
   | Some res, Some runner ->
-    let fut2, promise = make ~name () in
-    Runner.run_async ~name runner (bind_and_fulfill res promise);
+    let fut2, promise = make () in
+    Runner.run_async runner (bind_and_fulfill res promise);
     fut2
   | Some res, None -> apply_f_to_res res
   | None, Some runner ->
-    let fut2, promise = make ~name () in
+    let fut2, promise = make () in
     on_result fut (fun r ->
-        Runner.run_async ~name runner (bind_and_fulfill r promise));
+        Runner.run_async runner (bind_and_fulfill r promise));
     fut2
   | None, None ->
-    let fut2, promise = make ~name () in
+    let fut2, promise = make () in
     on_result fut (fun res -> bind_and_fulfill res promise ());
     fut2
 
@@ -234,7 +223,7 @@ let both a b : _ t =
   | Some (Ok x), Some (Ok y) -> return (x, y)
   | Some (Error (e, bt)), _ | _, Some (Error (e, bt)) -> fail e bt
   | _ ->
-    let fut, promise = make ~name:(get_name_ a) () in
+    let fut, promise = make () in
 
     let st = A.make `Neither in
     on_result a (function
@@ -267,7 +256,7 @@ let choose a b : _ t =
   | _, Some (Ok y) -> return (Either.Right y)
   | Some (Error (e, bt)), Some (Error _) -> fail e bt
   | _ ->
-    let fut, promise = make ~name:(get_name_ a) () in
+    let fut, promise = make () in
 
     let one_failure = A.make false in
     on_result a (function
@@ -290,7 +279,7 @@ let choose_same a b : _ t =
   | _, Some (Ok y) -> return y
   | Some (Error (e, bt)), Some (Error _) -> fail e bt
   | _ ->
-    let fut, promise = make ~name:(get_name_ a) () in
+    let fut, promise = make () in
 
     let one_failure = A.make false in
     on_result a (function

@@ -6,7 +6,6 @@ let k_storage = Task_local_storage.Private_.Storage.k_storage
 
 type task_full = {
   f: unit -> unit;
-  name: string;
   ls: Task_local_storage.storage;
 }
 
@@ -44,18 +43,17 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
     !cur_ls
   in
 
-  let run_another_task ls ~name task' =
+  let run_another_task ls task' =
     let ls' = Task_local_storage.Private_.Storage.copy ls in
-    schedule_ self { f = task'; name; ls = ls' }
+    schedule_ self { f = task'; ls = ls' }
   in
 
   let run_task (task : task_full) : unit =
     cur_ls := task.ls;
     let _ctx = before_task runner in
-    cur_span := Tracing_.enter_span task.name;
 
     let resume ls k res =
-      schedule_ self { f = (fun () -> k res); name = task.name; ls }
+      schedule_ self { f = (fun () -> k res);  ls }
     in
 
     (* run the task now, catching errors, handling effects *)
@@ -105,12 +103,12 @@ type ('a, 'b) create_args =
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
   ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
   ?num_threads:int ->
-  ?name:string ->
+    ?name:string ->
   'a
 
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
-    ?around_task ?num_threads ?name () : t =
+    ?around_task ?num_threads  ?name () : t =
   (* wrapper *)
   let around_task =
     match around_task with
@@ -131,7 +129,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
     { threads = Array.make num_threads dummy; q = Bb_queue.create () }
   in
 
-  let run_async ~name ~ls f = schedule_ pool { f; name; ls } in
+  let run_async ~ls f = schedule_ pool { f; ls } in
 
   let runner =
     Runner.For_runner_implementors.create

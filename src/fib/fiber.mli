@@ -55,12 +55,12 @@ val on_result : 'a t -> 'a callback -> unit
     with the result. If the fiber is done already then the
     callback is invoked immediately with its result. *)
 
-val spawn_top : ?name:string -> on:Runner.t -> (unit -> 'a) -> 'a t
+val spawn_top : on:Runner.t -> (unit -> 'a) -> 'a t
 (** [spawn_top ~on f] spawns a new (toplevel) fiber onto the given runner.
     This fiber is not the child of any other fiber: its lifetime
     is only determined by the lifetime of [f()]. *)
 
-val spawn_link : ?name:string -> protect:bool -> (unit -> 'a) -> 'a t
+val spawn_link : protect:bool -> (unit -> 'a) -> 'a t
 (** [spawn_link ~protect f] spawns a sub-fiber [f_child]
     from a running fiber [parent].
     The sub-fiber [f_child] is attached to the current fiber and fails
