@@ -15,17 +15,13 @@ module TCP_server = struct
           let oc = IO_out.of_unix_fd @@ Lwt_unix.unix_file_descr client_sock in
 
           let fut =
-            M.Fut.spawn ~name:"tcp.server.handler" ~on:runner (fun () ->
-                handler client_addr ic oc)
+            M.Fut.spawn ~on:runner (fun () -> handler client_addr ic oc)
           in
 
           let lwt_fut = lwt_of_fut fut in
           lwt_fut)
     in
-    Printf.printf "awaiting server\n%!";
-    let s = await_lwt server in
-    Printf.printf "got server\n%!";
-    s
+    await_lwt server
 
   let shutdown self = await_lwt @@ Lwt_io.shutdown_server self
 end

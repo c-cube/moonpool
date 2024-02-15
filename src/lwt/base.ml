@@ -143,7 +143,7 @@ let main_with_runner ~runner (f : unit -> 'a) : 'a =
   let lwt_fut, lwt_prom = Lwt.wait () in
 
   let _fiber =
-    Fiber.spawn_top ~name:"Moonpool_lwt.main" ~on:runner (fun () ->
+    Fiber.spawn_top ~on:runner (fun () ->
         try
           let x = f () in
           Perform_action_in_lwt.schedule (Action.Wakeup (lwt_prom, x))
