@@ -19,15 +19,14 @@ let main ~port ~runner () : unit Lwt.t =
   Printf.printf "listening on port %d\n%!" port;
 
   let handle_client client_addr ic oc =
-    let@ _sp =
-      Trace.with_span ~__FILE__ ~__LINE__ "handle.client" ~data:(fun () ->
-          [ "addr", `String (str_of_sockaddr client_addr) ])
+    let _sp =
+      Trace.enter_manual_toplevel_span ~__FILE__ ~__LINE__ "handle.client"
+        ~data:(fun () -> [ "addr", `String (str_of_sockaddr client_addr) ])
     in
 
     let buf = Bytes.create 32 in
     let continue = ref true in
     while !continue do
-      let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "read.loop" in
       Trace.message "read";
       let n = M_lwt.IO_in.input ic buf 0 (Bytes.length buf) in
       if n = 0 then
@@ -36,9 +35,10 @@ let main ~port ~runner () : unit Lwt.t =
         Trace.messagef (fun k -> k "got %dB" n);
         M_lwt.IO_out.output oc buf 0 n;
         M_lwt.IO_out.flush oc;
-        Trace.message "write" (* MU.sleep_s 0.02 *)
+        Trace.message "write"
       )
     done;
+    Trace.exit_manual_span _sp;
     Trace.message "exit handle client"
   in
 
