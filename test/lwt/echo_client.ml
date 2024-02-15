@@ -19,19 +19,28 @@ let main ~port ~runner ~n ~n_conn () : unit Lwt.t =
     (* Printf.printf "running task\n%!"; *)
     let n = Atomic.fetch_and_add remaining (-1) in
     if n > 0 then (
-      ( (* let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "connect.client" in *)
-        M_lwt.TCP_client.with_connect addr
-      @@ fun ic oc ->
-        let buf = Bytes.create 32 in
+      (let _sp =
+         Trace.enter_manual_toplevel_span ~__FILE__ ~__LINE__ "connect.client"
+       in
+       Trace.message "connecting new client…";
+       M_lwt.TCP_client.with_connect addr @@ fun ic oc ->
+       let buf = Bytes.create 32 in
 
-        for _j = 1 to 100 do
-          let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "write.loop" in
-          M_lwt.IO_out.output_string oc "hello";
+       for _j = 1 to 100 do
+         let _sp =
+           Trace.enter_manual_sub_span ~parent:_sp ~__FILE__ ~__LINE__
+             "write.loop"
+         in
 
-          (* read back something *)
-          let _n = M_lwt.IO_in.really_input ic buf in
-          ()
-        done );
+         M_lwt.IO_out.output_string oc "hello";
+         M_lwt.IO_out.flush oc;
+
+         (* read back something *)
+         M_lwt.IO_in.really_input ic buf 0 (String.length "hello");
+         Trace.exit_manual_span _sp;
+         ()
+       done;
+       Trace.exit_manual_span _sp);
 
       (* run another task *) M.Runner.run_async runner run_task
     ) else (
@@ -55,6 +64,7 @@ let main ~port ~runner ~n ~n_conn () : unit Lwt.t =
 let () =
   let@ () = Trace_tef.with_setup () in
   Trace.set_thread_name "main";
+
   let port = ref 0 in
   let j = ref 4 in
   let n_conn = ref 100 in
@@ -63,7 +73,7 @@ let () =
   let opts =
     [
       "-p", Arg.Set_int port, " port";
-      "j", Arg.Set_int j, " number of threads";
+      "-j", Arg.Set_int j, " number of threads";
       "-n", Arg.Set_int n, " total number of connections";
       "--n-conn", Arg.Set_int n_conn, " number of parallel connections";
     ]
