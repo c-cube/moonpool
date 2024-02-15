@@ -47,7 +47,7 @@ module Action_queue = struct
     while
       let old = Atomic.get self.q in
       if Atomic.compare_and_set self.q old (a :: old) then (
-        is_first := old = [];
+        is_first := old == [];
         false
       ) else
         true
