@@ -66,11 +66,26 @@ module TCP_server : sig
     (Unix.sockaddr -> IO_in.t -> IO_out.t -> unit) ->
     t
 
+  val establish' :
+    ?backlog:(* ?server_fd:Unix.file_descr -> *)
+             int ->
+    ?no_close:bool ->
+    runner:Moonpool.Runner.t ->
+    Unix.sockaddr ->
+    (Unix.sockaddr -> Lwt_io.input_channel -> Lwt_io.output_channel -> unit) ->
+    t
+
   val shutdown : t -> unit
 end
 
 module TCP_client : sig
+  val connect : Unix.sockaddr -> Unix.file_descr
+
   val with_connect : Unix.sockaddr -> (IO_in.t -> IO_out.t -> 'a) -> 'a
+  (** Open a connection. *)
+
+  val with_connect' :
+    Unix.sockaddr -> (Lwt_io.input_channel -> Lwt_io.output_channel -> 'a) -> 'a
   (** Open a connection. *)
 end
 
