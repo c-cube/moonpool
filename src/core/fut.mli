@@ -17,7 +17,7 @@
     the runner [pool] (once [fut] resolves successfully with a value).
 *)
 
-type 'a or_error = ('a, exn * Printexc.raw_backtrace) result
+type 'a or_error = ('a, Exn_bt.t) result
 
 type 'a t
 (** A future with a result of type ['a]. *)
@@ -51,6 +51,10 @@ val return : 'a -> 'a t
 val fail : exn -> Printexc.raw_backtrace -> _ t
 (** Already settled future, with a failure *)
 
+val fail_exn_bt : Exn_bt.t -> _ t
+(** Fail from a bundle of exception and backtrace
+    @since NEXT_RELEASE *)
+
 val of_result : 'a or_error -> 'a t
 
 val is_resolved : _ t -> bool
@@ -80,13 +84,27 @@ val is_done : _ t -> bool
 (** Is the future resolved? This is the same as [peek fut |> Option.is_some].
     @since 0.2 *)
 
+val is_success : _ t -> bool
+(** Checks if the future is resolved with [Ok _] as a result.
+    @since NEXT_RELEASE *)
+
+val is_failed : _ t -> bool
+(** Checks if the future is resolved with [Error _] as a result.
+    @since NEXT_RELEASE *)
+
 (** {2 Combinators} *)
 
-val spawn : ?name:string -> on:Runner.t -> (unit -> 'a) -> 'a t
+val spawn :
+  ?name:string ->
+  ?ls:Task_local_storage.storage ->
+  on:Runner.t ->
+  (unit -> 'a) ->
+  'a t
 (** [spaw ~on f] runs [f()] on the given runner [on], and return a future that will
       hold its result. *)
 
-val spawn_on_current_runner : ?name:string -> (unit -> 'a) -> 'a t
+val spawn_on_current_runner :
+  ?name:string -> ?ls:Task_local_storage.storage -> (unit -> 'a) -> 'a t
 (** This must be run from inside a runner, and schedules
     the new task on it as well.
 
@@ -204,7 +222,8 @@ val for_list : on:Runner.t -> 'a list -> ('a -> unit) -> unit t
 
 val await : 'a t -> 'a
 (** [await fut] suspends the current tasks until [fut] is fulfilled, then
-    resumes the task on this same runner.
+    resumes the task on this same runner (but possibly on a different
+    thread/domain).
 
     @since 0.3
 
@@ -263,3 +282,12 @@ include module type of Infix
 module Infix_local = Infix
 [@@deprecated "Use Infix"]
 (** @deprecated use Infix instead *)
+
+(**/**)
+
+module Private_ : sig
+  val unsafe_promise_of_fut : 'a t -> 'a promise
+  (** please do not use *)
+end
+
+(**/**)

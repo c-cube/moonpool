@@ -3,6 +3,7 @@
 let ( let@ ) = ( @@ )
 
 open Moonpool
+module FJ = Moonpool_forkjoin
 
 let rec fib_direct x =
   if x <= 1 then
@@ -15,9 +16,7 @@ let rec fib x : int =
   if x <= 18 then
     fib_direct x
   else (
-    let n1, n2 =
-      Fork_join.both (fun () -> fib (x - 1)) (fun () -> fib (x - 2))
-    in
+    let n1, n2 = FJ.both (fun () -> fib (x - 1)) (fun () -> fib (x - 2)) in
     n1 + n2
   )
 
@@ -32,7 +31,7 @@ let run_test () =
 
   let fut =
     Fut.spawn ~on:pool (fun () ->
-        let fibs = Fork_join.all_init 3 (fun _ -> fib 40) in
+        let fibs = FJ.all_init 3 (fun _ -> fib 40) in
         fibs)
   in
 

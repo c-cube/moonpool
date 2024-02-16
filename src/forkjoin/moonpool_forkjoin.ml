@@ -1,6 +1,6 @@
-[@@@ifge 5.0]
-
-module A = Atomic_
+module A = Moonpool.Atomic
+module Suspend_ = Moonpool.Private.Suspend_
+module Domain_ = Moonpool_private.Domain_
 
 module State_ = struct
   type error = exn * Printexc.raw_backtrace
@@ -48,7 +48,7 @@ module State_ = struct
       Suspend_.suspend
         {
           Suspend_.handle =
-            (fun ~name:_ ~run:_ suspension ->
+            (fun ~run:_ ~resume suspension ->
               while
                 let old_st = A.get self in
                 match old_st with
@@ -59,7 +59,7 @@ module State_ = struct
                 | Left_solved left ->
                   (* other thread is done, no risk of race condition *)
                   A.set self (Both_solved (left, right));
-                  suspension (Ok ());
+                  resume suspension (Ok ());
                   false
                 | Right_solved _ | Both_solved _ -> assert false
               do
@@ -110,22 +110,22 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
       | Some cs -> max 1 (min n cs)
       | None ->
         (* guess: try to have roughly one task per core *)
-        max 1 (1 + (n / D_pool_.n_domains ()))
+        max 1 (1 + (n / Moonpool.Private.num_domains ()))
     in
 
-    let start_tasks ~name ~run (suspension : Suspend_.suspension) =
+    let start_tasks ~run ~resume (suspension : Suspend_.suspension) =
       let task_for ~offset ~len_range =
         match f offset (offset + len_range - 1) with
         | () ->
           if A.fetch_and_add missing (-len_range) = len_range then
             (* all tasks done successfully *)
-            run ~name (fun () -> suspension (Ok ()))
+            resume suspension (Ok ())
         | exception exn ->
           let bt = Printexc.get_raw_backtrace () in
           if not (A.exchange has_failed true) then
             (* first one to fail, and [missing] must be >= 2
                because we're not decreasing it. *)
-            run ~name (fun () -> suspension (Error (exn, bt)))
+            resume suspension (Error (exn, bt))
       in
 
       let i = ref 0 in
@@ -135,7 +135,7 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
         let len_range = min chunk_size (n - offset) in
         assert (offset + len_range <= n);
 
-        run ~name (fun () -> task_for ~offset ~len_range);
+        run ~name:"" (fun () -> task_for ~offset ~len_range);
         i := !i + len_range
       done
     in
@@ -143,9 +143,9 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
     Suspend_.suspend
       {
         Suspend_.handle =
-          (fun ~name ~run suspension ->
+          (fun ~run ~resume suspension ->
             (* run tasks, then we'll resume [suspension] *)
-            start_tasks ~run ~name suspension);
+            start_tasks ~run ~resume suspension);
       }
   )
 
@@ -216,5 +216,3 @@ let map_list ?chunk_size f (l : _ list) : _ list =
       match res.(i) with
       | None -> assert false
       | Some x -> x)
-
-[@@@endif]

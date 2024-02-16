@@ -3,7 +3,7 @@ module TLS = Thread_local_storage_
 type task = unit -> unit
 
 type t = {
-  run_async: name:string -> task -> unit;
+  run_async: name:string -> ls:Task_local_storage.storage -> task -> unit;
   shutdown: wait:bool -> unit -> unit;
   size: unit -> int;
   num_tasks: unit -> int;
@@ -11,7 +11,10 @@ type t = {
 
 exception Shutdown
 
-let[@inline] run_async ?(name = "") (self : t) f : unit = self.run_async ~name f
+let[@inline] run_async ?(name = "")
+    ?(ls = Task_local_storage.Private_.Storage.create ()) (self : t) f : unit =
+  self.run_async ~name ~ls f
+
 let[@inline] shutdown (self : t) : unit = self.shutdown ~wait:true ()
 
 let[@inline] shutdown_without_waiting (self : t) : unit =
@@ -20,9 +23,9 @@ let[@inline] shutdown_without_waiting (self : t) : unit =
 let[@inline] num_tasks (self : t) : int = self.num_tasks ()
 let[@inline] size (self : t) : int = self.size ()
 
-let run_wait_block ?name self (f : unit -> 'a) : 'a =
+let run_wait_block ?name ?ls self (f : unit -> 'a) : 'a =
   let q = Bb_queue.create () in
-  run_async ?name self (fun () ->
+  run_async ?name ?ls self (fun () ->
       try
         let x = f () in
         Bb_queue.push q (Ok x)

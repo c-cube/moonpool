@@ -21,7 +21,6 @@ depends: [
 depopts: [
   "trace" {>= "0.6"}
   "thread-local-storage"
-  "domain-local-await" {>= "0.2"}
 ]
 build: [
   ["dune" "subst"] {dev}

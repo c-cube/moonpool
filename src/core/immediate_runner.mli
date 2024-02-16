@@ -11,6 +11,9 @@
     Another situation is when threads cannot be used at all (e.g. because you
     plan to call [Unix.fork] later).
 
+    {b NOTE}: this does not handle the [Suspend] effect, so [await], fork-join,
+    etc. will {b NOT} work on this runner.
+
     @since 0.5
 *)
 

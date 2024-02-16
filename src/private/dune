@@ -1,0 +1,25 @@
+(library
+ (name moonpool_private)
+ (public_name moonpool.private)
+ (synopsis "Private internal utils for Moonpool")
+ (preprocess
+  (action
+   (run %{project_root}/src/cpp/cpp.exe %{input-file})))
+ (libraries
+  threads
+  either
+  (select
+   thread_local_storage_.ml
+   from
+   (thread-local-storage -> thread_local_storage_.stub.ml)
+   (-> thread_local_storage_.real.ml))
+  (select
+   dla_.ml
+   from
+   (domain-local-await -> dla_.real.ml)
+   (-> dla_.dummy.ml))
+  (select
+   tracing_.ml
+   from
+   (trace.core -> tracing_.real.ml)
+   (-> tracing_.dummy.ml))))

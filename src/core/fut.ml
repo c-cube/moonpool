@@ -1,6 +1,6 @@
 module A = Atomic_
 
-type 'a or_error = ('a, exn * Printexc.raw_backtrace) result
+type 'a or_error = ('a, Exn_bt.t) result
 type 'a waiter = 'a or_error -> unit
 
 type 'a state =
@@ -25,6 +25,7 @@ let make ?(name = "") () =
 let[@inline] of_result x : _ t = { st = A.make (Done x) }
 let[@inline] return x : _ t = of_result (Ok x)
 let[@inline] fail e bt : _ t = of_result (Error (e, bt))
+let[@inline] fail_exn_bt ebt = of_result (Error ebt)
 
 let[@inline] is_resolved self : bool =
   match A.get self.st with
@@ -40,6 +41,16 @@ let[@inline] is_done self : bool =
   match A.get self.st with
   | Done _ -> true
   | Waiting _ -> false
+
+let[@inline] is_success self =
+  match A.get self.st with
+  | Done (Ok _) -> true
+  | _ -> false
+
+let[@inline] is_failed self =
+  match A.get self.st with
+  | Done (Error _) -> true
+  | _ -> false
 
 exception Not_ready
 
@@ -94,7 +105,7 @@ let[@inline] fulfill_idempotent self r =
 
 (* ### combinators ### *)
 
-let spawn ?name ~on f : _ t =
+let spawn ?name ?ls ~on f : _ t =
   let fut, promise = make () in
 
   let task () =
@@ -107,13 +118,13 @@ let spawn ?name ~on f : _ t =
     fulfill promise res
   in
 
-  Runner.run_async ?name on task;
+  Runner.run_async ?name ?ls on task;
   fut
 
-let spawn_on_current_runner ?name f : _ t =
+let spawn_on_current_runner ?name ?ls f : _ t =
   match Runner.get_current_runner () with
   | None -> failwith "Fut.spawn_on_current_runner: not running on a runner"
-  | Some on -> spawn ?name ~on f
+  | Some on -> spawn ?name ?ls ~on f
 
 let reify_error (f : 'a t) : 'a or_error t =
   match peek f with
@@ -426,11 +437,11 @@ let await (fut : 'a t) : 'a =
     Suspend_.suspend
       {
         Suspend_.handle =
-          (fun ~name ~run k ->
+          (fun ~run:_ ~resume k ->
             on_result fut (function
               | Ok _ ->
                 (* schedule continuation with the same name *)
-                run ~name (fun () -> k (Ok ()))
+                resume k (Ok ())
               | Error (exn, bt) ->
                 (* fail continuation immediately *)
                 k (Error (exn, bt))));
@@ -451,3 +462,7 @@ end
 
 include Infix
 module Infix_local = Infix [@@deprecated "use Infix"]
+
+module Private_ = struct
+  let[@inline] unsafe_promise_of_fut x = x
+end

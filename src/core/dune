@@ -1,0 +1,9 @@
+(library
+ (public_name moonpool)
+ (name moonpool)
+ (libraries moonpool.private)
+ (flags :standard -open Moonpool_private)
+ (private_modules types_ domain_pool_ util_pool_)
+ (preprocess
+  (action
+   (run %{project_root}/src/cpp/cpp.exe %{input-file}))))

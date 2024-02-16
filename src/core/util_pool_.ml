@@ -1,5 +1,5 @@
 let num_threads ?num_threads () : int =
-  let n_domains = D_pool_.n_domains () in
+  let n_domains = Domain_pool_.n_domains () in
 
   (* number of threads to run *)
   let num_threads =
