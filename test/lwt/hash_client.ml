@@ -15,7 +15,7 @@ let main ~port ~runner ~dir ~n_conn () : unit Lwt.t =
   (* TODO: *)
   let run_task () : unit =
     let _sp = Trace.enter_manual_toplevel_span ~__FILE__ ~__LINE__ "run-task" in
-    M_lwt.TCP_client.with_connect' addr @@ fun ic oc ->
+    M_lwt.TCP_client.with_connect_lwt addr @@ fun ic oc ->
     let rec walk file : unit =
       if not (Sys.file_exists file) then
         ()

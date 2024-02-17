@@ -212,7 +212,7 @@ let main ~port ~runner () : unit Lwt.t =
   in
 
   let addr = Unix.ADDR_INET (Unix.inet_addr_any, port) in
-  let _server = M_lwt.TCP_server.establish' ~runner addr handle_client in
+  let _server = M_lwt.TCP_server.establish_lwt ~runner addr handle_client in
 
   lwt_fut
 
