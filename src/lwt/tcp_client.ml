@@ -14,17 +14,7 @@ let connect addr : Unix.file_descr =
     with
     | Unix.Unix_error ((Unix.EWOULDBLOCK | Unix.EINPROGRESS | Unix.EAGAIN), _, _)
     ->
-      Moonpool.Private.Suspend_.suspend
-        {
-          handle =
-            (fun ~run:_ ~resume sus ->
-              Perform_action_in_lwt.schedule
-              @@ Action.Wait_writable
-                   ( sock,
-                     fun ev ->
-                       resume sus @@ Ok ();
-                       Lwt_engine.stop_event ev ));
-        };
+      IO.await_writable sock;
       true
   do
     ()
@@ -41,16 +31,22 @@ let with_connect addr (f : IO_in.t -> IO_out.t -> 'a) : 'a =
   let@ () = Fun.protect ~finally in
   f ic oc
 
-let with_connect' addr (f : Lwt_io.input_channel -> Lwt_io.output_channel -> 'a)
-    : 'a =
+let with_connect_lwt addr
+    (f : Lwt_io.input_channel -> Lwt_io.output_channel -> 'a) : 'a =
   let sock = connect addr in
 
-  let ic = Lwt_io.of_unix_fd ~mode:Lwt_io.input sock in
-  let oc = Lwt_io.of_unix_fd ~mode:Lwt_io.output sock in
+  let ic =
+    run_in_lwt_and_await (fun () ->
+        Lwt.return @@ Lwt_io.of_unix_fd ~mode:Lwt_io.input sock)
+  in
+  let oc =
+    run_in_lwt_and_await (fun () ->
+        Lwt.return @@ Lwt_io.of_unix_fd ~mode:Lwt_io.output sock)
+  in
 
   let finally () =
-    (try Lwt_io.close ic |> await_lwt with _ -> ());
-    (try Lwt_io.close oc |> await_lwt with _ -> ());
+    (try run_in_lwt_and_await (fun () -> Lwt_io.close ic) with _ -> ());
+    (try run_in_lwt_and_await (fun () -> Lwt_io.close oc) with _ -> ());
     try Unix.close sock with _ -> ()
   in
   let@ () = Fun.protect ~finally in

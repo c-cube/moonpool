@@ -3,8 +3,6 @@
    This module is an implementation detail of Moonpool and should
    not be used outside of it, except by experts to implement {!Runner}. *)
 
-open Types_
-
 type suspension = unit Exn_bt.result -> unit
 (** A suspended computation *)
 

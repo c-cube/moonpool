@@ -3,7 +3,7 @@ open Base
 
 type t = Lwt_io.server
 
-let establish' ?backlog ?no_close ~runner addr handler : t =
+let establish_lwt ?backlog ?no_close ~runner addr handler : t =
   let server =
     Lwt_io.establish_server_with_client_socket ?backlog ?no_close addr
       (fun client_addr client_sock ->

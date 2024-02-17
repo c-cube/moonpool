@@ -1,26 +1,41 @@
 open Base
 
+let await_readable fd : unit =
+  Moonpool.Private.Suspend_.suspend
+    {
+      handle =
+        (fun ~run:_ ~resume sus ->
+          Perform_action_in_lwt.schedule
+          @@ Action.Wait_readable
+               ( fd,
+                 fun cancel ->
+                   resume sus @@ Ok ();
+                   Lwt_engine.stop_event cancel ));
+    }
+
 let rec read fd buf i len : int =
   if len = 0 then
     0
   else (
     match Unix.read fd buf i len with
     | exception Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
-      (* wait for FD to be ready *)
-      Moonpool.Private.Suspend_.suspend
-        {
-          handle =
-            (fun ~run:_ ~resume sus ->
-              Perform_action_in_lwt.schedule
-              @@ Action.Wait_readable
-                   ( fd,
-                     fun cancel ->
-                       resume sus @@ Ok ();
-                       Lwt_engine.stop_event cancel ));
-        };
+      await_readable fd;
       read fd buf i len
     | n -> n
   )
+
+let await_writable fd =
+  Moonpool.Private.Suspend_.suspend
+    {
+      handle =
+        (fun ~run:_ ~resume sus ->
+          Perform_action_in_lwt.schedule
+          @@ Action.Wait_writable
+               ( fd,
+                 fun cancel ->
+                   resume sus @@ Ok ();
+                   Lwt_engine.stop_event cancel ));
+    }
 
 let rec write_once fd buf i len : int =
   if len = 0 then
@@ -28,18 +43,7 @@ let rec write_once fd buf i len : int =
   else (
     match Unix.write fd buf i len with
     | exception Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
-      (* wait for FD to be ready *)
-      Moonpool.Private.Suspend_.suspend
-        {
-          handle =
-            (fun ~run:_ ~resume sus ->
-              Perform_action_in_lwt.schedule
-              @@ Action.Wait_writable
-                   ( fd,
-                     fun cancel ->
-                       resume sus @@ Ok ();
-                       Lwt_engine.stop_event cancel ));
-        };
+      await_writable fd;
       write_once fd buf i len
     | n -> n
   )

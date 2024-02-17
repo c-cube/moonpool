@@ -1,4 +1,10 @@
-(** Lwt_engine-based event loop for Moonpool *)
+(** Lwt_engine-based event loop for Moonpool.
+
+    In what follows, we mean by "lwt thread" the thread
+    running [Lwt_main.run] (so, the thread where the Lwt event
+    loop and all Lwt callbacks execute).
+
+    @since NEXT_RELEASE *)
 
 module Fiber = Moonpool_fib.Fiber
 module FLS = Moonpool_fib.Fls
@@ -7,26 +13,31 @@ module FLS = Moonpool_fib.Fls
 
 val fut_of_lwt : 'a Lwt.t -> 'a Moonpool.Fut.t
 (** [fut_of_lwt lwt_fut] makes a thread-safe moonpool future that
-    completes when [lwt_fut] does *)
+    completes when [lwt_fut] does. This must be run from within
+    the Lwt thread. *)
 
 val lwt_of_fut : 'a Moonpool.Fut.t -> 'a Lwt.t
 (** [lwt_of_fut fut] makes a lwt future that completes when
-    [fut] does. The result should be used only from inside the
-    thread running [Lwt_main.run]. *)
+    [fut] does. This must be called from the Lwt thread, and the result
+    must always be used only from inside the Lwt thread. *)
 
 (** {2 Helpers on the moonpool side} *)
 
 val await_lwt : 'a Lwt.t -> 'a
 (** [await_lwt fut] awaits a Lwt future from inside a task running on
-    a moonpool runner. This must be run from within moonpool. *)
+    a moonpool runner. This must be run from within a Moonpool runner
+    so that the await-ing effect is handled. *)
 
 val run_in_lwt : (unit -> 'a Lwt.t) -> 'a Moonpool.Fut.t
 (** [run_in_lwt f] runs [f()] from within the Lwt thread
-    and returns a thread-safe future. *)
+    and returns a thread-safe future. This can be run from anywhere. *)
 
 val run_in_lwt_and_await : (unit -> 'a Lwt.t) -> 'a
 (** [run_in_lwt_and_await f] runs [f] in the Lwt thread, and
-    awaits its result. Must be run from inside a moonpool runner. *)
+    awaits its result. Must be run from inside a moonpool runner
+    so that the await-in effect is handled.
+
+    This is similar to [Moonpool.await @@ run_in_lwt f]. *)
 
 val get_runner : unit -> Moonpool.Runner.t
 (** Returns the runner from within which this is called.
@@ -41,21 +52,53 @@ val get_runner : unit -> Moonpool.Runner.t
     and rely on a [Lwt_engine] event loop being active (meaning,
     [Lwt_main.run] is currently running in some thread).
 
-    Calling these functions must be done from a moonpool runner and
-    will suspend the current task/fut/fiber if the FD is not ready.
+    Calling these functions must be done from a moonpool runner.
+    A function like [read] will first try to perform the IO action
+    directly (here, call {!Unix.read}); if the action fails because
+    the FD is not ready, then [await_readable] is called:
+    it suspends the fiber and subscribes it to Lwt to be awakened
+    when the FD becomes ready.
 *)
 module IO : sig
   val read : Unix.file_descr -> bytes -> int -> int -> int
+  (** Read from the file descriptor *)
+
+  val await_readable : Unix.file_descr -> unit
+  (** Suspend the fiber until the FD is readable *)
+
   val write_once : Unix.file_descr -> bytes -> int -> int -> int
+  (** Perform one write into the file descriptor *)
+
+  val await_writable : Unix.file_descr -> unit
+  (** Suspend the fiber until the FD is writable *)
+
   val write : Unix.file_descr -> bytes -> int -> int -> unit
+  (** Loop around {!write_once} to write the entire slice. *)
+
   val sleep_s : float -> unit
+  (** Suspend the fiber for [n] seconds. *)
 end
 
 module IO_in = IO_in
+(** Input channel *)
+
 module IO_out = IO_out
+(** Output channel *)
 
 module TCP_server : sig
   type t = Lwt_io.server
+
+  val establish_lwt :
+    ?backlog:(* ?server_fd:Unix.file_descr -> *)
+             int ->
+    ?no_close:bool ->
+    runner:Moonpool.Runner.t ->
+    Unix.sockaddr ->
+    (Unix.sockaddr -> Lwt_io.input_channel -> Lwt_io.output_channel -> unit) ->
+    t
+  (** [establish ~runner addr handler] runs a TCP server in the Lwt
+        thread. When a client connects, a moonpool fiber is started on [runner]
+        to handle it. *)
 
   val establish :
     ?backlog:(* ?server_fd:Unix.file_descr -> *)
@@ -65,26 +108,21 @@ module TCP_server : sig
     Unix.sockaddr ->
     (Unix.sockaddr -> IO_in.t -> IO_out.t -> unit) ->
     t
-
-  val establish' :
-    ?backlog:(* ?server_fd:Unix.file_descr -> *)
-             int ->
-    ?no_close:bool ->
-    runner:Moonpool.Runner.t ->
-    Unix.sockaddr ->
-    (Unix.sockaddr -> Lwt_io.input_channel -> Lwt_io.output_channel -> unit) ->
-    t
+  (** Like {!establish_lwt} but uses {!IO} to directly handle
+        reads and writes on client sockets. *)
 
   val shutdown : t -> unit
+  (** Shutdown the server *)
 end
 
 module TCP_client : sig
   val connect : Unix.sockaddr -> Unix.file_descr
 
   val with_connect : Unix.sockaddr -> (IO_in.t -> IO_out.t -> 'a) -> 'a
-  (** Open a connection. *)
+  (** Open a connection, and use {!IO} to read and write from
+      the socket in a non blocking way. *)
 
-  val with_connect' :
+  val with_connect_lwt :
     Unix.sockaddr -> (Lwt_io.input_channel -> Lwt_io.output_channel -> 'a) -> 'a
   (** Open a connection. *)
 end
