@@ -2,6 +2,7 @@ module M = Moonpool
 module M_lwt = Moonpool_lwt
 module Trace = Trace_core
 
+let spf = Printf.sprintf
 let ( let@ ) = ( @@ )
 
 let main ~port ~runner ~n ~n_conn () : unit Lwt.t =
@@ -26,17 +27,19 @@ let main ~port ~runner ~n ~n_conn () : unit Lwt.t =
        M_lwt.TCP_client.with_connect addr @@ fun ic oc ->
        let buf = Bytes.create 32 in
 
-       for _j = 1 to 100 do
+       for _j = 1 to 10 do
          let _sp =
            Trace.enter_manual_sub_span ~parent:_sp ~__FILE__ ~__LINE__
              "write.loop"
          in
 
-         M_lwt.IO_out.output_string oc "hello";
+         let s = spf "hello %d" _j in
+         M_lwt.IO_out.output_string oc s;
          M_lwt.IO_out.flush oc;
 
          (* read back something *)
-         M_lwt.IO_in.really_input ic buf 0 (String.length "hello");
+         M_lwt.IO_in.really_input ic buf 0 (String.length s);
+         Printf.printf "read: %s\n%!" (Bytes.sub_string buf 0 (String.length s));
          Trace.exit_manual_span _sp;
          ()
        done;
