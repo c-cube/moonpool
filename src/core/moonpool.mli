@@ -11,6 +11,7 @@
 
 module Ws_pool = Ws_pool
 module Fifo_pool = Fifo_pool
+module Background_thread = Background_thread
 module Runner = Runner
 module Immediate_runner = Immediate_runner
 module Exn_bt = Exn_bt
