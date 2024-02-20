@@ -52,14 +52,12 @@ val recommended_thread_count : unit -> int
   this because many of them will be blocked most of the time).
   @since 0.5 *)
 
-val spawn :
-  ?ls:Task_local_storage.storage -> on:Runner.t -> (unit -> 'a) -> 'a Fut.t
+val spawn : on:Runner.t -> (unit -> 'a) -> 'a Fut.t
 (** [spawn ~on f] runs [f()] on the runner (a thread pool typically)
     and returns a future result for it. See {!Fut.spawn}.
     @since 0.5 *)
 
-val spawn_on_current_runner :
-  ?ls:Task_local_storage.storage -> (unit -> 'a) -> 'a Fut.t
+val spawn_on_current_runner : (unit -> 'a) -> 'a Fut.t
 (** See {!Fut.spawn_on_current_runner}.
     @since 0.5 *)
 

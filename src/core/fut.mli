@@ -93,13 +93,11 @@ val is_failed : _ t -> bool
 
 (** {2 Combinators} *)
 
-val spawn :
-  ?ls:Task_local_storage.storage -> on:Runner.t -> (unit -> 'a) -> 'a t
+val spawn : on:Runner.t -> (unit -> 'a) -> 'a t
 (** [spaw ~on f] runs [f()] on the given runner [on], and return a future that will
       hold its result. *)
 
-val spawn_on_current_runner :
-  ?ls:Task_local_storage.storage -> (unit -> 'a) -> 'a t
+val spawn_on_current_runner : (unit -> 'a) -> 'a t
 (** This must be run from inside a runner, and schedules
     the new task on it as well.
 
