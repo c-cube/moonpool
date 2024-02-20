@@ -135,7 +135,7 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
         let len_range = min chunk_size (n - offset) in
         assert (offset + len_range <= n);
 
-        run ~name:"" (fun () -> task_for ~offset ~len_range);
+        run (fun () -> task_for ~offset ~len_range);
         i := !i + len_range
       done
     in

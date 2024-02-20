@@ -14,7 +14,7 @@ let cutoff = ref 20
 
 let rec fib ~on x : int Fut.t =
   if x <= !cutoff then
-    Fut.spawn ~name:"fib" ~on (fun () -> fib_direct x)
+    Fut.spawn ~on (fun () -> fib_direct x)
   else
     let open Fut.Infix in
     let+ t1 = fib ~on (x - 1) and+ t2 = fib ~on (x - 2) in
@@ -31,14 +31,14 @@ let fib_fj ~on x : int Fut.t =
       n1 + n2
     )
   in
-  Fut.spawn ~name:"fib" ~on (fun () -> fib_rec x)
+  Fut.spawn ~on (fun () -> fib_rec x)
 
 let fib_await ~on x : int Fut.t =
   let rec fib_rec x : int Fut.t =
     if x <= !cutoff then
-      Fut.spawn ~name:"fib" ~on (fun () -> fib_direct x)
+      Fut.spawn ~on (fun () -> fib_direct x)
     else
-      Fut.spawn ~name:"fib" ~on (fun () ->
+      Fut.spawn ~on (fun () ->
           let n1 = fib_rec (x - 1) in
           let n2 = fib_rec (x - 2) in
           let n1 = Fut.await n1 in

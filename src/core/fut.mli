@@ -26,9 +26,8 @@ type 'a promise
 (** A promise, which can be fulfilled exactly once to set
       the corresponding future *)
 
-val make : ?name:string -> unit -> 'a t * 'a promise
-(** Make a new future with the associated promise.
-    @param name name for the future, used for tracing. since NEXT_RELEASE. *)
+val make : unit -> 'a t * 'a promise
+(** Make a new future with the associated promise. *)
 
 val on_result : 'a t -> ('a or_error -> unit) -> unit
 (** [on_result fut f] registers [f] to be called in the future
@@ -95,16 +94,12 @@ val is_failed : _ t -> bool
 (** {2 Combinators} *)
 
 val spawn :
-  ?name:string ->
-  ?ls:Task_local_storage.storage ->
-  on:Runner.t ->
-  (unit -> 'a) ->
-  'a t
+  ?ls:Task_local_storage.storage -> on:Runner.t -> (unit -> 'a) -> 'a t
 (** [spaw ~on f] runs [f()] on the given runner [on], and return a future that will
       hold its result. *)
 
 val spawn_on_current_runner :
-  ?name:string -> ?ls:Task_local_storage.storage -> (unit -> 'a) -> 'a t
+  ?ls:Task_local_storage.storage -> (unit -> 'a) -> 'a t
 (** This must be run from inside a runner, and schedules
     the new task on it as well.
 

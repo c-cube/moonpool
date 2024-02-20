@@ -1,0 +1,3 @@
+(executables
+ (names echo_server echo_client hash_server hash_client)
+ (libraries moonpool moonpool-lwt lwt lwt.unix trace.core trace-tef))

@@ -20,10 +20,10 @@ jobs:
           allow-prerelease-opam: true
 
       - name: Deps
-        run: opam install odig moonpool
+        run: opam install odig moonpool moonpool-lwt
 
       - name: Build
-        run: opam exec -- odig odoc --cache-dir=_doc/ moonpool
+        run: opam exec -- odig odoc --cache-dir=_doc/ moonpool moonpool-lwt
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

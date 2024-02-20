@@ -33,4 +33,15 @@
  (tags
   (thread pool domain futures fork-join)))
 
+(package
+  (name moonpool-lwt)
+  (synopsis "Event loop for moonpool based on Lwt-engine")
+  (allow_empty)  ; on < 5.0
+  (depends
+    (moonpool (= :version))
+    (ocaml (>= 5.0))
+    lwt
+    base-unix
+    (odoc :with-doc)))
+
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
