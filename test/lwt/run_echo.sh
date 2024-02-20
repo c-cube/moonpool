@@ -5,6 +5,8 @@ PORT=1235
 
 echo "run echo client -p $PORT $@"
 
-./echo_client.exe -p $PORT $@
+export LC_LANG=C
+export LC_ALL=C
+./echo_client.exe -p $PORT $@ | sort
 
 kill %1
