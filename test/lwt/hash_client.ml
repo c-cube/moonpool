@@ -86,6 +86,6 @@ let () =
   Arg.parse opts ignore "echo client";
 
   let@ runner = M.Ws_pool.with_ ~name:"tpool" ~num_threads:!j () in
-  Lwt_engine.set @@ new Lwt_engine.libev ();
+  (* Lwt_engine.set @@ new Lwt_engine.libev (); *)
   Lwt_main.run
   @@ main ~runner ~port:!port ~ext:!ext ~dir:!dir ~n_conn:!n_conn ()
