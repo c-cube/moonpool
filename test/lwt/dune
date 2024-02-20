@@ -5,21 +5,25 @@
 (rule
   (targets output_hash.txt)
   (deps ./hash_server.exe ./hash_client.exe ./run_hash.sh)
+  (enabled_if (>= %{ocaml_version} 5.0))
   (action
     (with-stdout-to %{targets}
      (run ./run_hash.sh -d ../../src --n-conn=2 -j=4 --ext ".ml"))))
 
 (rule
   (alias runtest)
+  (enabled_if (>= %{ocaml_version} 5.0))
   (action (diff ./output_hash.expected ./output_hash.txt)))
 
 (rule
   (targets output_echo.txt)
   (deps ./echo_server.exe ./echo_client.exe ./run_echo.sh)
+  (enabled_if (>= %{ocaml_version} 5.0))
   (action
     (with-stdout-to %{targets}
      (run ./run_echo.sh -n 10 --n-conn=2 -j=4))))
 
 (rule
   (alias runtest)
+  (enabled_if (>= %{ocaml_version} 5.0))
   (action (diff ./output_echo.expected ./output_echo.txt)))
