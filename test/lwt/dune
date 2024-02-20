@@ -1,3 +1,14 @@
 (executables
  (names echo_server echo_client hash_server hash_client)
  (libraries moonpool moonpool-lwt lwt lwt.unix trace.core trace-tef))
+
+(rule
+  (targets output_hash.txt)
+  (deps ./hash_server.exe ./hash_client.exe ./run_hash.sh)
+  (action
+    (with-stdout-to %{targets}
+     (run ./run_hash.sh -d ../../src --n-conn=2 -j=4 --ext ".ml"))))
+
+(rule
+  (alias runtest)
+  (action (diff ./output_hash.expected ./output_hash.txt)))
