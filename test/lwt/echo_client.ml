@@ -4,6 +4,7 @@ module Trace = Trace_core
 
 let spf = Printf.sprintf
 let ( let@ ) = ( @@ )
+let lock_stdout = M.Lock.create ()
 
 let main ~port ~runner ~n ~n_conn () : unit Lwt.t =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "main" in
@@ -39,7 +40,9 @@ let main ~port ~runner ~n ~n_conn () : unit Lwt.t =
 
          (* read back something *)
          M_lwt.IO_in.really_input ic buf 0 (String.length s);
-         Printf.printf "read: %s\n%!" (Bytes.sub_string buf 0 (String.length s));
+         (let@ () = M.Lock.with_ lock_stdout in
+          Printf.printf "read: %s\n%!"
+            (Bytes.sub_string buf 0 (String.length s)));
          Trace.exit_manual_span _sp;
          ()
        done;
@@ -50,7 +53,8 @@ let main ~port ~runner ~n ~n_conn () : unit Lwt.t =
       (* if we're the last to exit, resolve the promise *)
       let n_already_done = Atomic.fetch_and_add all_done 1 in
       if n_already_done = n_conn - 1 then (
-        Printf.printf "all done\n%!";
+        (let@ () = M.Lock.with_ lock_stdout in
+         Printf.printf "all done\n%!");
         M.Fut.fulfill prom_exit @@ Ok ()
       )
     )

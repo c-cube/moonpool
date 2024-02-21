@@ -9,6 +9,7 @@ module Str_tbl = Hashtbl.Make (struct
 end)
 
 let ( let@ ) = ( @@ )
+let lock_stdout = M.Lock.create ()
 
 let main ~port ~runner ~ext ~dir ~n_conn () : unit Lwt.t =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "main" in
@@ -39,6 +40,7 @@ let main ~port ~runner ~ext ~dir ~n_conn () : unit Lwt.t =
           let res =
             M_lwt.run_in_lwt_and_await (fun () -> Lwt_io.read_line ic)
           in
+          let@ () = M.Lock.with_ lock_stdout in
           Printf.printf "%s\n%!" res
         )
       else if Sys.is_directory file then (
@@ -47,7 +49,8 @@ let main ~port ~runner ~ext ~dir ~n_conn () : unit Lwt.t =
             ~data:(fun () -> [ "d", `String file ])
         in
 
-        Printf.printf "explore %S\n%!" file;
+        (let@ () = M.Lock.with_ lock_stdout in
+         Printf.printf "explore %S\n%!" file);
         Str_tbl.add seen file ();
         let d = Sys.readdir file in
         Array.sort String.compare d;

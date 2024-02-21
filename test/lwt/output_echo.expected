@@ -2,7 +2,6 @@ run echo client -p 1235 -n 10 --n-conn=2 -j=4
 listening on port 1235
 all done
 connecting to port 1235
-hello 1
 read: hello 1
 read: hello 1
 read: hello 1
@@ -11,6 +10,8 @@ read: hello 1
 read: hello 1
 read: hello 1
 read: hello 1
+read: hello 1
+read: hello 1
 read: hello 10
 read: hello 10
 read: hello 10
@@ -101,4 +102,3 @@ read: hello 9
 read: hello 9
 read: hello 9
 read: hello 9
-read: read: hello 1
