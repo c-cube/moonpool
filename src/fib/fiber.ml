@@ -9,22 +9,26 @@ type cancel_callback = Exn_bt.t -> unit
 let prom_of_fut : 'a Fut.t -> 'a Fut.promise =
   Fut.Private_.unsafe_promise_of_fut
 
-type 'a t = {
-  id: Handle.t;  (** unique identifier for this fiber *)
-  state: 'a state A.t;  (** Current state in the lifetime of the fiber *)
-  res: 'a Fut.t;
-  runner: Runner.t;
-}
+module Private_ = struct
+  type 'a t = {
+    id: Handle.t;  (** unique identifier for this fiber *)
+    state: 'a state A.t;  (** Current state in the lifetime of the fiber *)
+    res: 'a Fut.t;
+    runner: Runner.t;
+  }
 
-and 'a state =
-  | Alive of {
-      children: children;
-      on_cancel: cancel_callback list;
-    }
-  | Terminating_or_done of 'a Exn_bt.result A.t
+  and 'a state =
+    | Alive of {
+        children: children;
+        on_cancel: cancel_callback list;
+      }
+    | Terminating_or_done of 'a Exn_bt.result A.t
 
-and children = any FM.t
-and any = Any : _ t -> any [@@unboxed]
+  and children = any FM.t
+  and any = Any : _ t -> any [@@unboxed]
+end
+
+include Private_
 
 let[@inline] res self = self.res
 let[@inline] peek self = Fut.peek self.res
@@ -178,6 +182,11 @@ let spawn_ ~on (f : _ -> 'a) : 'a t =
 
 let[@inline] spawn_top ~on f : _ t = spawn_ ~on f
 
+let[@inline] self () : any =
+  match Task_local_storage.get k_current_fiber with
+  | None -> failwith "Fiber.self: must be run from inside a fiber."
+  | Some f -> f
+
 let spawn_link ~protect f : _ t =
   match Task_local_storage.get k_current_fiber with
   | None -> failwith "Fiber.spawn_link: must be run from inside a fiber."
@@ -214,6 +223,11 @@ let remove_top_cancel_cb_ (self : _ t) =
   done
 
 let with_cancel_callback (self : _ t) cb (k : unit -> 'a) : 'a =
+  add_cancel_cb_ self cb;
+  Fun.protect k ~finally:(fun () -> remove_top_cancel_cb_ self)
+
+let with_self_cancel_callback cb (k : unit -> 'a) : 'a =
+  let (Any self) = self () in
   add_cancel_cb_ self cb;
   Fun.protect k ~finally:(fun () -> remove_top_cancel_cb_ self)
 

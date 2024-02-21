@@ -9,7 +9,24 @@
       of structured concurrency
 *)
 
-type 'a t
+(**/**)
+
+module Private_ : sig
+  type 'a state
+
+  type 'a t = private {
+    id: Handle.t;  (** unique identifier for this fiber *)
+    state: 'a state Atomic.t;  (** Current state in the lifetime of the fiber *)
+    res: 'a Fut.t;
+    runner: Runner.t;
+  }
+  (** Type definition, exposed so that {!any} can be unboxed.
+      Please do not rely on that. *)
+end
+
+(**/**)
+
+type 'a t = 'a Private_.t
 (** A fiber returning a value of type ['a]. *)
 
 val res : 'a t -> 'a Fut.t
@@ -19,6 +36,14 @@ type 'a callback = 'a Exn_bt.result -> unit
 (** Callbacks that are called when a fiber is done. *)
 
 type cancel_callback = Exn_bt.t -> unit
+
+(** Type erased fiber *)
+type any = Any : _ t -> any [@@unboxed]
+
+val self : unit -> any
+(** [self ()] is the current fiber.
+    Must be run from inside a fiber.
+    @raise Failure if not run from inside a fiber. *)
 
 val peek : 'a t -> 'a Fut.or_error option
 (** Peek inside the future result *)
@@ -49,6 +74,10 @@ val with_cancel_callback : _ t -> cancel_callback -> (unit -> 'a) -> 'a
     in a scope in which, if the fiber [fib] is cancelled,
     [cb()] is called. If [e] returns without the fiber being cancelled,
     this callback is removed. *)
+
+val with_self_cancel_callback : cancel_callback -> (unit -> 'a) -> 'a
+(** [with_self_cancel_callback cb f] calls [f()] in a scope where
+    [cb] is added to the cancel callbacks of the current fiber *)
 
 val on_result : 'a t -> 'a callback -> unit
 (** Wait for fiber to be done and call the callback
