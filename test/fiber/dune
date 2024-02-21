@@ -1,0 +1,15 @@
+
+(tests
+ (names
+  t_fib1 t_fls)
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (libraries
+  moonpool
+  moonpool.fib
+  trace
+  trace-tef
+  qcheck-core
+  qcheck-core.runner
+  ;tracy-client.trace
+  ))
