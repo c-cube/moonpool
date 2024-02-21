@@ -8,7 +8,7 @@
   (enabled_if (>= %{ocaml_version} 5.0))
   (action
     (with-stdout-to %{targets}
-     (run ./run_hash.sh -d ../../src --n-conn=2 -j=4 --ext ".ml"))))
+     (run ./run_hash.sh -d ../../src/core/ --n-conn=2 -j=4 --ext ".ml"))))
 
 (rule
   (alias runtest)
