@@ -37,9 +37,8 @@ jobs:
       - run: opam install -t moonpool --deps-only
         if: matrix.ocaml-compiler != '5.1'
       - run: opam exec -- dune build @install
-      - run: opam exec -- dune runtest
-      - run: opam install thread-local-storage trace
+
+      # install some depopts
+      - run: opam install thread-local-storage trace domain-local-await
       - run: opam exec -- dune build @install @runtest
-      - run: opam install trace thread-local-storage
-      - run: opam exec -- dune build @install
 

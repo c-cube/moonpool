@@ -49,8 +49,6 @@ let main ~port ~runner ~ext ~dir ~n_conn () : unit Lwt.t =
             ~data:(fun () -> [ "d", `String file ])
         in
 
-        (let@ () = M.Lock.with_ lock_stdout in
-         Printf.printf "explore %S\n%!" file);
         Str_tbl.add seen file ();
         let d = Sys.readdir file in
         Array.sort String.compare d;
