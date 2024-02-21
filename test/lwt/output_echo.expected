@@ -1,5 +1,5 @@
-run echo client -p 1235 -n 10 --n-conn=2 -j=4
 listening on port 1235
+run echo client -p 1235 -n 10 --n-conn=2 -j=4
 all done
 connecting to port 1235
 read: hello 1
