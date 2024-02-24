@@ -34,9 +34,9 @@ type with_suspend_handler =
       -> with_suspend_handler
 
 let with_suspend (WSH { on_suspend; run; resume }) (f : unit -> unit) : unit =
-  let module E = Effect.Deep in
+  let module E = Effect.Shallow in
   (* effect handler *)
-  let effc : type e. e Effect.t -> ((e, _) E.continuation -> _) option =
+  let rec effc : type e. e Effect.t -> ((e, _) E.continuation -> _) option =
     function
     | Suspend h ->
       (* TODO: discontinue [k] if current fiber (if any) is cancelled? *)
@@ -44,8 +44,8 @@ let with_suspend (WSH { on_suspend; run; resume }) (f : unit -> unit) : unit =
         (fun k ->
           let state = on_suspend () in
           let k' : suspension = function
-            | Ok () -> E.continue k ()
-            | Error (exn, bt) -> E.discontinue_with_backtrace k exn bt
+            | Ok () -> E.continue_with k () handler
+            | Error (exn, bt) -> E.discontinue_with_backtrace k exn bt handler
           in
           h.handle ~run:(run state) ~resume:(resume state) k')
     | Yield ->
@@ -54,14 +54,14 @@ let with_suspend (WSH { on_suspend; run; resume }) (f : unit -> unit) : unit =
         (fun k ->
           let state = on_suspend () in
           let k' : suspension = function
-            | Ok () -> E.continue k ()
-            | Error (exn, bt) -> E.discontinue_with_backtrace k exn bt
+            | Ok () -> E.continue_with k () handler
+            | Error (exn, bt) -> E.discontinue_with_backtrace k exn bt handler
           in
           resume state k' @@ Ok ())
     | _ -> None
-  in
+  and handler = { E.retc = Fun.id; exnc = raise; effc } in
 
-  E.try_with f () { E.effc }
+  E.continue_with (E.fiber f) () handler
 
 (* DLA interop *)
 let prepare_for_await () : Dla_.t =
