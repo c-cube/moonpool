@@ -26,6 +26,12 @@ module Private_ = struct
 
   and children = any FM.t
   and any = Any : _ t -> any [@@unboxed]
+
+  (** Key to access the current fiber. *)
+  let k_current_fiber : any option Task_local_storage.key =
+    Task_local_storage.new_key ~init:(fun () -> None) ()
+
+  let[@inline] get_cur () : any option = Task_local_storage.get k_current_fiber
 end
 
 include Private_
@@ -148,10 +154,6 @@ let add_child_ ~protect (self : _ t) (child : _ t) =
     ()
   done
 
-(** Key to access the current fiber. *)
-let k_current_fiber : any option Task_local_storage.key =
-  Task_local_storage.new_key ~init:(fun () -> None) ()
-
 let spawn_ ~on (f : _ -> 'a) : 'a t =
   let id = Handle.generate_fresh () in
   let res, _promise = Fut.make () in
@@ -167,6 +169,7 @@ let spawn_ ~on (f : _ -> 'a) : 'a t =
   let run () =
     (* make sure the fiber is accessible from inside itself *)
     Task_local_storage.set k_current_fiber (Some (Any fib));
+    assert (Task_local_storage.get k_current_fiber |> Option.is_some);
     try
       let res = f () in
       resolve_ok_ fib res

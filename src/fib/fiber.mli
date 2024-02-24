@@ -22,6 +22,10 @@ module Private_ : sig
   }
   (** Type definition, exposed so that {!any} can be unboxed.
       Please do not rely on that. *)
+
+  type any = Any : _ t -> any [@@unboxed]
+
+  val get_cur : unit -> any option
 end
 
 (**/**)
@@ -38,7 +42,7 @@ type 'a callback = 'a Exn_bt.result -> unit
 type cancel_callback = Exn_bt.t -> unit
 
 (** Type erased fiber *)
-type any = Any : _ t -> any [@@unboxed]
+type any = Private_.any = Any : _ t -> any [@@unboxed]
 
 val self : unit -> any
 (** [self ()] is the current fiber.

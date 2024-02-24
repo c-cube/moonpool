@@ -113,17 +113,17 @@ let run_task_now_ (self : state) ~runner (w : worker_state) ~ls task :
   let _ctx = before_task runner in
 
   let[@inline] on_suspend () =
-    !(w.cur_ls)
+    let w' = find_current_worker_ () in
+    let ls= !(w.cur_ls) in
+    w', ls
   in
 
-  let run_another_task ls task' =
-    let w = find_current_worker_ () in
+  let run_another_task (w,ls) task' =
     let ls' = Task_local_storage.Private_.Storage.copy ls in
     schedule_task_ self w ~ls:ls' task'
   in
 
-  let resume ls k r =
-    let w = find_current_worker_ () in
+  let resume (w,ls) k r =
     schedule_task_ self w ~ls (fun () -> k r)
   in
 
