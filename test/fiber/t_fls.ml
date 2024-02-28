@@ -95,7 +95,7 @@ module Render = struct
     List.iter (pp_tree 2 oc) self.roots
 end
 
-let () =
+let run ~pool ~pool_name () =
   let tracer = Tracer.create () in
 
   let sub_sub_child ~idx ~idx_child ~idx_sub ~idx_sub_sub () =
@@ -155,8 +155,7 @@ let () =
     List.iter F.await subs
   in
 
-  let@ pool = Ws_pool.with_ () in
-
+  Printf.printf "run test on pool = %s\n" pool_name;
   let fibs =
     List.init 8 (fun idx -> F.spawn_top ~on:pool (fun () -> top idx))
   in
@@ -167,4 +166,12 @@ let () =
   let tree = Render.build tracer in
   Render.pp stdout tree;
   Printf.printf "done\n%!";
+  ()
+
+let () =
+  (let@ pool = Ws_pool.with_ () in
+   run ~pool ~pool_name:"ws_pool" ());
+
+  (let@ pool = Fifo_pool.with_ () in
+   run ~pool ~pool_name:"ws_pool" ());
   ()
