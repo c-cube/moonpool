@@ -27,8 +27,8 @@ main fiber exited
 ============
 start
 wait for subs
-await fiber 0
 fiber 0 resolved as ok
+await fiber 0
 res 0 = 0
 await fiber 1
 fiber 1 resolved as ok
@@ -46,9 +46,9 @@ await fiber 5
 fiber 5 resolved as ok
 res 5 = 5
 await fiber 6
+fiber 6 resolved as ok
 res 6 = 6
 await fiber 7
-fiber 6 resolved as ok
 I'm fiber 7 and I'm about to…
 sub-fiber 8 was cancelled
 fiber 8 resolved as error

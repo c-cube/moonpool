@@ -21,13 +21,13 @@ let () =
     let subs =
       List.init 5 (fun i ->
           F.spawn_link ~protect:false @@ fun () ->
-          Thread.delay 0.000_01;
+          Thread.delay (float i *. 0.01);
           i)
     in
 
     ignore
       (F.spawn_link ~protect:false @@ fun () ->
-       Thread.delay 0.2;
+       Thread.delay 0.4;
        logf "other fib done\n%!"
         : _ F.t);
     logf "wait for subs\n%!";
