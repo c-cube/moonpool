@@ -10,6 +10,16 @@ type suspension_handler = {
 }
 [@@unboxed]
 
+type with_suspend_handler =
+  | WSH : {
+      on_suspend: unit -> 'state;
+          (** on_suspend called when [f()] suspends itself. *)
+      run: 'state -> task -> unit;  (** run used to schedule new tasks *)
+      resume: 'state -> suspension -> unit Exn_bt.result -> unit;
+          (** resume run the suspension. Must be called exactly once. *)
+    }
+      -> with_suspend_handler
+
 [@@@ifge 5.0]
 [@@@ocaml.alert "-unstable"]
 
@@ -21,16 +31,6 @@ type _ Effect.t +=
 
 let[@inline] yield () = Effect.perform Yield
 let[@inline] suspend h = Effect.perform (Suspend h)
-
-type with_suspend_handler =
-  | WSH : {
-      on_suspend: unit -> 'state;
-          (** on_suspend called when [f()] suspends itself. *)
-      run: 'state -> task -> unit;  (** run used to schedule new tasks *)
-      resume: 'state -> suspension -> unit Exn_bt.result -> unit;
-          (** resume run the suspension. Must be called exactly once. *)
-    }
-      -> with_suspend_handler
 
 let with_suspend (WSH { on_suspend; run; resume }) (f : unit -> unit) : unit =
   let module E = Effect.Deep in
