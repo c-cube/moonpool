@@ -25,7 +25,9 @@ let schedule_ (self : state) (task : task_full) : unit =
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
 let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
-  let cur_ls : Task_local_storage.storage ref = ref Task_local_storage.Private_.Storage.dummy in
+  let cur_ls : Task_local_storage.storage ref =
+    ref Task_local_storage.Private_.Storage.dummy
+  in
   TLS.set k_storage (Some cur_ls);
   TLS.get Runner.For_runner_implementors.k_cur_runner := Some runner;
 
@@ -52,21 +54,13 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
     cur_ls := task.ls;
     let _ctx = before_task runner in
 
-    let resume ls k res =
-      schedule_ self { f = (fun () -> k res);  ls }
-    in
+    let resume ls k res = schedule_ self { f = (fun () -> k res); ls } in
 
     (* run the task now, catching errors, handling effects *)
     (try
-[@@@ifge 5.0]
-      Suspend_.with_suspend (WSH {
-        run=run_another_task;
-        resume;
-        on_suspend;
-      }) task.f
-[@@@else_]
-      task.f()
-[@@@endif]
+       Suspend_.with_suspend
+         (WSH { run = run_another_task; resume; on_suspend })
+         task.f
      with e ->
        let bt = Printexc.get_raw_backtrace () in
        on_exn e bt);
@@ -103,12 +97,12 @@ type ('a, 'b) create_args =
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
   ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
   ?num_threads:int ->
-    ?name:string ->
+  ?name:string ->
   'a
 
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
-    ?around_task ?num_threads  ?name () : t =
+    ?around_task ?num_threads ?name () : t =
   (* wrapper *)
   let around_task =
     match around_task with
