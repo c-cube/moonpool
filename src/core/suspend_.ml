@@ -1,8 +1,6 @@
 type suspension = unit Exn_bt.result -> unit
 type task = unit -> unit
 
-[@@@ifge 5.0]
-
 type suspension_handler = {
   handle:
     run:(task -> unit) ->
@@ -12,6 +10,7 @@ type suspension_handler = {
 }
 [@@unboxed]
 
+[@@@ifge 5.0]
 [@@@ocaml.alert "-unstable"]
 
 module A = Atomic_

@@ -6,8 +6,6 @@
 type suspension = unit Exn_bt.result -> unit
 (** A suspended computation *)
 
-[@@@ifge 5.0]
-
 type task = unit -> unit
 
 type suspension_handler = {
@@ -40,6 +38,7 @@ type suspension_handler = {
     - use [resume] exactly
 *)
 
+[@@@ifge 5.0]
 [@@@ocaml.alert "-unstable"]
 
 type _ Effect.t +=
