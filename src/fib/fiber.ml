@@ -154,7 +154,7 @@ let add_child_ ~protect (self : _ t) (child : _ t) =
     ()
   done
 
-let spawn_ ~on (f : _ -> 'a) : 'a t =
+let spawn_ ~ls ~on (f : _ -> 'a) : 'a t =
   let id = Handle.generate_fresh () in
   let res, _promise = Fut.make () in
   let fib =
@@ -169,7 +169,6 @@ let spawn_ ~on (f : _ -> 'a) : 'a t =
   let run () =
     (* make sure the fiber is accessible from inside itself *)
     Task_local_storage.set k_current_fiber (Some (Any fib));
-    assert (Task_local_storage.get k_current_fiber |> Option.is_some);
     try
       let res = f () in
       resolve_ok_ fib res
@@ -179,11 +178,11 @@ let spawn_ ~on (f : _ -> 'a) : 'a t =
       resolve_as_failed_ fib ebt
   in
 
-  Runner.run_async on run;
+  Runner.run_async ?ls on run;
 
   fib
 
-let[@inline] spawn_top ~on f : _ t = spawn_ ~on f
+let[@inline] spawn_top ~on f : _ t = spawn_ ~ls:None ~on f
 
 let[@inline] self () : any =
   match Task_local_storage.get k_current_fiber with
@@ -194,7 +193,9 @@ let spawn_link ~protect f : _ t =
   match Task_local_storage.get k_current_fiber with
   | None -> failwith "Fiber.spawn_link: must be run from inside a fiber."
   | Some (Any parent) ->
-    let child = spawn_ ~on:parent.runner f in
+    (* spawn [f()] with a copy of our local storage *)
+    let ls = Task_local_storage.Private_.Storage.copy_of_current () in
+    let child = spawn_ ~ls:(Some ls) ~on:parent.runner f in
     add_child_ ~protect parent child;
     child
 
@@ -235,6 +236,8 @@ let with_self_cancel_callback cb (k : unit -> 'a) : 'a =
   Fun.protect k ~finally:(fun () -> remove_top_cancel_cb_ self)
 
 let[@inline] await self = Fut.await self.res
+let[@inline] wait_block self = Fut.wait_block self.res
+let[@inline] wait_block_exn self = Fut.wait_block_exn self.res
 
 module Suspend_ = Moonpool.Private.Suspend_
 

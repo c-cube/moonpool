@@ -65,6 +65,7 @@ module Private_ = struct
     let k_storage = k_ls_values
     let[@inline] create () = [||]
     let copy = Array.copy
+    let[@inline] copy_of_current () = copy @@ !(get_cur_ ())
     let dummy = [||]
   end
 end

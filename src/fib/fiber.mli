@@ -64,6 +64,14 @@ val is_success : _ t -> bool
 val await : 'a t -> 'a
 (** [await fib] is like [Fut.await (res fib)] *)
 
+val wait_block_exn : 'a t -> 'a
+(** [wait_block_exn fib] is [Fut.wait_block_exn (res fib)].
+    {b NOTE}: See {!Fut.wait_block} for warnings about deadlocks. *)
+
+val wait_block : 'a t -> 'a Fut.or_error
+(** [wait_block fib] is [Fut.wait_block (res fib)].
+    {b NOTE}: See {!Fut.wait_block} for warnings about deadlocks. *)
+
 val check_if_cancelled : unit -> unit
 (** Check if the current fiber is cancelled, in which case this raises.
     Must be run from inside a fiber.

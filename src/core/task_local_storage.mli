@@ -54,6 +54,7 @@ module Private_ : sig
     val k_storage : t ref option Thread_local_storage_.key
     val create : unit -> t
     val copy : t -> t
+    val copy_of_current : unit -> t
     val dummy : t
   end
 end
