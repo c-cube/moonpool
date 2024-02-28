@@ -2,14 +2,24 @@
 start
 wait for subs
 await fiber 0
+cur fiber is some: true
+cur fiber is some: true
 res 0 = 0
 await fiber 1
+cur fiber is some: true
+cur fiber is some: true
 res 1 = 1
 await fiber 2
+cur fiber is some: true
+cur fiber is some: true
 res 2 = 2
 await fiber 3
+cur fiber is some: true
+cur fiber is some: true
 res 3 = 3
 await fiber 4
+cur fiber is some: true
+cur fiber is some: true
 res 4 = 4
 main fiber done
 other fib done

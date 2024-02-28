@@ -8,8 +8,10 @@ let lock = Lock.create ()
 let logf fmt =
   Printf.ksprintf
     (fun s ->
-      let@ () = Lock.with_ lock in
-      print_string s)
+      let out = stdout in
+      (let@ () = Lock.with_ lock in
+       output_string out s);
+      flush out)
     fmt
 
 let () =
@@ -32,7 +34,13 @@ let () =
     List.iteri
       (fun i f ->
         logf "await fiber %d\n%!" i;
+        logf "cur fiber is some: %b\n%!"
+          (Option.is_some @@ F.Private_.get_cur ());
         let res = F.await f in
+        logf "cur fiber is some: %b\n%!"
+          (Option.is_some @@ F.Private_.get_cur ());
+        Thread.delay 0.000_01;
+        F.yield ();
         logf "res %d = %d\n%!" i res)
       subs;
     logf "main fiber done\n%!"
