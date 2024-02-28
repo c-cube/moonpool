@@ -63,6 +63,8 @@ val suspend : suspension_handler -> unit
     and a task runner function.
 *)
 
+[@@@endif]
+
 type with_suspend_handler =
   | WSH : {
       on_suspend: unit -> 'state;
@@ -83,8 +85,6 @@ val with_suspend : with_suspend_handler -> (unit -> unit) -> unit
     The suspension should always be passed exactly once to
     [resume]. [run] should be used to start other tasks.
 *)
-
-[@@@endif]
 
 val prepare_for_await : unit -> Dla_.t
 (** Our stub for DLA. Unstable. *)

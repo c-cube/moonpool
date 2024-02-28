@@ -82,7 +82,7 @@ let prepare_for_await () : Dla_.t =
 [@@@ocaml.alert "+unstable"]
 [@@@else_]
 
-let[@inline] with_suspend ~on_suspend:_ ~run:_ ~resume:_ f = f ()
+let[@inline] with_suspend (WSH _) f = f ()
 let[@inline] prepare_for_await () = { Dla_.release = ignore; await = ignore }
 
 [@@@endif]
