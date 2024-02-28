@@ -4,11 +4,11 @@
 
 (rule
   (targets output_hash.txt)
-  (deps ./hash_server.exe ./hash_client.exe ./run_hash.sh)
+  (deps ./hash_server.exe ./hash_client.exe ./run_hash.sh (glob_files_rec ../data/**))
   (enabled_if (>= %{ocaml_version} 5.0))
   (action
     (with-stdout-to %{targets}
-     (run ./run_hash.sh -d ../../src/core/ --n-conn=2 -j=4 --ext ".ml"))))
+     (run ./run_hash.sh -d ../data/ --n-conn=2 -j=4))))
 
 (rule
   (alias runtest)
