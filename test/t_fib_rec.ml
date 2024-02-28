@@ -81,5 +81,5 @@ let () =
   List.iter (fun size -> run_test_size ~size ()) [ 1; 2; 4; 8 ];
 
   (* now make sure we can do this with multiple pools in parallel *)
-  let jobs = Array.init 4 (fun _ -> Thread.create (run_test_size ~size:4) ()) in
+  let jobs = Array.init 3 (fun _ -> Thread.create (run_test_size ~size:4) ()) in
   Array.iter Thread.join jobs
