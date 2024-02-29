@@ -81,6 +81,17 @@ val yield : unit -> unit
 (** Yield control to the scheduler from the current fiber.
     @raise Failure if not run from inside a fiber. *)
 
+type cancel_handle
+(** An opaque handle for a single cancel callback in a fiber *)
+
+val add_on_cancel : _ t -> cancel_callback -> cancel_handle
+(** [add_on_cancel fib cb] adds [cb] to the list of cancel callbacks
+    for [fib]. If [fib] is already cancelled, [cb] is called immediately. *)
+
+val remove_on_cancel : _ t -> cancel_handle -> unit
+(** [remove_on_cancel fib h] removes the cancel callback
+    associated with handle [h]. *)
+
 val with_cancel_callback : _ t -> cancel_callback -> (unit -> 'a) -> 'a
 (** [with_cancel_callback fib cb (fun () -> <e>)] evaluates [e]
     in a scope in which, if the fiber [fib] is cancelled,
