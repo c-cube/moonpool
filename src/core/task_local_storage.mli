@@ -35,6 +35,10 @@ val get : 'a key -> 'a
     Must be run from inside a task running on a runner.
     @raise Failure otherwise *)
 
+val get_opt : 'a key -> 'a option
+(** [get_opt k] gets the current task's value for key [k],
+    or [None] if not run from inside the task. *)
+
 val set : 'a key -> 'a -> unit
 (** [set k v] sets the storage for [k] to [v].
     Must be run from inside a task running on a runner.

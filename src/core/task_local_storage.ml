@@ -35,8 +35,7 @@ let[@inline] get_cur_ () : ls_value array ref =
   | Some r -> r
   | None -> failwith "Task local storage must be accessed from within a runner."
 
-let get (type a) ((module K) : a key) : a =
-  let cur = get_cur_ () in
+let get_from_ (type a) cur ((module K) : a key) : a =
   if K.offset >= Array.length !cur then resize_ cur (K.offset + 1);
   match !cur.(K.offset) with
   | K.V x -> (* common case first *) x
@@ -46,6 +45,15 @@ let get (type a) ((module K) : a key) : a =
     !cur.(K.offset) <- K.V v;
     v
   | _ -> assert false
+
+let[@inline] get (key : 'a key) : 'a =
+  let cur = get_cur_ () in
+  get_from_ cur key
+
+let[@inline] get_opt key =
+  match TLS.get k_ls_values with
+  | None -> None
+  | Some cur -> Some (get_from_ cur key)
 
 let set (type a) ((module K) : a key) (v : a) : unit =
   let cur = get_cur_ () in
