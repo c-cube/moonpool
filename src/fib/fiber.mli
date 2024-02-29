@@ -112,7 +112,7 @@ val spawn_top : on:Runner.t -> (unit -> 'a) -> 'a t
     This fiber is not the child of any other fiber: its lifetime
     is only determined by the lifetime of [f()]. *)
 
-val spawn_link : protect:bool -> (unit -> 'a) -> 'a t
+val spawn_link : ?protect:bool -> (unit -> 'a) -> 'a t
 (** [spawn_link ~protect f] spawns a sub-fiber [f_child]
     from a running fiber [parent].
     The sub-fiber [f_child] is attached to the current fiber and fails
@@ -121,7 +121,14 @@ val spawn_link : protect:bool -> (unit -> 'a) -> 'a t
     @param protect if true, when [f_child] fails, it does not
       affect [parent]. If false, [f_child] failing also
       causes [parent] to fail (and therefore all other children
-      of [parent]).
+      of [parent]). Default is [true].
 
     Must be run from inside a fiber.
     @raise Failure if not run from  inside a fiber. *)
+
+val spawn_top_or_link : ?protect:bool -> on:Runner.t -> (unit -> 'a) -> 'a t
+(** [spawn_top_or_link ~on ~protect f] runs [f()] in a new fiber.
+    If this is run from inside a fiber, this behaves like [spawn_link ~protect f]
+    (links to the parent); otherwise it behaves like [spawn_top ~on f].
+    @param protect if false, failure of the new fiber will also cancel
+    the parent (in case there is a parent). Default [true]. See {!spawn_link}. *)

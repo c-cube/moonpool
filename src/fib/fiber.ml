@@ -194,15 +194,22 @@ let[@inline] self () : any =
   | None -> failwith "Fiber.self: must be run from inside a fiber."
   | Some f -> f
 
-let spawn_link ~protect f : _ t =
+let spawn_link_ ?(protect = true) parent f : _ t =
+  (* spawn [f()] with a copy of our local storage *)
+  let ls = Task_local_storage.Private_.Storage.copy_of_current () in
+  let child = spawn_ ~ls:(Some ls) ~on:parent.runner f in
+  add_child_ ~protect parent child;
+  child
+
+let spawn_link ?protect f : _ t =
   match Task_local_storage.get k_current_fiber with
   | None -> failwith "Fiber.spawn_link: must be run from inside a fiber."
-  | Some (Any parent) ->
-    (* spawn [f()] with a copy of our local storage *)
-    let ls = Task_local_storage.Private_.Storage.copy_of_current () in
-    let child = spawn_ ~ls:(Some ls) ~on:parent.runner f in
-    add_child_ ~protect parent child;
-    child
+  | Some (Any parent) -> spawn_link_ ?protect parent f
+
+let spawn_top_or_link ?protect ~on f : _ t =
+  match Task_local_storage.get k_current_fiber with
+  | None -> spawn_top ~on f
+  | Some (Any parent) -> spawn_link_ ?protect parent f
 
 type cancel_handle = int
 
