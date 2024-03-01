@@ -49,22 +49,21 @@ let logf = Log_.logf
 
 let () =
   Printf.printf "============\nstart\n";
+  let@ nursery = F.Nursery.with_create_top ~on:runner () in
   let clock = ref TS.init in
   let fib =
-    F.spawn_top ~on:runner @@ fun () ->
+    F.spawn nursery @@ fun nursery ->
     let subs =
       List.init 5 (fun i ->
-          F.spawn_link ~protect:false @@ fun () ->
+          F.spawn nursery ~protect:false @@ fun _n ->
           Thread.delay (float i *. 0.01);
           i)
     in
 
-    ignore
-      (F.spawn_link ~protect:false @@ fun () ->
-       Thread.delay 0.4;
-       TS.tick clock;
-       logf !clock "other fib done"
-        : _ F.t);
+    F.spawn_ignore nursery ~protect:false (fun _n ->
+        Thread.delay 0.4;
+        TS.tick clock;
+        logf !clock "other fib done");
 
     logf (TS.tick_get clock) "wait for subs";
     List.iteri
@@ -92,8 +91,9 @@ let () =
   Printf.printf "============\nstart\n";
 
   let clock = ref TS.init in
+  let@ nursery = F.Nursery.with_create_top ~on:runner () in
   let fib =
-    F.spawn_top ~on:runner @@ fun () ->
+    F.spawn nursery @@ fun nursery ->
     let@ () =
       F.with_self_cancel_callback (fun ebt ->
           logf (TS.tick_get clock) "main fiber cancelled with %s"
@@ -104,7 +104,7 @@ let () =
     let subs =
       List.init 10 (fun i ->
           let clock = ref (0 :: i :: !clock) in
-          F.spawn_link ~protect:false @@ fun () ->
+          F.spawn nursery ~protect:false @@ fun _n ->
           let@ () =
             F.with_self_cancel_callback (fun _ ->
                 logf (TS.tick_get clock) "sub-fiber %d was cancelled" i)
@@ -126,11 +126,9 @@ let () =
           | Error _ -> logf (i :: post) "fiber %d resolved as error" i))
       subs;
 
-    ignore
-      (F.spawn_link ~protect:false @@ fun () ->
-       Thread.delay 0.2;
-       logf (TS.tick_get clock) "other fib done"
-        : _ F.t);
+    F.spawn_ignore nursery ~protect:false (fun _n ->
+        Thread.delay 0.2;
+        logf (TS.tick_get clock) "other fib done");
 
     logf (TS.tick_get clock) "wait for subs";
     List.iteri
