@@ -51,11 +51,15 @@ val with_value : 'a key -> 'a -> (unit -> 'b) -> 'b
 
 (**/**)
 
+(** Private API *)
 module Private_ : sig
   module Storage : sig
     type t = storage
 
+    val get : t ref -> 'a key -> 'a
+    val set : t ref -> 'a key -> 'a -> unit
     val k_storage : t ref option Thread_local_storage_.key
+    val get_cur_opt : unit -> t ref option
     val create : unit -> t
     val copy : t -> t
     val copy_of_current : unit -> t
