@@ -1,4 +1,7 @@
-(** The unique name of a fiber *)
+(** The unique name of a fiber.
+
+    Each fiber has a unique handle that can be used to
+    refer to it in maps or sets. *)
 
 type t = private int
 (** Unique, opaque identifier for a fiber. *)

@@ -6,11 +6,11 @@ let k_storage = Task_local_storage.Private_.Storage.k_storage
 
 type task_full =
   | T_start of {
-      ls: Task_local_storage.storage;
+      ls: Task_local_storage.storage ref;
       f: task;
     }
   | T_resume : {
-      ls: Task_local_storage.storage;
+      ls: Task_local_storage.storage ref;
       k: 'a -> unit;
       x: 'a;
     }
@@ -30,23 +30,22 @@ let schedule_ (self : state) (task : task_full) : unit =
   try Bb_queue.push self.q task with Bb_queue.Closed -> raise Shutdown
 
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
-type worker_state = { cur_ls: Task_local_storage.storage ref }
+type worker_state = { mutable cur_ls: Task_local_storage.storage ref option }
 
 let k_worker_state : worker_state option ref TLS.key =
   TLS.new_key (fun () -> ref None)
 
 let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
-  let w = { cur_ls = ref Task_local_storage.Private_.Storage.dummy } in
+  let w = { cur_ls = None } in
   TLS.get k_worker_state := Some w;
-  TLS.set k_storage (Some w.cur_ls);
   TLS.get Runner.For_runner_implementors.k_cur_runner := Some runner;
 
   let (AT_pair (before_task, after_task)) = around_task in
 
   let on_suspend () =
     match !(TLS.get k_worker_state) with
-    | None -> assert false
-    | Some w -> !(w.cur_ls)
+    | Some { cur_ls = Some ls; _ } -> ls
+    | _ -> assert false
   in
   let run_another_task ls task' = schedule_ self @@ T_start { f = task'; ls } in
   let resume ls k res = schedule_ self @@ T_resume { ls; k; x = res } in
@@ -56,7 +55,8 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
       match task with
       | T_start { ls; _ } | T_resume { ls; _ } -> ls
     in
-    w.cur_ls := ls;
+    w.cur_ls <- Some ls;
+    TLS.set k_storage (Some ls);
     let _ctx = before_task runner in
 
     (* run the task now, catching errors, handling effects *)
@@ -74,7 +74,8 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
        let bt = Printexc.get_raw_backtrace () in
        on_exn e bt);
     after_task runner _ctx;
-    w.cur_ls := Task_local_storage.Private_.Storage.dummy
+    w.cur_ls <- None;
+    TLS.set k_storage None
   in
 
   let main_loop () =

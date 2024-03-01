@@ -16,6 +16,7 @@ module Private_ = struct
     state: 'a state A.t;  (** Current state in the lifetime of the fiber *)
     res: 'a Fut.t;
     runner: Runner.t;
+    ls: Task_local_storage.storage ref;
   }
 
   and 'a state =
@@ -28,12 +29,18 @@ module Private_ = struct
 
   and children = any FM.t
   and any = Any : _ t -> any [@@unboxed]
+  and nursery = Nursery : _ t -> nursery [@@unboxed]
 
   (** Key to access the current fiber. *)
   let k_current_fiber : any option Task_local_storage.key =
     Task_local_storage.new_key ~init:(fun () -> None) ()
 
   let[@inline] get_cur () : any option = Task_local_storage.get k_current_fiber
+
+  let[@inline] is_closed (self : _ t) =
+    match A.get self.state with
+    | Alive _ -> false
+    | Terminating_or_done _ -> true
 end
 
 include Private_
@@ -44,6 +51,9 @@ let[@inline] is_done self = Fut.is_done self.res
 let[@inline] is_success self = Fut.is_success self.res
 let[@inline] is_cancelled self = Fut.is_failed self.res
 let[@inline] on_result (self : _ t) f = Fut.on_result self.res f
+let[@inline] await self = Fut.await self.res
+let[@inline] wait_block self = Fut.wait_block self.res
+let[@inline] wait_block_exn self = Fut.wait_block_exn self.res
 
 (** Resolve [promise] once [children] are all done *)
 let resolve_once_children_are_done_ ~children ~promise
@@ -91,6 +101,53 @@ let rec resolve_as_failed_ : type a. a t -> Exn_bt.t -> unit =
 (** Cancel eagerly all children *)
 and cancel_children_ ebt ~children : unit =
   FM.iter (fun _ (Any f) -> resolve_as_failed_ f ebt) children
+
+type cancel_handle = int
+
+let add_on_cancel (self : _ t) cb : cancel_handle =
+  let h = ref 0 in
+  while
+    match A.get self.state with
+    | Alive { children; cancel_id; on_cancel } as old ->
+      let new_st =
+        Alive
+          {
+            children;
+            cancel_id = cancel_id + 1;
+            on_cancel = Int_map.add cancel_id cb on_cancel;
+          }
+      in
+      if A.compare_and_set self.state old new_st then (
+        h := cancel_id;
+        false
+      ) else
+        true
+    | Terminating_or_done r ->
+      (match A.get r with
+      | Error ebt -> cb ebt
+      | Ok _ -> ());
+      false
+  do
+    ()
+  done;
+  !h
+
+let remove_on_cancel (self : _ t) h =
+  while
+    match A.get self.state with
+    | Alive ({ on_cancel; _ } as alive) as old ->
+      let new_st =
+        Alive { alive with on_cancel = Int_map.remove h on_cancel }
+      in
+      not (A.compare_and_set self.state old new_st)
+    | Terminating_or_done _ -> false
+  do
+    ()
+  done
+
+let with_cancel_callback (self : _ t) cb (k : unit -> 'a) : 'a =
+  let h = add_on_cancel self cb in
+  Fun.protect k ~finally:(fun () -> remove_on_cancel self h)
 
 (** Successfully resolve the fiber *)
 let resolve_ok_ (self : 'a t) (r : 'a) : unit =
@@ -156,26 +213,28 @@ let add_child_ ~protect (self : _ t) (child : _ t) =
     ()
   done
 
-let spawn_ ~ls ~on (f : _ -> 'a) : 'a t =
+let create_ ~ls ~runner () : 'a t =
   let id = Handle.generate_fresh () in
   let res, _promise = Fut.make () in
-  let fib =
-    {
-      state =
-        A.make
-        @@ Alive
-             { children = FM.empty; on_cancel = Int_map.empty; cancel_id = 0 };
-      id;
-      res;
-      runner = on;
-    }
-  in
+  {
+    state =
+      A.make
+      @@ Alive { children = FM.empty; on_cancel = Int_map.empty; cancel_id = 0 };
+    id;
+    res;
+    runner;
+    ls;
+  }
+
+let spawn_ ~ls (Nursery n) (f : nursery -> 'a) : 'a t =
+  if is_closed n then failwith "spawn: nursery is closed";
+  let fib = create_ ~ls ~runner:n.runner () in
 
   let run () =
     (* make sure the fiber is accessible from inside itself *)
     Task_local_storage.set k_current_fiber (Some (Any fib));
     try
-      let res = f () in
+      let res = f (Nursery fib) in
       resolve_ok_ fib res
     with exn ->
       let bt = Printexc.get_raw_backtrace () in
@@ -183,89 +242,63 @@ let spawn_ ~ls ~on (f : _ -> 'a) : 'a t =
       resolve_as_failed_ fib ebt
   in
 
-  Runner.run_async ?ls on run;
+  Runner.run_async ~ls n.runner run;
 
   fib
 
-let[@inline] spawn_top ~on f : _ t = spawn_ ~ls:None ~on f
+let spawn (Nursery n) ?(protect = true) f : _ t =
+  (* spawn [f()] with a copy of our local storage *)
+  let ls = ref (Task_local_storage.Private_.Storage.copy !(n.ls)) in
+  let child = spawn_ ~ls (Nursery n) f in
+  add_child_ ~protect n child;
+  child
+
+let[@inline] spawn_ignore n ?protect f : unit =
+  ignore (spawn n ?protect f : _ t)
+
+module Nursery = struct
+  type t = nursery
+
+  let[@inline] await (Nursery n) : unit =
+    ignore (await n);
+    ()
+
+  let cancel_with (Nursery n) ebt : unit = resolve_as_failed_ n ebt
+
+  let with_create_top ~on () f =
+    let n =
+      create_
+        ~ls:(ref @@ Task_local_storage.Private_.Storage.create ())
+        ~runner:on ()
+    in
+    Fun.protect ~finally:(fun () -> resolve_ok_ n ()) (fun () -> f (Nursery n))
+
+  let with_create_sub ~protect (Nursery parent : t) f =
+    let n =
+      create_
+        ~ls:(ref @@ Task_local_storage.Private_.Storage.copy !(parent.ls))
+        ~runner:parent.runner ()
+    in
+    add_child_ ~protect parent n;
+    Fun.protect ~finally:(fun () -> resolve_ok_ n ()) (fun () -> f (Nursery n))
+
+  let[@inline] with_cancel_callback (Nursery self) cb f =
+    with_cancel_callback self cb f
+end
 
 let[@inline] self () : any =
   match Task_local_storage.get k_current_fiber with
   | None -> failwith "Fiber.self: must be run from inside a fiber."
   | Some f -> f
 
-let spawn_link_ ?(protect = true) parent f : _ t =
-  (* spawn [f()] with a copy of our local storage *)
-  let ls = Task_local_storage.Private_.Storage.copy_of_current () in
-  let child = spawn_ ~ls:(Some ls) ~on:parent.runner f in
-  add_child_ ~protect parent child;
-  child
-
-let spawn_link ?protect f : _ t =
-  match Task_local_storage.get k_current_fiber with
-  | None -> failwith "Fiber.spawn_link: must be run from inside a fiber."
-  | Some (Any parent) -> spawn_link_ ?protect parent f
-
-let spawn_top_or_link ?protect ~on f : _ t =
-  match Task_local_storage.get_opt k_current_fiber with
-  | Some (Some (Any parent)) -> spawn_link_ ?protect parent f
-  | None | Some None -> spawn_top ~on f
-
-type cancel_handle = int
-
-let add_on_cancel (self : _ t) cb : cancel_handle =
-  let h = ref 0 in
-  while
-    match A.get self.state with
-    | Alive { children; cancel_id; on_cancel } as old ->
-      let new_st =
-        Alive
-          {
-            children;
-            cancel_id = cancel_id + 1;
-            on_cancel = Int_map.add cancel_id cb on_cancel;
-          }
-      in
-      if A.compare_and_set self.state old new_st then (
-        h := cancel_id;
-        false
-      ) else
-        true
-    | Terminating_or_done r ->
-      (match A.get r with
-      | Error ebt -> cb ebt
-      | Ok _ -> ());
-      false
-  do
-    ()
-  done;
-  !h
-
-let remove_on_cancel (self : _ t) h =
-  while
-    match A.get self.state with
-    | Alive ({ on_cancel; _ } as alive) as old ->
-      let new_st =
-        Alive { alive with on_cancel = Int_map.remove h on_cancel }
-      in
-      not (A.compare_and_set self.state old new_st)
-    | Terminating_or_done _ -> false
-  do
-    ()
-  done
-
-let with_cancel_callback (self : _ t) cb (k : unit -> 'a) : 'a =
-  let h = add_on_cancel self cb in
-  Fun.protect k ~finally:(fun () -> remove_on_cancel self h)
+let[@inline] cur_nursery () =
+  let (Any f) = self () in
+  Nursery f
 
 let with_self_cancel_callback cb (k : unit -> 'a) : 'a =
   let (Any self) = self () in
   let h = add_on_cancel self cb in
   Fun.protect k ~finally:(fun () -> remove_on_cancel self h)
-
-let[@inline] await self = Fut.await self.res
-let[@inline] wait_block self = Fut.wait_block self.res
-let[@inline] wait_block_exn self = Fut.wait_block_exn self.res
 
 module Suspend_ = Moonpool.Private.Suspend_
 
