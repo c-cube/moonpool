@@ -3,7 +3,7 @@ module TLS = Thread_local_storage_
 type task = unit -> unit
 
 type t = {
-  run_async: ls:Task_local_storage.storage -> task -> unit;
+  run_async: ls:Task_local_storage.storage ref -> task -> unit;
   shutdown: wait:bool -> unit -> unit;
   size: unit -> int;
   num_tasks: unit -> int;
@@ -11,8 +11,9 @@ type t = {
 
 exception Shutdown
 
-let[@inline] run_async ?(ls = Task_local_storage.Private_.Storage.create ())
-    (self : t) f : unit =
+let[@inline] run_async
+    ?(ls = ref @@ Task_local_storage.Private_.Storage.create ()) (self : t) f :
+    unit =
   self.run_async ~ls f
 
 let[@inline] shutdown (self : t) : unit = self.shutdown ~wait:true ()

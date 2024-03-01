@@ -4,10 +4,8 @@ include Runner
 (* convenient alias *)
 let k_ls = Task_local_storage.Private_.Storage.k_storage
 
-let run_async_ ~ls f =
-  let cur_ls = ref ls in
+let run_async_ ~ls:cur_ls f =
   TLS.set k_ls (Some cur_ls);
-  cur_ls := ls;
   try
     let x = f () in
     TLS.set k_ls None;

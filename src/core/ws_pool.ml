@@ -18,11 +18,11 @@ type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 
 type task_full =
   | T_start of {
-      ls: Task_local_storage.storage;
+      ls: Task_local_storage.storage ref;
       f: task;
     }
   | T_resume : {
-      ls: Task_local_storage.storage;
+      ls: Task_local_storage.storage ref;
       k: 'a -> unit;
       x: 'a;
     }
@@ -32,7 +32,7 @@ type worker_state = {
   pool_id_: Id.t;  (** Unique per pool *)
   mutable thread: Thread.t;
   q: task_full WSQ.t;  (** Work stealing queue *)
-  cur_ls: Task_local_storage.storage ref;  (** Task storage *)
+  mutable cur_ls: Task_local_storage.storage ref option;  (** Task storage *)
   rng: Random.State.t;
 }
 (** State for a given worker. Only this worker is
@@ -120,17 +120,14 @@ let run_task_now_ (self : state) ~runner ~(w : worker_state) (task : task_full)
     | T_start { ls; _ } | T_resume { ls; _ } -> ls
   in
 
-  w.cur_ls := ls;
+  w.cur_ls <- Some ls;
+  TLS.set k_storage (Some ls);
   let _ctx = before_task runner in
 
-  let[@inline] on_suspend () =
-    let w =
-      match find_current_worker_ () with
-      | Some w -> w
-      | None -> assert false
-    in
-    let ls = !(w.cur_ls) in
-    ls
+  let[@inline] on_suspend () : _ ref =
+    match find_current_worker_ () with
+    | Some { cur_ls = Some w; _ } -> w
+    | _ -> assert false
   in
 
   let run_another_task ls (task' : task) =
@@ -139,7 +136,7 @@ let run_task_now_ (self : state) ~runner ~(w : worker_state) (task : task_full)
       | Some w when Id.equal w.pool_id_ self.id_ -> Some w
       | _ -> None
     in
-    let ls' = Task_local_storage.Private_.Storage.copy ls in
+    let ls' = ref @@ Task_local_storage.Private_.Storage.copy !ls in
     schedule_task_ self ~w @@ T_start { ls = ls'; f = task' }
   in
 
@@ -168,7 +165,8 @@ let run_task_now_ (self : state) ~runner ~(w : worker_state) (task : task_full)
      self.on_exn e bt);
 
   after_task runner _ctx;
-  w.cur_ls := Task_local_storage.Private_.Storage.dummy
+  w.cur_ls <- None;
+  TLS.set k_storage None
 
 let run_async_ (self : state) ~ls (f : task) : unit =
   let w = find_current_worker_ () in
@@ -291,7 +289,7 @@ type ('a, 'b) create_args =
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
 let dummy_task_ : task_full =
-  T_start { f = ignore; ls = Task_local_storage.Private_.Storage.dummy }
+  T_start { f = ignore; ls = ref Task_local_storage.Private_.Storage.dummy }
 
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
@@ -318,7 +316,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
           thread = dummy;
           q = WSQ.create ~dummy:dummy_task_ ();
           rng = Random.State.make [| i |];
-          cur_ls = ref Task_local_storage.Private_.Storage.dummy;
+          cur_ls = None;
         })
   in
 
@@ -360,7 +358,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
       let thread = Thread.self () in
       let t_id = Thread.id thread in
       on_init_thread ~dom_id:dom_idx ~t_id ();
-      TLS.set k_storage (Some w.cur_ls);
+      TLS.set k_storage None;
 
       (* set thread name *)
       Option.iter

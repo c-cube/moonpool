@@ -27,14 +27,14 @@ val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
 val run_async :
-  ?ls:Task_local_storage.storage -> Runner.t -> (unit -> unit) -> unit
+  ?ls:Task_local_storage.storage ref -> Runner.t -> (unit -> unit) -> unit
 (** [run_async runner task] schedules the task to run
   on the given runner. This means [task()] will be executed
   at some point in the future, possibly in another thread.
   @since 0.5 *)
 
 val run_wait_block :
-  ?ls:Task_local_storage.storage -> Runner.t -> (unit -> 'a) -> 'a
+  ?ls:Task_local_storage.storage ref -> Runner.t -> (unit -> 'a) -> 'a
 (** [run_wait_block runner f] schedules [f] for later execution
     on the runner, like {!run_async}.
     It then blocks the current thread until [f()] is done executing,

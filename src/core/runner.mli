@@ -33,14 +33,15 @@ val shutdown_without_waiting : t -> unit
 
 exception Shutdown
 
-val run_async : ?ls:Task_local_storage.storage -> t -> task -> unit
+val run_async : ?ls:Task_local_storage.storage ref -> t -> task -> unit
 (** [run_async pool f] schedules [f] for later execution on the runner
     in one of the threads. [f()] will run on one of the runner's
     worker threads/domains.
     @param ls if provided, run the task with this initial local storage
     @raise Shutdown if the runner was shut down before [run_async] was called. *)
 
-val run_wait_block : ?ls:Task_local_storage.storage -> t -> (unit -> 'a) -> 'a
+val run_wait_block :
+  ?ls:Task_local_storage.storage ref -> t -> (unit -> 'a) -> 'a
 (** [run_wait_block pool f] schedules [f] for later execution
     on the pool, like {!run_async}.
     It then blocks the current thread until [f()] is done executing,
@@ -60,7 +61,7 @@ module For_runner_implementors : sig
     size:(unit -> int) ->
     num_tasks:(unit -> int) ->
     shutdown:(wait:bool -> unit -> unit) ->
-    run_async:(ls:Task_local_storage.storage -> task -> unit) ->
+    run_async:(ls:Task_local_storage.storage ref -> task -> unit) ->
     unit ->
     t
   (** Create a new runner.
