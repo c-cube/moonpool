@@ -16,11 +16,21 @@ end
 type 'a ls_key = (module LS_KEY with type t = 'a)
 (** A LS key (task local storage) *)
 
-type task_ls = ls_value array
+type task = unit -> unit
+type local_storage = ls_value array ref
 
-(** Store the current LS values for the current thread.
+type runner = {
+  run_async: ls:local_storage -> task -> unit;
+  shutdown: wait:bool -> unit -> unit;
+  size: unit -> int;
+  num_tasks: unit -> int;
+}
 
-    A worker thread is going to cycle through many tasks, each of which
-    has its own storage.  This key allows tasks running on the worker
-    to access their own storage *)
-let k_ls_values : task_ls ref option TLS.key = TLS.new_key (fun () -> None)
+let k_cur_runner : runner option ref TLS.key = TLS.new_key (fun () -> ref None)
+
+let k_cur_storage : local_storage option ref TLS.key =
+  TLS.new_key (fun () -> ref None)
+
+let[@inline] get_current_runner () : _ option = !(TLS.get k_cur_runner)
+let[@inline] get_current_storage () : _ option = !(TLS.get k_cur_storage)
+let[@inline] create_local_storage () = ref [||]

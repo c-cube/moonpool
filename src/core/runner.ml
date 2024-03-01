@@ -1,9 +1,10 @@
+open Types_
 module TLS = Thread_local_storage_
 
 type task = unit -> unit
 
-type t = {
-  run_async: ls:Task_local_storage.storage ref -> task -> unit;
+type t = runner = {
+  run_async: ls:local_storage -> task -> unit;
   shutdown: wait:bool -> unit -> unit;
   size: unit -> int;
   num_tasks: unit -> int;
@@ -11,9 +12,7 @@ type t = {
 
 exception Shutdown
 
-let[@inline] run_async
-    ?(ls = ref @@ Task_local_storage.Private_.Storage.create ()) (self : t) f :
-    unit =
+let[@inline] run_async ?(ls = create_local_storage ()) (self : t) f : unit =
   self.run_async ~ls f
 
 let[@inline] shutdown (self : t) : unit = self.shutdown ~wait:true ()
@@ -41,8 +40,8 @@ module For_runner_implementors = struct
   let create ~size ~num_tasks ~shutdown ~run_async () : t =
     { size; num_tasks; shutdown; run_async }
 
-  let k_cur_runner : t option ref TLS.key = TLS.new_key (fun () -> ref None)
+  let k_cur_runner : t option ref TLS.key = Types_.k_cur_runner
 end
 
-let[@inline] get_current_runner () : _ option =
-  !(TLS.get For_runner_implementors.k_cur_runner)
+let get_current_runner = get_current_runner
+let get_current_storage = get_current_storage

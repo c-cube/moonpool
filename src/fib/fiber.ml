@@ -16,7 +16,7 @@ module Private_ = struct
     state: 'a state A.t;  (** Current state in the lifetime of the fiber *)
     res: 'a Fut.t;
     runner: Runner.t;
-    ls: Task_local_storage.storage ref;
+    ls: Task_local_storage.t;
   }
 
   and 'a state =
@@ -248,7 +248,7 @@ let spawn_ ~ls (Nursery n) (f : nursery -> 'a) : 'a t =
 
 let spawn (Nursery n) ?(protect = true) f : _ t =
   (* spawn [f()] with a copy of our local storage *)
-  let ls = ref (Task_local_storage.Private_.Storage.copy !(n.ls)) in
+  let ls = Task_local_storage.Direct.copy n.ls in
   let child = spawn_ ~ls (Nursery n) f in
   add_child_ ~protect n child;
   child
@@ -259,6 +259,8 @@ let[@inline] spawn_ignore n ?protect f : unit =
 module Nursery = struct
   type t = nursery
 
+  let[@inline] runner (Nursery n) = n.runner
+
   let[@inline] await (Nursery n) : unit =
     ignore (await n);
     ()
@@ -266,17 +268,13 @@ module Nursery = struct
   let cancel_with (Nursery n) ebt : unit = resolve_as_failed_ n ebt
 
   let with_create_top ~on () f =
-    let n =
-      create_
-        ~ls:(ref @@ Task_local_storage.Private_.Storage.create ())
-        ~runner:on ()
-    in
+    let n = create_ ~ls:(Task_local_storage.Direct.create ()) ~runner:on () in
     Fun.protect ~finally:(fun () -> resolve_ok_ n ()) (fun () -> f (Nursery n))
 
   let with_create_sub ~protect (Nursery parent : t) f =
     let n =
       create_
-        ~ls:(ref @@ Task_local_storage.Private_.Storage.copy !(parent.ls))
+        ~ls:(Task_local_storage.Direct.copy parent.ls)
         ~runner:parent.runner ()
     in
     add_child_ ~protect parent n;

@@ -27,6 +27,9 @@ type cancel_callback = Exn_bt.t -> unit
 module Nursery : sig
   type t
 
+  val runner : t -> Runner.t
+  (** Recover the runner this nursery uses to spawn fibers *)
+
   val await : t -> unit
   (** Await for the nursery to exit. *)
 
@@ -59,7 +62,7 @@ module Private_ : sig
     state: 'a state Atomic.t;  (** Current state in the lifetime of the fiber *)
     res: 'a Fut.t;
     runner: Runner.t;
-    ls: Task_local_storage.storage ref;
+    ls: Task_local_storage.t;
   }
   (** Type definition, exposed so that {!any} can be unboxed.
       Please do not rely on that. *)

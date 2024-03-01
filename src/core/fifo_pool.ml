@@ -2,15 +2,14 @@ open Types_
 include Runner
 
 let ( let@ ) = ( @@ )
-let k_storage = Task_local_storage.Private_.Storage.k_storage
 
 type task_full =
   | T_start of {
-      ls: Task_local_storage.storage ref;
+      ls: Task_local_storage.t;
       f: task;
     }
   | T_resume : {
-      ls: Task_local_storage.storage ref;
+      ls: Task_local_storage.t;
       k: 'a -> unit;
       x: 'a;
     }
@@ -30,7 +29,7 @@ let schedule_ (self : state) (task : task_full) : unit =
   try Bb_queue.push self.q task with Bb_queue.Closed -> raise Shutdown
 
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
-type worker_state = { mutable cur_ls: Task_local_storage.storage ref option }
+type worker_state = { mutable cur_ls: Task_local_storage.t option }
 
 let k_worker_state : worker_state option ref TLS.key =
   TLS.new_key (fun () -> ref None)
@@ -56,7 +55,7 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
       | T_start { ls; _ } | T_resume { ls; _ } -> ls
     in
     w.cur_ls <- Some ls;
-    TLS.set k_storage (Some ls);
+    TLS.get k_cur_storage := Some ls;
     let _ctx = before_task runner in
 
     (* run the task now, catching errors, handling effects *)
@@ -75,7 +74,7 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
        on_exn e bt);
     after_task runner _ctx;
     w.cur_ls <- None;
-    TLS.set k_storage None
+    TLS.get k_cur_storage := None
   in
 
   let main_loop () =
