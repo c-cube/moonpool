@@ -207,9 +207,9 @@ let spawn_link ?protect f : _ t =
   | Some (Any parent) -> spawn_link_ ?protect parent f
 
 let spawn_top_or_link ?protect ~on f : _ t =
-  match Task_local_storage.get k_current_fiber with
-  | None -> spawn_top ~on f
-  | Some (Any parent) -> spawn_link_ ?protect parent f
+  match Task_local_storage.get_opt k_current_fiber with
+  | Some (Some (Any parent)) -> spawn_link_ ?protect parent f
+  | None | Some None -> spawn_top ~on f
 
 type cancel_handle = int
 
