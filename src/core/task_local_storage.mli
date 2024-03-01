@@ -8,8 +8,11 @@
     @since NEXT_RELEASE
 *)
 
-type storage
-(** Underlying storage for a task *)
+type t = Types_.local_storage
+(** Underlying storage for a task. This is mutable and
+    not thread-safe. *)
+
+val dummy : t
 
 type 'a key
 (** A key used to access a particular (typed) storage slot on every task. *)
@@ -49,22 +52,12 @@ val with_value : 'a key -> 'a -> (unit -> 'b) -> 'b
     to [f()]. When [f()] returns (or fails), [k] is restored
     to its old value. *)
 
-(**/**)
+(** Direct access to values from a storage handle *)
+module Direct : sig
+  val get : t -> 'a key -> 'a
+  (** Access a key *)
 
-(** Private API *)
-module Private_ : sig
-  module Storage : sig
-    type t = storage
-
-    val get : t ref -> 'a key -> 'a
-    val set : t ref -> 'a key -> 'a -> unit
-    val k_storage : t ref option Thread_local_storage_.key
-    val get_cur_opt : unit -> t ref option
-    val create : unit -> t
-    val copy : t -> t
-    val copy_of_current : unit -> t
-    val dummy : t
-  end
+  val set : t -> 'a key -> 'a -> unit
+  val create : unit -> t
+  val copy : t -> t
 end
-
-(**/**)

@@ -5,7 +5,44 @@ type 'a key = 'a ls_key
 
 let key_count_ = A.make 0
 
-type storage = task_ls
+type t = local_storage
+type ls_value += Dummy
+
+let dummy : t = ref [||]
+
+(** Resize array of TLS values *)
+let[@inline never] resize_ (cur : ls_value array ref) n =
+  if n > Sys.max_array_length then failwith "too many task local storage keys";
+  let len = Array.length !cur in
+  let new_ls =
+    Array.make (min Sys.max_array_length (max n ((len * 2) + 2))) Dummy
+  in
+  Array.blit !cur 0 new_ls 0 len;
+  cur := new_ls
+
+module Direct = struct
+  type nonrec t = t
+
+  let create = create_local_storage
+  let[@inline] copy (self : t) = ref (Array.copy !self)
+
+  let get (type a) (self : t) ((module K) : a key) : a =
+    if K.offset >= Array.length !self then resize_ self (K.offset + 1);
+    match !self.(K.offset) with
+    | K.V x -> (* common case first *) x
+    | Dummy ->
+      (* first time we access this *)
+      let v = K.init () in
+      !self.(K.offset) <- K.V v;
+      v
+    | _ -> assert false
+
+  let set (type a) (self : t) ((module K) : a key) (v : a) : unit =
+    assert (self != dummy);
+    if K.offset >= Array.length !self then resize_ self (K.offset + 1);
+    !self.(K.offset) <- K.V v;
+    ()
+end
 
 let new_key (type t) ~init () : t key =
   let offset = A.fetch_and_add key_count_ 1 in
@@ -18,68 +55,25 @@ let new_key (type t) ~init () : t key =
   end : LS_KEY
     with type t = t)
 
-type ls_value += Dummy
-
-(** Resize array of TLS values *)
-let[@inline never] resize_ (cur : ls_value array ref) n =
-  if n > Sys.max_array_length then failwith "too many task local storage keys";
-  let len = Array.length !cur in
-  let new_ls =
-    Array.make (min Sys.max_array_length (max n ((len * 2) + 2))) Dummy
-  in
-  Array.blit !cur 0 new_ls 0 len;
-  cur := new_ls
-
 let[@inline] get_cur_ () : ls_value array ref =
-  match TLS.get k_ls_values with
+  match get_current_storage () with
   | Some r -> r
   | None -> failwith "Task local storage must be accessed from within a runner."
 
-let get_from_ (type a) cur ((module K) : a key) : a =
-  if K.offset >= Array.length !cur then resize_ cur (K.offset + 1);
-  match !cur.(K.offset) with
-  | K.V x -> (* common case first *) x
-  | Dummy ->
-    (* first time we access this *)
-    let v = K.init () in
-    !cur.(K.offset) <- K.V v;
-    v
-  | _ -> assert false
-
 let[@inline] get (key : 'a key) : 'a =
   let cur = get_cur_ () in
-  get_from_ cur key
+  Direct.get cur key
 
 let[@inline] get_opt key =
-  match TLS.get k_ls_values with
+  match get_current_storage () with
   | None -> None
-  | Some cur -> Some (get_from_ cur key)
-
-let set_into_ (type a) cur ((module K) : a key) (v : a) : unit =
-  if K.offset >= Array.length !cur then resize_ cur (K.offset + 1);
-  !cur.(K.offset) <- K.V v;
-  ()
+  | Some cur -> Some (Direct.get cur key)
 
 let[@inline] set key v : unit =
   let cur = get_cur_ () in
-  set_into_ cur key v
+  Direct.set cur key v
 
 let with_value key x f =
   let old = get key in
   set key x;
   Fun.protect ~finally:(fun () -> set key old) f
-
-module Private_ = struct
-  module Storage = struct
-    type t = storage
-
-    let k_storage = k_ls_values
-    let[@inline] create () = [||]
-    let[@inline] get_cur_opt () = TLS.get k_storage
-    let copy = Array.copy
-    let get = get_from_
-    let set = set_into_
-    let[@inline] copy_of_current () = copy @@ !(get_cur_ ())
-    let dummy = [||]
-  end
-end
