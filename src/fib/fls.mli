@@ -11,6 +11,7 @@
     has its own storage, spawning a sub-fiber [f2] from a fiber [f1]
     will only do a shallow copy of the storage.
     Values inside [f1]'s storage will be physically shared with [f2].
+    It is thus recommended to store only persistent values in the local storage.
 *)
 
 include module type of struct
