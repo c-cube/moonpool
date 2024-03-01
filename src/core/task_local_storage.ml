@@ -55,11 +55,14 @@ let[@inline] get_opt key =
   | None -> None
   | Some cur -> Some (get_from_ cur key)
 
-let set (type a) ((module K) : a key) (v : a) : unit =
-  let cur = get_cur_ () in
+let set_into_ (type a) cur ((module K) : a key) (v : a) : unit =
   if K.offset >= Array.length !cur then resize_ cur (K.offset + 1);
   !cur.(K.offset) <- K.V v;
   ()
+
+let[@inline] set key v : unit =
+  let cur = get_cur_ () in
+  set_into_ cur key v
 
 let with_value key x f =
   let old = get key in
@@ -72,7 +75,10 @@ module Private_ = struct
 
     let k_storage = k_ls_values
     let[@inline] create () = [||]
+    let[@inline] get_cur_opt () = TLS.get k_storage
     let copy = Array.copy
+    let get = get_from_
+    let set = set_into_
     let[@inline] copy_of_current () = copy @@ !(get_cur_ ())
     let dummy = [||]
   end
