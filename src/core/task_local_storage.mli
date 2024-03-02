@@ -52,6 +52,10 @@ val with_value : 'a key -> 'a -> (unit -> 'b) -> 'b
     to [f()]. When [f()] returns (or fails), [k] is restored
     to its old value. *)
 
+val get_current : unit -> t option
+(** Access the current storage, or [None] if not run from
+    within a task. *)
+
 (** Direct access to values from a storage handle *)
 module Direct : sig
   val get : t -> 'a key -> 'a

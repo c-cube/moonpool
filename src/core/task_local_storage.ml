@@ -77,3 +77,5 @@ let with_value key x f =
   let old = get key in
   set key x;
   Fun.protect ~finally:(fun () -> set key old) f
+
+let get_current = get_current_storage
