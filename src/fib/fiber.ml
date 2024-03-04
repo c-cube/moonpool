@@ -65,7 +65,7 @@ let create_done_ ~res () : _ t =
       @@ Alive { children = FM.empty; on_cancel = Int_map.empty; cancel_id = 0 };
     id;
     res;
-    runner = Immediate_runner.runner;
+    runner = Runner.dummy;
     ls = Task_local_storage.dummy;
   }
 
