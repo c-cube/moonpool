@@ -144,14 +144,13 @@ let detach_in_runner ~runner f : _ Lwt.t =
         Perform_action_in_lwt.schedule @@ Action.Wakeup_exn (promise, exn));
   fut
 
-let main_with_runner ~runner (f : Fiber.Nursery.t -> 'a) : 'a =
+let main_with_runner ~runner (f : unit -> 'a) : 'a =
   let lwt_fut, lwt_prom = Lwt.wait () in
-  let@ n = Fiber.Nursery.with_create_top ~on:runner () in
 
   let _fiber =
-    Fiber.spawn n (fun _n ->
+    Fiber.spawn_top ~on:runner (fun () ->
         try
-          let x = f n in
+          let x = f () in
           Perform_action_in_lwt.schedule (Action.Wakeup (lwt_prom, x))
         with exn ->
           Perform_action_in_lwt.schedule (Action.Wakeup_exn (lwt_prom, exn)))

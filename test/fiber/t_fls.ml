@@ -96,7 +96,6 @@ module Render = struct
 end
 
 let run ~pool ~pool_name () =
-  let@ nursery = F.Nursery.with_create_top ~on:pool () in
   let tracer = Tracer.create () in
 
   let sub_sub_child ~idx ~idx_child ~idx_sub ~idx_sub_sub () =
@@ -111,7 +110,7 @@ let run ~pool ~pool_name () =
     done
   in
 
-  let sub_child ~idx ~idx_child ~idx_sub nursery =
+  let sub_child ~idx ~idx_child ~idx_sub () =
     let@ () =
       Tracer.with_span tracer (spf "child_%d.%d.%d" idx idx_child idx_sub)
     in
@@ -123,19 +122,19 @@ let run ~pool ~pool_name () =
 
     let subs =
       List.init 2 (fun idx_sub_sub ->
-          F.spawn ~protect:true nursery (fun _nursery ->
+          F.spawn ~protect:true (fun () ->
               sub_sub_child ~idx ~idx_child ~idx_sub ~idx_sub_sub ()))
     in
     List.iter F.await subs
   in
 
-  let top_child ~idx ~idx_child nursery =
+  let top_child ~idx ~idx_child () =
     let@ () = Tracer.with_span tracer (spf "child.%d.%d" idx idx_child) in
 
     let subs =
       List.init 2 (fun k ->
-          F.spawn nursery ~protect:true @@ fun nursery ->
-          sub_child ~idx ~idx_child ~idx_sub:k nursery)
+          F.spawn ~protect:true @@ fun () ->
+          sub_child ~idx ~idx_child ~idx_sub:k ())
     in
 
     let@ () =
@@ -145,13 +144,12 @@ let run ~pool ~pool_name () =
     List.iter F.await subs
   in
 
-  let top nursery idx =
+  let top idx =
     let@ () = Tracer.with_span tracer (spf "top_%d" idx) in
 
     let subs =
       List.init 5 (fun j ->
-          F.spawn nursery ~protect:true @@ fun nursery ->
-          top_child ~idx ~idx_child:j nursery)
+          F.spawn ~protect:true @@ fun () -> top_child ~idx ~idx_child:j ())
     in
 
     List.iter F.await subs
@@ -159,7 +157,7 @@ let run ~pool ~pool_name () =
 
   Printf.printf "run test on pool = %s\n" pool_name;
   let fibs =
-    List.init 8 (fun idx -> F.spawn nursery (fun nursery -> top nursery idx))
+    List.init 8 (fun idx -> F.spawn_top ~on:pool (fun () -> top idx))
   in
   List.iter F.wait_block_exn fibs;
 

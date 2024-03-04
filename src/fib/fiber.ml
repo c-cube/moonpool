@@ -29,7 +29,6 @@ module Private_ = struct
 
   and children = any FM.t
   and any = Any : _ t -> any [@@unboxed]
-  and nursery = Nursery : _ t -> nursery [@@unboxed]
 
   (** Key to access the current fiber. *)
   let k_current_fiber : any option Task_local_storage.key =
@@ -226,15 +225,17 @@ let create_ ~ls ~runner () : 'a t =
     ls;
   }
 
-let spawn_ ~ls (Nursery n) (f : nursery -> 'a) : 'a t =
-  if is_closed n then failwith "spawn: nursery is closed";
-  let fib = create_ ~ls ~runner:n.runner () in
+let spawn_ ~ls ~parent ~runner (f : unit -> 'a) : 'a t =
+  (match parent with
+  | Some p when is_closed p -> failwith "spawn: nursery is closed"
+  | _ -> ());
+  let fib = create_ ~ls ~runner () in
 
   let run () =
     (* make sure the fiber is accessible from inside itself *)
     Task_local_storage.set k_current_fiber (Some (Any fib));
     try
-      let res = f (Nursery fib) in
+      let res = f () in
       resolve_ok_ fib res
     with exn ->
       let bt = Printexc.get_raw_backtrace () in
@@ -242,56 +243,32 @@ let spawn_ ~ls (Nursery n) (f : nursery -> 'a) : 'a t =
       resolve_as_failed_ fib ebt
   in
 
-  Runner.run_async ~ls n.runner run;
+  Runner.run_async ~ls runner run;
 
   fib
 
-let spawn (Nursery n) ?(protect = true) f : _ t =
+let spawn_top ~on f : _ t =
+  let ls = Task_local_storage.Direct.create () in
+  spawn_ ~ls ~runner:on ~parent:None f
+
+let spawn ?(protect = true) f : _ t =
   (* spawn [f()] with a copy of our local storage *)
-  let ls = Task_local_storage.Direct.copy n.ls in
-  let child = spawn_ ~ls (Nursery n) f in
-  add_child_ ~protect n child;
+  let (Any p) =
+    match get_cur () with
+    | None -> failwith "Fiber.spawn: must be run from within another fiber."
+    | Some p -> p
+  in
+  let ls = Task_local_storage.Direct.copy p.ls in
+  let child = spawn_ ~ls ~parent:(Some p) ~runner:p.runner f in
+  add_child_ ~protect p child;
   child
 
-let[@inline] spawn_ignore n ?protect f : unit =
-  ignore (spawn n ?protect f : _ t)
-
-module Nursery = struct
-  type t = nursery
-
-  let[@inline] runner (Nursery n) = n.runner
-
-  let[@inline] await (Nursery n) : unit =
-    ignore (await n);
-    ()
-
-  let cancel_with (Nursery n) ebt : unit = resolve_as_failed_ n ebt
-
-  let with_create_top ~on () f =
-    let n = create_ ~ls:(Task_local_storage.Direct.create ()) ~runner:on () in
-    Fun.protect ~finally:(fun () -> resolve_ok_ n ()) (fun () -> f (Nursery n))
-
-  let with_create_sub ~protect (Nursery parent : t) f =
-    let n =
-      create_
-        ~ls:(Task_local_storage.Direct.copy parent.ls)
-        ~runner:parent.runner ()
-    in
-    add_child_ ~protect parent n;
-    Fun.protect ~finally:(fun () -> resolve_ok_ n ()) (fun () -> f (Nursery n))
-
-  let[@inline] with_cancel_callback (Nursery self) cb f =
-    with_cancel_callback self cb f
-end
+let[@inline] spawn_ignore ?protect f : unit = ignore (spawn ?protect f : _ t)
 
 let[@inline] self () : any =
   match Task_local_storage.get k_current_fiber with
   | None -> failwith "Fiber.self: must be run from inside a fiber."
   | Some f -> f
-
-let[@inline] cur_nursery () =
-  let (Any f) = self () in
-  Nursery f
 
 let with_self_cancel_callback cb (k : unit -> 'a) : 'a =
   let (Any self) = self () in

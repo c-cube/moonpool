@@ -136,9 +136,9 @@ val detach_in_runner : runner:Moonpool.Runner.t -> (unit -> 'a) -> 'a Lwt.t
 
 (** {2 Wrappers around Lwt_main} *)
 
-val main_with_runner : runner:Moonpool.Runner.t -> (Fiber.Nursery.t -> 'a) -> 'a
+val main_with_runner : runner:Moonpool.Runner.t -> (unit -> 'a) -> 'a
 (** [main_with_runner ~runner f] starts a Lwt-based event loop and runs [f()] inside
     a fiber in [runner]. *)
 
-val main : (Fiber.Nursery.t -> 'a) -> 'a
+val main : (unit -> 'a) -> 'a
 (** Like {!main_with_runner} but with a default choice of runner. *)
