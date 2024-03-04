@@ -44,6 +44,33 @@ end
 
 include Private_
 
+let create_ ~ls ~runner () : 'a t =
+  let id = Handle.generate_fresh () in
+  let res, _promise = Fut.make () in
+  {
+    state =
+      A.make
+      @@ Alive { children = FM.empty; on_cancel = Int_map.empty; cancel_id = 0 };
+    id;
+    res;
+    runner;
+    ls;
+  }
+
+let create_done_ ~res () : _ t =
+  let id = Handle.generate_fresh () in
+  {
+    state =
+      A.make
+      @@ Alive { children = FM.empty; on_cancel = Int_map.empty; cancel_id = 0 };
+    id;
+    res;
+    runner = Immediate_runner.runner;
+    ls = Task_local_storage.dummy;
+  }
+
+let[@inline] return x = create_done_ ~res:(Fut.return x) ()
+let[@inline] fail ebt = create_done_ ~res:(Fut.fail_exn_bt ebt) ()
 let[@inline] res self = self.res
 let[@inline] peek self = Fut.peek self.res
 let[@inline] is_done self = Fut.is_done self.res
@@ -211,19 +238,6 @@ let add_child_ ~protect (self : _ t) (child : _ t) =
   do
     ()
   done
-
-let create_ ~ls ~runner () : 'a t =
-  let id = Handle.generate_fresh () in
-  let res, _promise = Fut.make () in
-  {
-    state =
-      A.make
-      @@ Alive { children = FM.empty; on_cancel = Int_map.empty; cancel_id = 0 };
-    id;
-    res;
-    runner;
-    ls;
-  }
 
 let spawn_ ~ls ~parent ~runner (f : unit -> 'a) : 'a t =
   (match parent with

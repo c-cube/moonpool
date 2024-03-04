@@ -46,6 +46,9 @@ type 'a callback = 'a Exn_bt.result -> unit
 (** Type erased fiber *)
 type any = Private_.any = Any : _ t -> any [@@unboxed]
 
+val return : 'a -> 'a t
+val fail : Exn_bt.t -> _ t
+
 val self : unit -> any
 (** [self ()] is the current fiber.
     Must be run from inside a fiber.
