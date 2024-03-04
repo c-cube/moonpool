@@ -51,6 +51,10 @@ val run_wait_block : ?ls:Task_local_storage.t -> t -> (unit -> 'a) -> 'a
       about the required discipline to avoid deadlocks).
     @raise Shutdown if the runner was already shut down *)
 
+val dummy : t
+(** Runner that fails when scheduling tasks on it.
+    Calling {!run_async} on it will raise Failure. *)
+
 (** {2 Implementing runners} *)
 
 (** This module is specifically intended for users who implement their

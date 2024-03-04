@@ -43,5 +43,14 @@ module For_runner_implementors = struct
   let k_cur_runner : t option ref TLS.key = Types_.k_cur_runner
 end
 
+let dummy : t =
+  For_runner_implementors.create
+    ~size:(fun () -> 0)
+    ~num_tasks:(fun () -> 0)
+    ~shutdown:(fun ~wait:_ () -> ())
+    ~run_async:(fun ~ls:_ _ ->
+      failwith "Runner.dummy: cannot actually run tasks")
+    ()
+
 let get_current_runner = get_current_runner
 let get_current_storage = get_current_storage
