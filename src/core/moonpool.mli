@@ -13,7 +13,13 @@ module Ws_pool = Ws_pool
 module Fifo_pool = Fifo_pool
 module Background_thread = Background_thread
 module Runner = Runner
-module Immediate_runner = Immediate_runner
+
+module Immediate_runner : sig end
+[@@deprecated "use Moonpool_fib.Main"]
+(** Runner that runs tasks in the caller thread.
+
+    This is removed since NEXT_RELEASE, and replaced by {!Moonpool_fib.Main}. *)
+
 module Exn_bt = Exn_bt
 
 exception Shutdown
