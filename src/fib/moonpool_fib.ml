@@ -1,4 +1,8 @@
-(** Fiber for moonpool *)
+(** Fibers for moonpool.
+
+    See {!Fiber} for the most important explanations.
+
+    @since NEXT_RELEASE. *)
 
 module Fiber = Fiber
 module Fls = Fls

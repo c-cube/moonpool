@@ -14,6 +14,7 @@ type cancel_callback = Exn_bt.t -> unit
 
 (**/**)
 
+(** Do not rely on this, it is internal implementation details. *)
 module Private_ : sig
   type 'a state
 
