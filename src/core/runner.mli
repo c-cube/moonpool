@@ -53,7 +53,8 @@ val run_wait_block : ?ls:Task_local_storage.t -> t -> (unit -> 'a) -> 'a
 
 val dummy : t
 (** Runner that fails when scheduling tasks on it.
-    Calling {!run_async} on it will raise Failure. *)
+    Calling {!run_async} on it will raise Failure.
+    @since NEXT_RELEASE *)
 
 (** {2 Implementing runners} *)
 
