@@ -81,7 +81,8 @@ val wait_block : 'a t -> 'a Fut.or_error
 val check_if_cancelled : unit -> unit
 (** Check if the current fiber is cancelled, in which case this raises.
     Must be run from inside a fiber.
-    @raise Failure if not. *)
+    @raise e if the current fiber is cancelled with exception [e]
+    @raise Failure if not run from a fiber. *)
 
 val yield : unit -> unit
 (** Yield control to the scheduler from the current fiber.

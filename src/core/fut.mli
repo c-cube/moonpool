@@ -91,6 +91,10 @@ val is_failed : _ t -> bool
 (** Checks if the future is resolved with [Error _] as a result.
     @since NEXT_RELEASE *)
 
+val raise_if_failed : _ t -> unit
+(** [raise_if_failed fut] raises [e] if [fut] failed with [e].
+    @since NEXT_RELEASE *)
+
 (** {2 Combinators} *)
 
 val spawn : on:Runner.t -> (unit -> 'a) -> 'a t

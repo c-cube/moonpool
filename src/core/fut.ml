@@ -29,6 +29,11 @@ let[@inline] peek self : _ option =
   | Done x -> Some x
   | Waiting _ -> None
 
+let[@inline] raise_if_failed self : unit =
+  match A.get self.st with
+  | Done (Error ebt) -> Exn_bt.raise ebt
+  | _ -> ()
+
 let[@inline] is_done self : bool =
   match A.get self.st with
   | Done _ -> true

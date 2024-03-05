@@ -291,15 +291,18 @@ let with_on_self_cancel cb (k : unit -> 'a) : 'a =
 
 module Suspend_ = Moonpool.Private.Suspend_
 
+let[@inline] check_if_cancelled_ (self : _ t) = Fut.raise_if_failed self.res
+
 let check_if_cancelled () =
   match Task_local_storage.get k_current_fiber with
   | None ->
     failwith "Fiber.check_if_cancelled: must be run from inside a fiber."
-  | Some (Any self) ->
-    (match peek self with
-    | Some (Error ebt) -> Exn_bt.raise ebt
-    | _ -> ())
+  | Some (Any self) -> check_if_cancelled_ self
 
-let[@inline] yield () : unit =
-  check_if_cancelled ();
-  Suspend_.yield ()
+let yield () : unit =
+  match Task_local_storage.get k_current_fiber with
+  | None -> failwith "Fiber.yield: must be run from inside a fiber."
+  | Some (Any self) ->
+    check_if_cancelled_ self;
+    Suspend_.yield ();
+    check_if_cancelled_ self
