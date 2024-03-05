@@ -1,3 +1,66 @@
+module Bb_queue = struct
+  type 'a t = {
+    mutex: Mutex.t;
+    cond: Condition.t;
+    q: 'a Queue.t;
+  }
+
+  let create () : _ t =
+    { mutex = Mutex.create (); cond = Condition.create (); q = Queue.create () }
+
+  let push (self : _ t) x : unit =
+    Mutex.lock self.mutex;
+    let was_empty = Queue.is_empty self.q in
+    Queue.push x self.q;
+    if was_empty then Condition.broadcast self.cond;
+    Mutex.unlock self.mutex
+
+  let pop (self : 'a t) : 'a =
+    Mutex.lock self.mutex;
+    let rec loop () =
+      if Queue.is_empty self.q then (
+        Condition.wait self.cond self.mutex;
+        (loop [@tailcall]) ()
+      ) else (
+        let x = Queue.pop self.q in
+        Mutex.unlock self.mutex;
+        x
+      )
+    in
+    loop ()
+end
+
+module Lock = struct
+  type 'a t = {
+    mutex: Mutex.t;
+    mutable content: 'a;
+  }
+
+  let create content : _ t = { mutex = Mutex.create (); content }
+
+  let with_ (self : _ t) f =
+    Mutex.lock self.mutex;
+    try
+      let x = f self.content in
+      Mutex.unlock self.mutex;
+      x
+    with e ->
+      Mutex.unlock self.mutex;
+      raise e
+
+  let[@inline] update_map l f =
+    with_ l (fun x ->
+        let x', y = f x in
+        l.content <- x';
+        y)
+
+  let get l =
+    Mutex.lock l.mutex;
+    let x = l.content in
+    Mutex.unlock l.mutex;
+    x
+end
+
 type domain = Domain_.t
 
 type event =

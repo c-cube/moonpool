@@ -1,3 +1,5 @@
+open Types_
+
 exception Shutdown = Runner.Shutdown
 
 let start_thread_on_some_domain f x =

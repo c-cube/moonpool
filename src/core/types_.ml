@@ -1,4 +1,5 @@
 module TLS = Thread_local_storage_
+module Domain_pool_ = Moonpool_dpool
 
 type ls_value = ..
 
