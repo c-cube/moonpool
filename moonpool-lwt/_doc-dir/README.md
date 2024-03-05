@@ -165,6 +165,57 @@ val expected_sum : int = 5050
 - : unit = ()
 ```
 
+### Errors
+
+We have a `Exn_bt.t` type that comes in handy in many places. It bundles together
+an exception and the backtrace associated with the place the exception was caught.
+
+### Fibers
+
+On OCaml 5, Moonpool comes with a library `moonpool.fib` (module `Moonpool_fib`)
+which provides _lightweight fibers_
+that can run on any Moonpool runner.
+These fibers are a sort of lightweight thread, dispatched on the runner's
+background thread(s).
+Fibers rely on effects to implement `Fiber.await`, suspending themselves until the `await`-ed fiber
+is done.
+
+```ocaml
+# #require "moonpool.fib";;
+
+# (* convenient alias *)
+  module F = Moonpool_fib;;
+module F = Moonpool_fib
+# F.main (fun _runner ->
+    let f1 = F.spawn (fun () -> fib 10) in
+    let f2 = F.spawn (fun () -> fib 15) in
+    F.await f1 + F.await f2);;
+- : int = 1076
+```
+
+Fibers form a _tree_, where a fiber calling `Fiber.spawn` to start a sub-fiber is
+the sub-fiber's _parent_.
+When a parent fails, all its children are cancelled (forced to fail).
+This is a simple form of [Structured Concurrency](https://en.wikipedia.org/wiki/Structured_concurrency).
+
+Like a future, a fiber eventually _resolves_ into a value (or an `Exn_bt.t`) that it's possible
+to `await`. With `Fiber.res : 'a Fiber.t -> 'a Fut.t` it's possible to access that result
+as a regular future, too.
+However, this resolution is only done after all the children of the fiber have
+resolved — the lifetime of fibers forms a well-nested tree in that sense.
+
+When a fiber is suspended because it `await`s another fiber (or future), the scheduler's
+thread on which it was running becomes available again and can go on process another task.
+When the fiber resumes, it will automatically be re-scheduled on the same runner it started on.
+This means fibers on pool P1 can await fibers from pool P2 and still be resumed on P1.
+
+In addition to all that, fibers provide _fiber local storage_ (like thread-local storage, but per fiber).
+This storage is inherited in `spawn` (as a shallow copy only — it's advisable to only
+put persistent data in storage to avoid confusing aliasing).
+The storage is convenient for carrying around context for cross-cutting concerns such
+as logging or tracing (e.g. a log tag for the current user or request ID, or a tracing
+scope).
+
 ### Fork-join
 
 On OCaml 5, again using effect handlers, the sublibrary `moonpool.forkjoin`
