@@ -265,7 +265,7 @@ let spawn_top ~on f : _ t =
   let ls = Task_local_storage.Direct.create () in
   spawn_ ~ls ~runner:on ~parent:None f
 
-let spawn ?(protect = true) f : _ t =
+let spawn ?on ?(protect = true) f : _ t =
   (* spawn [f()] with a copy of our local storage *)
   let (Any p) =
     match get_cur () with
@@ -273,7 +273,12 @@ let spawn ?(protect = true) f : _ t =
     | Some p -> p
   in
   let ls = Task_local_storage.Direct.copy p.ls in
-  let child = spawn_ ~ls ~parent:(Some p) ~runner:p.runner f in
+  let runner =
+    match on with
+    | Some r -> r
+    | None -> p.runner
+  in
+  let child = spawn_ ~ls ~parent:(Some p) ~runner f in
   add_child_ ~protect p child;
   child
 
