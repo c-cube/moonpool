@@ -93,7 +93,7 @@ let () =
   let fib =
     F.spawn_top ~on:runner @@ fun () ->
     let@ () =
-      F.with_self_cancel_callback (fun ebt ->
+      F.with_on_self_cancel (fun ebt ->
           logf (TS.tick_get clock) "main fiber cancelled with %s"
           @@ Exn_bt.show ebt)
     in
@@ -104,7 +104,7 @@ let () =
           let clock = ref (0 :: i :: !clock) in
           F.spawn ~protect:false @@ fun _n ->
           let@ () =
-            F.with_self_cancel_callback (fun _ ->
+            F.with_on_self_cancel (fun _ ->
                 logf (TS.tick_get clock) "sub-fiber %d was cancelled" i)
           in
           Thread.delay (float i *. 0.001);

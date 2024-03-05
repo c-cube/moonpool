@@ -171,7 +171,7 @@ let remove_on_cancel (self : _ t) h =
     ()
   done
 
-let with_cancel_callback (self : _ t) cb (k : unit -> 'a) : 'a =
+let with_on_cancel (self : _ t) cb (k : unit -> 'a) : 'a =
   let h = add_on_cancel self cb in
   Fun.protect k ~finally:(fun () -> remove_on_cancel self h)
 
@@ -284,7 +284,7 @@ let[@inline] self () : any =
   | None -> failwith "Fiber.self: must be run from inside a fiber."
   | Some f -> f
 
-let with_self_cancel_callback cb (k : unit -> 'a) : 'a =
+let with_on_self_cancel cb (k : unit -> 'a) : 'a =
   let (Any self) = self () in
   let h = add_on_cancel self cb in
   Fun.protect k ~finally:(fun () -> remove_on_cancel self h)

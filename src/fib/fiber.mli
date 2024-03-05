@@ -97,15 +97,16 @@ val remove_on_cancel : _ t -> cancel_handle -> unit
 (** [remove_on_cancel fib h] removes the cancel callback
     associated with handle [h]. *)
 
-val with_cancel_callback : _ t -> cancel_callback -> (unit -> 'a) -> 'a
-(** [with_cancel_callback fib cb (fun () -> <e>)] evaluates [e]
+val with_on_cancel : _ t -> cancel_callback -> (unit -> 'a) -> 'a
+(** [with_on_cancel fib cb (fun () -> <e>)] evaluates [e]
     in a scope in which, if the fiber [fib] is cancelled,
     [cb()] is called. If [e] returns without the fiber being cancelled,
     this callback is removed. *)
 
-val with_self_cancel_callback : cancel_callback -> (unit -> 'a) -> 'a
-(** [with_self_cancel_callback cb f] calls [f()] in a scope where
-    [cb] is added to the cancel callbacks of the current fiber *)
+val with_on_self_cancel : cancel_callback -> (unit -> 'a) -> 'a
+(** [with_on_self_cancel cb f] calls [f()] in a scope where
+    [cb] is added to the cancel callbacks of the current fiber;
+    and [f()] terminates, [cb] is removed from the list. *)
 
 val on_result : 'a t -> 'a callback -> unit
 (** Wait for fiber to be done and call the callback
