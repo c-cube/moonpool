@@ -302,7 +302,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
     | None -> AT_pair (ignore, fun _ _ -> ())
   in
 
-  let num_domains = Domain_pool_.n_domains () in
+  let num_domains = Domain_pool_.max_number_of_domains () in
   let num_threads = Util_pool_.num_threads ?num_threads () in
 
   (* make sure we don't bias towards the first domain(s) in {!D_pool_} *)

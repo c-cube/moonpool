@@ -151,7 +151,7 @@ let () =
   ignore (Thread.create (fun () -> work_ 0 w) () : Thread.t);
   domains_.(0) <- Lock.create (Some w, None)
 
-let[@inline] n_domains () : int = Array.length domains_
+let[@inline] max_number_of_domains () : int = Array.length domains_
 
 let run_on (i : int) (f : unit -> unit) : unit =
   assert (i < Array.length domains_);

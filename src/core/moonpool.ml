@@ -3,7 +3,7 @@ open Types_
 exception Shutdown = Runner.Shutdown
 
 let start_thread_on_some_domain f x =
-  let did = Random.int (Domain_pool_.n_domains ()) in
+  let did = Random.int (Domain_pool_.max_number_of_domains ()) in
   Domain_pool_.run_on_and_wait did (fun () -> Thread.create f x)
 
 let run_async = Runner.run_async
@@ -39,5 +39,5 @@ module Private = struct
   module Domain_ = Domain_
   module Tracing_ = Tracing_
 
-  let num_domains = Domain_pool_.n_domains
+  let num_domains = Domain_pool_.max_number_of_domains
 end

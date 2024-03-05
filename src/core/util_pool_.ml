@@ -1,5 +1,5 @@
 let num_threads ?num_threads () : int =
-  let n_domains = Moonpool_dpool.n_domains () in
+  let n_domains = Moonpool_dpool.max_number_of_domains () in
 
   (* number of threads to run *)
   let num_threads =

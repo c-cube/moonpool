@@ -128,7 +128,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
     | None -> default_around_task_
   in
 
-  let num_domains = Domain_pool_.n_domains () in
+  let num_domains = Domain_pool_.max_number_of_domains () in
 
   (* number of threads to run *)
   let num_threads = Util_pool_.num_threads ?num_threads () in
