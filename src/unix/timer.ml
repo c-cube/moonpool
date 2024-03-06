@@ -13,7 +13,7 @@ type task = {
   kind: kind;
 }
 
-module Task_heap = Heap.Make (struct
+module Task_heap = Heap_.Make (struct
   type t = task
 
   let[@inline] leq t1 t2 = t1.deadline <= t2.deadline

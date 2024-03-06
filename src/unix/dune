@@ -4,7 +4,7 @@
   (public_name moonpool.unix)
   (optional)
   (synopsis "Simple Unix-based event loop for moonpool")
-  (private_modules common_)
+  (private_modules common_ heap_)
   (libraries moonpool moonpool.fib unix
              (select time.ml from
                      (mtime mtime.os.clock -> time.mtime.ml)
