@@ -1,0 +1,14 @@
+
+(library
+  (name moonpool_io)
+  (public_name moonpool.io)
+  (synopsis "Event loop for Moonpool based on poll")
+  (optional) ; dep on poll
+  (flags :standard -open Moonpool)
+  (private_modules heap_ time_)
+  (enabled_if
+   (>= %{ocaml_version} 5.0))
+  (libraries moonpool moonpool.fib poll iostream
+             (select time_.ml from
+                     (mtime mtime.clock.os -> time_.mtime.ml)
+                     (-> time_.unix.ml))))
