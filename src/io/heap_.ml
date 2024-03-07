@@ -26,24 +26,9 @@ module type S = sig
   val find_min : t -> elt option
   (** [find_min h] find the minimal element of the heap [h]. *)
 
-  val find_min_exn : t -> elt
-  (** [find_min_exn h] is like {!find_min} but can fail.
-      @raise Empty if the heap is empty. *)
-
-  val take : t -> (t * elt) option
-  (** [take h] extracts and returns the minimum element, and the new heap (without
-      this element), or [None] if the heap [h] is empty. *)
-
   val take_exn : t -> t * elt
   (** [take_exn h] is like {!take}, but can fail.
       @raise Empty if the heap is empty. *)
-
-  val delete_one : (elt -> elt -> bool) -> elt -> t -> t
-  (** [delete_one eq x h] uses [eq] to find one occurrence of a value [x]
-      if it exist in the heap [h], and delete it.
-      If [h] do not contain [x] then it return [h]. *)
-
-  val size : t -> int
 end
 
 module Make (E : PARTIAL_ORD) : S with type elt = E.t = struct
@@ -88,46 +73,11 @@ module Make (E : PARTIAL_ORD) : S with type elt = E.t = struct
 
   let insert x h = merge (N (1, x, E, E)) h
 
-  let find_min_exn = function
-    | E -> raise Empty
-    | N (_, x, _, _) -> x
-
   let find_min = function
     | E -> None
     | N (_, x, _, _) -> Some x
 
-  let take = function
-    | E -> None
-    | N (_, x, l, r) -> Some (merge l r, x)
-
   let take_exn = function
     | E -> raise Empty
     | N (_, x, l, r) -> merge l r, x
-
-  let delete_one eq x h =
-    let rec aux = function
-      | E -> false, E
-      | N (_, y, l, r) as h ->
-        if eq x y then
-          true, merge l r
-        else if E.leq y x then (
-          let found_left, l1 = aux l in
-          let found, r1 =
-            if found_left then
-              true, r
-            else
-              aux r
-          in
-          if found then
-            true, _make_node y l1 r1
-          else
-            false, h
-        ) else
-          false, h
-    in
-    snd (aux h)
-
-  let rec size = function
-    | E -> 0
-    | N (_, _, l, r) -> 1 + size l + size r
 end

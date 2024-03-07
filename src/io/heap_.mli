@@ -30,24 +30,9 @@ module type S = sig
   val find_min : t -> elt option
   (** [find_min h] find the minimal element of the heap [h]. *)
 
-  val find_min_exn : t -> elt
-  (** [find_min_exn h] is like {!find_min} but can fail.
-      @raise Empty if the heap is empty. *)
-
-  val take : t -> (t * elt) option
-  (** [take h] extracts and returns the minimum element, and the new heap (without
-      this element), or [None] if the heap [h] is empty. *)
-
   val take_exn : t -> t * elt
   (** [take_exn h] is like {!take}, but can fail.
       @raise Empty if the heap is empty. *)
-
-  val delete_one : (elt -> elt -> bool) -> elt -> t -> t
-  (** [delete_one eq x h] uses [eq] to find one occurrence of a value [x]
-      if it exist in the heap [h], and delete it.
-      If [h] do not contain [x] then it return [h]. *)
-
-  val size : t -> int
 end
 
 module Make (E : PARTIAL_ORD) : S with type elt = E.t

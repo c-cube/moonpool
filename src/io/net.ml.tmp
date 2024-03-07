@@ -35,16 +35,17 @@ module Sockaddr = struct
 end
 
 module TCP_server = struct
-  type t = { fiber: unit Fiber.t } [@@unboxed]
+  type t = { fut: unit Fut.t } [@@unboxed]
 
   exception Stop
 
-  let stop_ fiber =
-    let ebt = Exn_bt.get Stop in
-    Fuseau.Fiber.Private_.cancel fiber ebt
+  let stop_ fut =
+    let ebt = Exn_bt.get_callstack 20 Stop in
+    let promise = Fut.Private_.unsafe_promise_of_fut fut in
+    Fut.fulfill_idempotent promise (Error ebt)
 
-  let stop self = stop_ self.fiber
-  let join self = Fuseau.await self.fiber
+  let stop self = stop_ self.fut
+  let join self = Fut.await self.fut
 
   let with_serve' (addr : Sockaddr.t) handle_client (f : t -> 'a) : 'a =
     let sock = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
@@ -54,8 +55,8 @@ module TCP_server = struct
     Unix.setsockopt sock Unix.SO_REUSEADDR true;
     Unix.listen sock 32;
 
-    let fiber = Fuseau.Fiber.Private_.create () in
-    let self = { fiber } in
+    let fut, _ = Fut.make () in
+    let self = { fut } in
 
     let loop_client client_sock client_addr : unit =
       Unix.set_nonblock client_sock;
@@ -69,11 +70,11 @@ module TCP_server = struct
     in
 
     let loop () =
-      while not (Fiber.is_done fiber) do
+      while not (Fut.is_done fut) do
         match Unix.accept sock with
         | client_sock, client_addr ->
           ignore
-            (Fuseau.spawn ~propagate_cancel_to_parent:false (fun () ->
+            (Fiber.spawn ~protect:true (fun () ->
                  loop_client client_sock client_addr)
               : _ Fiber.t)
         | exception Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
