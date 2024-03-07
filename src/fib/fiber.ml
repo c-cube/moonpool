@@ -40,22 +40,26 @@ module Private_ = struct
     match A.get self.state with
     | Alive _ -> false
     | Terminating_or_done _ -> true
+
+  let create_ ~ls ~runner () : 'a t =
+    let id = Handle.generate_fresh () in
+    let res, _promise = Fut.make () in
+    {
+      state =
+        A.make
+        @@ Alive
+             { children = FM.empty; on_cancel = Int_map.empty; cancel_id = 0 };
+      id;
+      res;
+      runner;
+      ls;
+    }
+
+  let create ~runner () : _ t =
+    create_ ~ls:(Task_local_storage.Direct.create ()) ~runner ()
 end
 
 include Private_
-
-let create_ ~ls ~runner () : 'a t =
-  let id = Handle.generate_fresh () in
-  let res, _promise = Fut.make () in
-  {
-    state =
-      A.make
-      @@ Alive { children = FM.empty; on_cancel = Int_map.empty; cancel_id = 0 };
-    id;
-    res;
-    runner;
-    ls;
-  }
 
 let create_done_ ~res () : _ t =
   let id = Handle.generate_fresh () in

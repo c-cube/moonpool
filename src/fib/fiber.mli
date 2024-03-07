@@ -31,6 +31,7 @@ module Private_ : sig
   type any = Any : _ t -> any [@@unboxed]
 
   val get_cur : unit -> any option
+  val create : runner:Runner.t -> unit -> 'a t
 end
 
 (**/**)
