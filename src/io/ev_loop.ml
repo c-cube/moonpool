@@ -156,16 +156,23 @@ module Main_loop = struct
     Unix.set_nonblock _magic_pipe_read;
     Unix.set_nonblock _magic_pipe_write;
     let poll = Poll.create () in
-    {
-      timer = Timer.create ();
-      io_tbl = IO_tbl.create ();
-      incoming = B_queue.create ();
-      in_poll = A.make false;
-      poll;
-      buf4 = Bytes.create 4;
-      _magic_pipe_read;
-      _magic_pipe_write;
-    }
+    let self =
+      {
+        timer = Timer.create ();
+        io_tbl = IO_tbl.create ();
+        incoming = B_queue.create ();
+        in_poll = A.make false;
+        poll;
+        buf4 = Bytes.create 4;
+        _magic_pipe_read;
+        _magic_pipe_write;
+      }
+    in
+    (* make sure we subscribe to readiness of the notification pipe *)
+    IO_tbl.add_io_wait self.io_tbl self.poll self._magic_pipe_read Read
+      (Handle.fresh H_read) (IO_wait.make ignore);
+
+    self
 
   let push (self : state) (msg : Incoming_msg.t) =
     B_queue.push self.incoming msg;
