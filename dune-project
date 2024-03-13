@@ -29,9 +29,6 @@
     :with-test)))
  (depopts
    (trace (>= 0.6))
-   (mtime (>= 2.0))
-   (iostream (>= 0.2))
-   (poll (>= 0.3))
    thread-local-storage)
  (tags
   (thread pool domain futures fork-join)))
@@ -46,5 +43,19 @@
     lwt
     base-unix
     (odoc :with-doc)))
+
+(package
+  (name moonpool-io)
+  (synopsis "Event loop for moonpool based on Poll")
+  (allow_empty)  ; on < 5.0
+  (depends
+   (moonpool (= :version))
+   (ocaml (>= 5.0))
+   base-unix
+   (iostream (>= 0.2))
+   (poll (>= 0.3))
+   (odoc :with-doc))
+  (depopts
+   (mtime (>= 2.0))))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
