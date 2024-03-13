@@ -32,18 +32,22 @@ module TCP_server : sig
   val join : t -> unit
 
   val with_serve' :
-    Sockaddr.t -> (Sockaddr.t -> Unix.file_descr -> unit) -> (t -> 'a) -> 'a
+    Sockaddr.t -> (Sockaddr.t -> Fd.t -> unit) -> (t -> 'a) -> 'a
+
+  (* TODO: bytes pool *)
 
   val with_serve :
     Sockaddr.t ->
-    (Sockaddr.t -> Iostream.In.t -> Iostream.Out.t -> unit) ->
+    (Sockaddr.t -> Iostream.In_buf.t -> Iostream.Out_buf.t -> unit) ->
     (t -> 'a) ->
     'a
 end
 
 module TCP_client : sig
-  val with_connect' : Unix.sockaddr -> (Unix.file_descr -> 'a) -> 'a
+  val with_connect' : Unix.sockaddr -> (Fd.t -> 'a) -> 'a
+
+  (* TODO: bytes pool *)
 
   val with_connect :
-    Unix.sockaddr -> (Iostream.In.t -> Iostream.Out.t -> 'a) -> 'a
+    Unix.sockaddr -> (Iostream.In_buf.t -> Iostream.Out_buf.t -> 'a) -> 'a
 end

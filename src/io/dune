@@ -1,7 +1,7 @@
 
 (library
   (name moonpool_io)
-  (public_name moonpool.io)
+  (public_name moonpool-io)
   (synopsis "Event loop for Moonpool based on poll")
   (optional) ; dep on poll
   (flags :standard -open Moonpool)

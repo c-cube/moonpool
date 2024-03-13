@@ -11,3 +11,5 @@ val on_readable : t -> Unix.file_descr -> (unit -> unit) -> Cancel_handle.t
 val on_writable : t -> Unix.file_descr -> (unit -> unit) -> Cancel_handle.t
 val run_after_s : t -> float -> (unit -> unit) -> Cancel_handle.t
 val run_every_s : t -> float -> (Cancel_handle.t -> unit) -> Cancel_handle.t
+
+(* FIXME: add a close function that closes a FD here and removes the subscription *)

@@ -54,18 +54,16 @@ module TCP_server = struct
     Unix.set_nonblock sock;
     Unix.setsockopt sock Unix.SO_REUSEADDR true;
     Unix.listen sock 32;
+    let fd_sock = Fd.create sock in
 
-    let fut, _ = Fut.make () in
+    let fut, promise = Fut.make () in
     let self = { fut } in
 
     let loop_client client_sock client_addr : unit =
-      Unix.set_nonblock client_sock;
       Unix.setsockopt client_sock Unix.TCP_NODELAY true;
+      let client_sock = Fd.create ~close_noerr:true client_sock in
 
-      let@ () =
-        Fun.protect ~finally:(fun () ->
-            try Unix.close client_sock with _ -> ())
-      in
+      let@ () = Fun.protect ~finally:(fun () -> Fd.close client_sock) in
       handle_client client_addr client_sock
     in
 
@@ -78,74 +76,61 @@ module TCP_server = struct
                  loop_client client_sock client_addr)
               : _ Fiber.t)
         | exception Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
+          (* FIXME: possible race condition: the socket became readable
+              in the mid-time and we won't get notified. We need to call
+              [accept] after subscribing to [on_readable]. *)
           (* suspend *)
-          let loop = U_loop.cur () in
-          Fuseau.Private_.suspend ~before_suspend:(fun ~wakeup ->
-              (* FIXME: possible race condition: the socket became readable
-                  in the mid-time and we won't get notified. We need to call
-                  [accept] after subscribing to [on_readable]. *)
-              ignore
-                (loop#on_readable sock (fun _ev ->
-                     wakeup ();
-                     Cancel_handle.cancel _ev)
-                  : Cancel_handle.t))
+          Fd.await_readable fd_sock
       done
     in
 
-    let loop_fiber =
-      let sched = Fuseau.get_scheduler () in
-      Fuseau.spawn_as_child_of ~propagate_cancel_to_parent:true sched fiber loop
-    in
+    let _loop_fiber : unit Fiber.t = Fiber.spawn ~protect:false loop in
     let finally () =
-      stop_ loop_fiber;
-      Unix.close sock
+      Fut.fulfill_idempotent promise @@ Ok ();
+      Fd.close fd_sock
     in
     let@ () = Fun.protect ~finally in
     f self
 
   let with_serve (addr : Sockaddr.t) handle_client (f : t -> 'a) : 'a =
     with_serve' addr
-      (fun client_addr client_sock ->
-        let ic = IO_unix.In.of_unix_fd client_sock in
-        let oc = IO_unix.Out.of_unix_fd client_sock in
+      (fun client_addr (client_sock : Fd.t) ->
+        let ic = new Fd.to_in_buf client_sock in
+        let oc = new Fd.to_out_buf client_sock in
         handle_client client_addr ic oc)
       f
 end
 
 module TCP_client = struct
-  let with_connect' addr (f : Unix.file_descr -> 'a) : 'a =
+  let with_connect' addr (f : Fd.t -> 'a) : 'a =
     let sock = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
-    Unix.set_nonblock sock;
     Unix.setsockopt sock Unix.TCP_NODELAY true;
+    let sock = Fd.create ~close_noerr:true sock in
 
     (* connect asynchronously *)
     while
       try
-        Unix.connect sock addr;
+        let fd = Fd.fd sock in
+        Unix.connect fd addr;
         false
       with
       | Unix.Unix_error
           ((Unix.EWOULDBLOCK | Unix.EINPROGRESS | Unix.EAGAIN), _, _)
       ->
-        Fuseau.Private_.suspend ~before_suspend:(fun ~wakeup ->
-            let loop = U_loop.cur () in
-            ignore
-              (loop#on_writable sock (fun _ev ->
-                   wakeup ();
-                   Cancel_handle.cancel _ev)
-                : Cancel_handle.t));
+        Fd.await_writable sock;
         true
     do
       ()
     done;
 
-    let finally () = try Unix.close sock with _ -> () in
+    let finally () = Fd.close sock in
     let@ () = Fun.protect ~finally in
     f sock
 
-  let with_connect addr (f : Iostream.In.t -> Iostream.Out.t -> 'a) : 'a =
+  let with_connect addr (f : Iostream.In_buf.t -> Iostream.Out_buf.t -> 'a) : 'a
+      =
     with_connect' addr (fun sock ->
-        let ic = IO_unix.In.of_unix_fd sock in
-        let oc = IO_unix.Out.of_unix_fd sock in
+        let ic = new Fd.to_in_buf sock in
+        let oc = new Fd.to_out_buf sock in
         f ic oc)
 end
