@@ -296,7 +296,13 @@ let with_on_self_cancel cb (k : unit -> 'a) : 'a =
 
 module Suspend_ = Moonpool.Private.Suspend_
 
-let[@inline] check_if_cancelled_ (self : _ t) = Fut.raise_if_failed self.res
+let check_if_cancelled_ (self : _ t) =
+  match A.get self.state with
+  | Terminating_or_done r ->
+    (match A.get r with
+    | Error ebt -> Exn_bt.raise ebt
+    | _ -> ())
+  | _ -> ()
 
 let check_if_cancelled () =
   match Task_local_storage.get k_current_fiber with
