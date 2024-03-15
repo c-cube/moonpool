@@ -13,6 +13,7 @@
 (rule
   (alias runtest)
   (enabled_if (>= %{ocaml_version} 5.0))
+  (package moonpool-lwt)
   (action (diff ./output_hash.expected ./output_hash.txt)))
 
 (rule
@@ -26,4 +27,5 @@
 (rule
   (alias runtest)
   (enabled_if (>= %{ocaml_version} 5.0))
+  (package moonpool-lwt)
   (action (diff ./output_echo.expected ./output_echo.txt)))

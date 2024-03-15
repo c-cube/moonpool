@@ -42,5 +42,5 @@ jobs:
       - run: opam install thread-local-storage trace domain-local-await
         if: matrix.ocaml-compiler == '5.1'
 
-      - run: opam exec -- dune build @install @runtest
+      - run: opam exec -- dune build --profile=release --force @install @runtest
 
