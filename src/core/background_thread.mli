@@ -6,7 +6,7 @@
 
     This is similar to {!Fifo_pool} with exactly one thread.
 
-    @since NEXT_RELEASE
+    @since 0.6
 *)
 
 include module type of Runner

@@ -18,14 +18,14 @@ module Immediate_runner : sig end
 [@@deprecated "use Moonpool_fib.Main"]
 (** Runner that runs tasks in the caller thread.
 
-    This is removed since NEXT_RELEASE, and replaced by {!Moonpool_fib.Main}. *)
+    This is removed since 0.6, and replaced by {!Moonpool_fib.Main}. *)
 
 module Exn_bt = Exn_bt
 
 exception Shutdown
 (** Exception raised when trying to run tasks on
     runners that have been shut down.
-    @since NEXT_RELEASE *)
+    @since 0.6 *)
 
 val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
 (** Similar to {!Thread.create}, but it picks a background domain at random
@@ -48,7 +48,7 @@ val run_wait_block : ?ls:Task_local_storage.t -> Runner.t -> (unit -> 'a) -> 'a
     {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}
       about the required discipline to avoid deadlocks).
     @raise Shutdown if the runner was already shut down
-    @since NEXT_RELEASE *)
+    @since 0.6 *)
 
 val recommended_thread_count : unit -> int
 (** Number of threads recommended to saturate the CPU.

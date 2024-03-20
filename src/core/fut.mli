@@ -52,7 +52,7 @@ val fail : exn -> Printexc.raw_backtrace -> _ t
 
 val fail_exn_bt : Exn_bt.t -> _ t
 (** Fail from a bundle of exception and backtrace
-    @since NEXT_RELEASE *)
+    @since 0.6 *)
 
 val of_result : 'a or_error -> 'a t
 
@@ -85,15 +85,15 @@ val is_done : _ t -> bool
 
 val is_success : _ t -> bool
 (** Checks if the future is resolved with [Ok _] as a result.
-    @since NEXT_RELEASE *)
+    @since 0.6 *)
 
 val is_failed : _ t -> bool
 (** Checks if the future is resolved with [Error _] as a result.
-    @since NEXT_RELEASE *)
+    @since 0.6 *)
 
 val raise_if_failed : _ t -> unit
 (** [raise_if_failed fut] raises [e] if [fut] failed with [e].
-    @since NEXT_RELEASE *)
+    @since 0.6 *)
 
 (** {2 Combinators} *)
 

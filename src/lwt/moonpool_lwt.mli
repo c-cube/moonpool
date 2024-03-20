@@ -4,7 +4,9 @@
     running [Lwt_main.run] (so, the thread where the Lwt event
     loop and all Lwt callbacks execute).
 
-    @since NEXT_RELEASE *)
+    {b NOTE}: this is experimental and might change in future versions.
+
+    @since 0.6 *)
 
 module Fiber = Moonpool_fib.Fiber
 module FLS = Moonpool_fib.Fls
