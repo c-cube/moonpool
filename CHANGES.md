@@ -1,4 +1,29 @@
 
+# 0.6
+
+- breaking: remove `Immediate_runner` (bug prone and didn't
+    handle effects). `Moonpool_fib.main` can be used to handle
+    effects in the main function.
+- remove deprecated alias `Moonpool.Pool`
+
+- feat: add structured concurrency sub-library `moonpool.fib` with
+    fibers. Fibers can use `await` and spawn other fibers that will
+    be appropriately cancelled when their parent is.
+- feat: add add `moonpool-lwt` as an experimental bridge between moonpool and lwt.
+    This allows moonpool runners to be used from within Lwt to
+    perform background computations, and conversely to call Lwt from
+    moonpool with some precautions.
+- feat: task-local storage in the main moonpool runners, available from
+    fibers and regular tasks.
+- feat: add `Exn_bt` to core
+- feat: add `Runner.dummy`
+- make `moonpool.forkjoin` optional (only on OCaml >= 5.0)
+- feat: add `Fut.Advanced.barrier_on_abstract_container_of_futures`
+- feat: add `Fut.map_list`
+
+- refactor: split off domain pool to `moonpool.dpool`
+- fix too early exit in Ws_pool
+
 # 0.5.1
 
 - fix `Ws_pool`: workers would exit before processing

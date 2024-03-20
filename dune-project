@@ -2,7 +2,7 @@
 (using mdx 0.2)
 
 (name moonpool)
-(version 0.5.1)
+(version 0.6)
 (generate_opam_files true)
 (source
  (github c-cube/moonpool))
@@ -35,7 +35,7 @@
 
 (package
   (name moonpool-lwt)
-  (synopsis "Event loop for moonpool based on Lwt-engine")
+  (synopsis "Event loop for moonpool based on Lwt-engine (experimental)")
   (allow_empty)  ; on < 5.0
   (depends
     (moonpool (= :version))

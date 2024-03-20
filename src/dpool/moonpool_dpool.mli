@@ -11,7 +11,7 @@
 
    {b NOTE}: Interface is still experimental.
 
-   @since NEXT_RELEASE
+   @since 0.6
 *)
 
 type domain = Domain_.t

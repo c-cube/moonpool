@@ -2,7 +2,7 @@
 
     See {!Fiber} for the most important explanations.
 
-    @since NEXT_RELEASE. *)
+    @since 0.6. *)
 
 module Fiber = Fiber
 module Fls = Fls

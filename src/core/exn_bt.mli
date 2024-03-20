@@ -1,6 +1,6 @@
 (** Exception with backtrace.
 
-    @since NEXT_RELEASE *)
+    @since 0.6 *)
 
 type t = exn * Printexc.raw_backtrace
 (** An exception bundled with a backtrace *)

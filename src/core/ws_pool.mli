@@ -45,7 +45,7 @@ val create : (unit -> t, _) create_args
       before a task is processed,
       on the worker thread about to run it, and returns [x]; and [after pool x] is called by
       the same thread after the task is over. (since 0.2)
-     @param name a name for this thread pool, used if tracing is enabled (since NEXT_RELEASE)
+     @param name a name for this thread pool, used if tracing is enabled (since 0.6)
   *)
 
 val with_ : (unit -> (t -> 'a) -> 'a, _) create_args

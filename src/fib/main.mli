@@ -16,7 +16,7 @@
 
     This handles effects, including the ones in {!Fiber}.
 
-    @since NEXT_RELEASE
+    @since 0.6
 *)
 
 val main : (Moonpool.Runner.t -> 'a) -> 'a

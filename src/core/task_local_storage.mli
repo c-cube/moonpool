@@ -5,7 +5,7 @@
     the current thread. The storage is carried along in case
     the current task is suspended.
 
-    @since NEXT_RELEASE
+    @since 0.6
 *)
 
 type t = Types_.local_storage
