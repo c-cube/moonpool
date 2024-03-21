@@ -13,6 +13,7 @@
   t_ws_deque
   t_ws_wait
   t_bounded_queue)
+ (package moonpool)
  (libraries
   moonpool
   qcheck-core

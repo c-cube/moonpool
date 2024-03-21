@@ -4,5 +4,6 @@
 
 (mdx
  (libraries moonpool moonpool.forkjoin moonpool.fib threads)
+ (package moonpool)
  (enabled_if
   (>= %{ocaml_version} 5.0)))

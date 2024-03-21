@@ -13,6 +13,7 @@
    (run %{project_root}/src/cpp/cpp.exe %{input-file})))
  (enabled_if
   (>= %{ocaml_version} 5.0))
+ (package moonpool)
  (libraries
   moonpool
   moonpool.forkjoin
