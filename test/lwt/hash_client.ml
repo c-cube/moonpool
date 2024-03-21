@@ -31,18 +31,6 @@ let main ~port ~runner ~ext ~dir ~n_conn () : unit Lwt.t =
         ()
       else if Str_tbl.mem seen file then
         ()
-      else if Sys.is_regular_file file then
-        if ext <> "" && Filename.extension file <> ext then
-          ()
-        else (
-          Str_tbl.add seen file ();
-          M_lwt.run_in_lwt_and_await (fun () -> Lwt_io.write_line oc file);
-          let res =
-            M_lwt.run_in_lwt_and_await (fun () -> Lwt_io.read_line ic)
-          in
-          let@ () = M.Lock.with_ lock_stdout in
-          Printf.printf "%s\n%!" res
-        )
       else if Sys.is_directory file then (
         let _sp =
           Trace.enter_manual_sub_span ~parent:_sp ~__FILE__ ~__LINE__ "walk-dir"
@@ -53,6 +41,14 @@ let main ~port ~runner ~ext ~dir ~n_conn () : unit Lwt.t =
         let d = Sys.readdir file in
         Array.sort String.compare d;
         Array.iter (fun sub -> walk (Filename.concat file sub)) d
+      ) else if ext <> "" && Filename.extension file <> ext then
+        ()
+      else (
+        Str_tbl.add seen file ();
+        M_lwt.run_in_lwt_and_await (fun () -> Lwt_io.write_line oc file);
+        let res = M_lwt.run_in_lwt_and_await (fun () -> Lwt_io.read_line ic) in
+        let@ () = M.Lock.with_ lock_stdout in
+        Printf.printf "%s\n%!" res
       )
     in
     walk dir;
