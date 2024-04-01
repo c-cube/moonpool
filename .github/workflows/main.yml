@@ -8,15 +8,13 @@ on:
 
 jobs:
   run:
-    name: build
+    name: build  # build+test on various versions of OCaml, on linux
     timeout-minutes: 15
     strategy:
       fail-fast: true
       matrix:
         os:
             - ubuntu-latest
-              #- macos-latest
-              #- windows-latest
         ocaml-compiler:
             - '4.08'
             - '4.14'
@@ -45,15 +43,14 @@ jobs:
       - run: opam exec -- dune build --profile=release --force @install @runtest
 
   compat:
-    name: build-compat
+    name: build-compat # compat with other OSes
     timeout-minutes: 15
     strategy:
       fail-fast: true
       matrix:
         os:
-            - ubuntu-latest
             - macos-latest
-            - windows-latest
+              #- windows-latest
         ocaml-compiler:
             - '5.1'
     runs-on: ${{ matrix.os }}
