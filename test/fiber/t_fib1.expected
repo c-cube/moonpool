@@ -27,7 +27,8 @@ start
 ============
 start
 1: start fibers
-1.7.1: I'm fiber 7 and I'm about to…
+1.7.1: I'm fiber 7 and I'm about to fail…
+1.8.1: sub-fiber 8 was cancelled
 1.9.1: sub-fiber 9 was cancelled
 2.0: fiber 0 resolved as ok
 2.1: fiber 1 resolved as ok
@@ -37,7 +38,7 @@ start
 2.5: fiber 5 resolved as ok
 2.6: fiber 6 resolved as ok
 2.7: fiber 7 resolved as error
-2.8: fiber 8 resolved as ok
+2.8: fiber 8 resolved as error
 2.9: fiber 9 resolved as error
 3: wait for subs
 4: await fiber 0
@@ -51,11 +52,12 @@ start
 12: await fiber 4
 13: res 4 = 4
 14: await fiber 5
-15: res 5 = 5
-16: await fiber 6
-17: res 6 = 6
-18: await fiber 7
-19: main fiber cancelled with Failure("oh no!")
-20: main fiber result: error Failure("oh no!")
-21: main fib failed with "oh no!"
-22: main fiber exited
+15: other fib done
+16: res 5 = 5
+17: await fiber 6
+18: res 6 = 6
+19: await fiber 7
+20: main fiber cancelled with Failure("oh no!")
+21: main fiber result: error Failure("oh no!")
+22: main fib failed with "oh no!"
+23: main fiber exited
