@@ -438,7 +438,7 @@ let await (fut : 'a t) : 'a =
                 resume k (Ok ())
               | Error (exn, bt) ->
                 (* fail continuation immediately *)
-                k (Error (exn, bt))));
+                resume k (Error (exn, bt))));
       };
     (* un-suspended: we should have a result! *)
     get_or_fail_exn fut
