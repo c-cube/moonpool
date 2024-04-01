@@ -107,10 +107,10 @@ let () =
             F.with_on_self_cancel (fun _ ->
                 logf (TS.tick_get clock) "sub-fiber %d was cancelled" i)
           in
-          Thread.delay (float i *. 0.001);
+          Thread.delay (float i *. 0.05);
           F.yield ();
           if i = 7 then (
-            logf (TS.tick_get clock) "I'm fiber %d and I'm about to…" i;
+            logf (TS.tick_get clock) "I'm fiber %d and I'm about to fail…" i;
             failwith "oh no!"
           );
           i)
