@@ -28,7 +28,6 @@ start
 start
 1: start fibers
 1.7.1: I'm fiber 7 and I'm about to…
-1.8.1: sub-fiber 8 was cancelled
 1.9.1: sub-fiber 9 was cancelled
 2.0: fiber 0 resolved as ok
 2.1: fiber 1 resolved as ok
@@ -38,7 +37,7 @@ start
 2.5: fiber 5 resolved as ok
 2.6: fiber 6 resolved as ok
 2.7: fiber 7 resolved as error
-2.8: fiber 8 resolved as error
+2.8: fiber 8 resolved as ok
 2.9: fiber 9 resolved as error
 3: wait for subs
 4: await fiber 0

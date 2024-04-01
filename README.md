@@ -182,6 +182,7 @@ is done.
 
 ```ocaml
 # #require "moonpool.fib";;
+...
 
 # (* convenient alias *)
   module F = Moonpool_fib;;
