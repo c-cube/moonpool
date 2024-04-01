@@ -44,3 +44,50 @@ jobs:
 
       - run: opam exec -- dune build --profile=release --force @install @runtest
 
+  compat:
+    name: build-compat
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+            - ubuntu-latest
+            - macos-latest
+            - windows-latest
+        ocaml-compiler:
+            - '5.1'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@main
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          dune-cache: true
+          allow-prerelease-opam: true
+
+      - run: opam install -t moonpool moonpool-lwt --deps-only
+      - run: opam exec -- dune build @install
+      # install some depopts
+      - run: opam install thread-local-storage trace domain-local-await
+      - run: opam exec -- dune build --profile=release --force @install @runtest
+
+  format:
+    name: format
+    strategy:
+      matrix:
+        ocaml-compiler:
+            - '5.1'
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@main
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          dune-cache: true
+          allow-prerelease-opam: true
+
+      - run: opam install ocamlformat.0.24.1
+      - run: opam exec -- make format-check
+
