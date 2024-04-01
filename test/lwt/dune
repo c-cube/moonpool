@@ -3,29 +3,41 @@
  (libraries moonpool moonpool-lwt lwt lwt.unix trace.core trace-tef))
 
 (rule
-  (targets output_hash.txt)
-  (deps ./hash_server.exe ./hash_client.exe ./run_hash.sh (glob_files_rec ../data/**))
-  (enabled_if (>= %{ocaml_version} 5.0))
-  (action
-    (with-stdout-to %{targets}
-     (run ./run_hash.sh -d ../data/ --n-conn=2 -j=4))))
+ (targets output_hash.txt)
+ (deps
+  ./hash_server.exe
+  ./hash_client.exe
+  ./run_hash.sh
+  (glob_files_rec ../data/**))
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ./run_hash.sh -d ../data/ --n-conn=2 -j=4))))
 
 (rule
-  (alias runtest)
-  (enabled_if (>= %{ocaml_version} 5.0))
-  (package moonpool-lwt)
-  (action (diff ./output_hash.expected ./output_hash.txt)))
+ (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (package moonpool-lwt)
+ (action
+  (diff ./output_hash.expected ./output_hash.txt)))
 
 (rule
-  (targets output_echo.txt)
-  (deps ./echo_server.exe ./echo_client.exe ./run_echo.sh)
-  (enabled_if (>= %{ocaml_version} 5.0))
-  (action
-    (with-stdout-to %{targets}
-     (run ./run_echo.sh -n 10 --n-conn=2 -j=4))))
+ (targets output_echo.txt)
+ (deps ./echo_server.exe ./echo_client.exe ./run_echo.sh)
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ./run_echo.sh -n 10 --n-conn=2 -j=4))))
 
 (rule
-  (alias runtest)
-  (enabled_if (>= %{ocaml_version} 5.0))
-  (package moonpool-lwt)
-  (action (diff ./output_echo.expected ./output_echo.txt)))
+ (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (package moonpool-lwt)
+ (action
+  (diff ./output_echo.expected ./output_echo.txt)))
