@@ -56,6 +56,7 @@ start
 16: await fiber 6
 17: res 6 = 6
 18: await fiber 7
-19: main fiber result: error Failure("oh no!")
-20: main fib failed with "oh no!"
-21: main fiber exited
+19: main fiber cancelled with Failure("oh no!")
+20: main fiber result: error Failure("oh no!")
+21: main fib failed with "oh no!"
+22: main fiber exited
