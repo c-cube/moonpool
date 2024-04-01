@@ -1,8 +1,7 @@
-
 (library
-  (name moonpool_lwt)
-  (public_name moonpool-lwt)
-  (private_modules common_)
-  (enabled_if
-   (>= %{ocaml_version} 5.0))
-  (libraries moonpool moonpool.fib lwt lwt.unix))
+ (name moonpool_lwt)
+ (public_name moonpool-lwt)
+ (private_modules common_)
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (libraries moonpool moonpool.fib lwt lwt.unix))

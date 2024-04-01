@@ -1,7 +1,5 @@
-
 (tests
- (names
-  t_fib1 t_fls t_main)
+ (names t_fib1 t_fls t_main)
  (enabled_if
   (>= %{ocaml_version} 5.0))
  (package moonpool)
