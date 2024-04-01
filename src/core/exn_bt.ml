@@ -13,6 +13,7 @@ let[@inline] get_callstack n exn =
   make exn bt
 
 let show self = Printexc.to_string (fst self)
+let pp out self = Format.pp_print_string out (show self)
 let[@inline] raise self = Printexc.raise_with_backtrace (exn self) (bt self)
 
 type nonrec 'a result = ('a, t) result

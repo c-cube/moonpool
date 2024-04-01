@@ -22,4 +22,6 @@ val raise : t -> 'a
 val show : t -> string
 (** Simple printing *)
 
+val pp : Format.formatter -> t -> unit
+
 type nonrec 'a result = ('a, t) result
