@@ -211,8 +211,9 @@ let main ~port ~runner () : unit Lwt.t =
       Trace.message "exit handle client"
   in
 
-  let addr = Unix.ADDR_INET (Unix.inet_addr_any, port) in
+  let addr = Unix.ADDR_INET (Unix.inet_addr_loopback, port) in
   let _server = M_lwt.TCP_server.establish_lwt ~runner addr handle_client in
+  Printf.printf "listening on port=%d\n%!" port;
 
   lwt_fut
 
