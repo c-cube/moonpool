@@ -52,12 +52,11 @@ start
 12: await fiber 4
 13: res 4 = 4
 14: await fiber 5
-15: other fib done
-16: res 5 = 5
-17: await fiber 6
-18: res 6 = 6
-19: await fiber 7
-20: main fiber cancelled with Failure("oh no!")
-21: main fiber result: error Failure("oh no!")
-22: main fib failed with "oh no!"
-23: main fiber exited
+15: res 5 = 5
+16: await fiber 6
+17: res 6 = 6
+18: await fiber 7
+19: main fiber cancelled with Failure("oh no!")
+20: main fiber result: error Failure("oh no!")
+21: main fib failed with "oh no!"
+22: main fiber exited

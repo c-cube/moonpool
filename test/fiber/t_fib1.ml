@@ -86,6 +86,7 @@ let () =
   ()
 
 let () =
+  let@ _r = Moonpool_fib.main in
   (* same but now, cancel one of the sub-fibers *)
   Printf.printf "============\nstart\n";
 
@@ -98,6 +99,9 @@ let () =
           @@ Exn_bt.show ebt)
     in
 
+    let chans_unblock = Array.init 10 (fun _i -> Chan.create ()) in
+    let chan_progress = Chan.create () in
+
     logf (TS.tick_get clock) "start fibers";
     let subs =
       List.init 10 (fun i ->
@@ -107,12 +111,19 @@ let () =
             F.with_on_self_cancel (fun _ ->
                 logf (TS.tick_get clock) "sub-fiber %d was cancelled" i)
           in
-          Thread.delay (float i *. 0.05);
-          F.yield ();
+          Thread.delay 0.002;
+
+          (* sync for determinism *)
+          Chan.pop_await chans_unblock.(i);
+          Chan.push chan_progress i;
+
           if i = 7 then (
             logf (TS.tick_get clock) "I'm fiber %d and I'm about to fail…" i;
             failwith "oh no!"
           );
+
+          F.check_if_cancelled ();
+
           i)
     in
 
@@ -124,9 +135,13 @@ let () =
           | Error _ -> logf (i :: post) "fiber %d resolved as error" i))
       subs;
 
-    F.spawn_ignore ~protect:false (fun _n ->
-        Thread.delay 0.2;
-        logf (TS.tick_get clock) "other fib done");
+    (* sequentialize the fibers, for determinism *)
+    F.spawn_ignore (fun () ->
+        for j = 0 to 9 do
+          Chan.push chans_unblock.(j) ();
+          let j' = Chan.pop_await chan_progress in
+          assert (j = j')
+        done);
 
     logf (TS.tick_get clock) "wait for subs";
     List.iteri
