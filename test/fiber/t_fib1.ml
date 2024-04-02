@@ -52,31 +52,42 @@ let () =
   let clock = ref TS.init in
   let fib =
     F.spawn_top ~on:runner @@ fun () ->
+    let chan_progress = Chan.create () in
+    let chans = Array.init 5 (fun _ -> Chan.create ()) in
+
     let subs =
       List.init 5 (fun i ->
           F.spawn ~protect:false @@ fun _n ->
           Thread.delay (float i *. 0.01);
+          Chan.pop_await chans.(i);
+          Chan.push chan_progress i;
+          F.check_if_cancelled ();
           i)
     in
 
-    F.spawn_ignore ~protect:false (fun _n ->
-        Thread.delay 0.4;
-        TS.tick clock;
-        logf !clock "other fib done");
-
     logf (TS.tick_get clock) "wait for subs";
-    List.iteri
-      (fun i f ->
-        let clock = ref (0 :: i :: !clock) in
-        logf !clock "await fiber %d" i;
-        logf (TS.tick_get clock) "cur fiber[%d] is some: %b" i
-          (Option.is_some @@ F.Private_.get_cur ());
-        let res = F.await f in
-        logf (TS.tick_get clock) "cur fiber[%d] is some: %b" i
-          (Option.is_some @@ F.Private_.get_cur ());
-        F.yield ();
-        logf (TS.tick_get clock) "res %d = %d" i res)
-      subs;
+
+    F.spawn_ignore (fun () ->
+        for i = 0 to 4 do
+          Chan.push chans.(i) ();
+          let i' = Chan.pop_await chan_progress in
+          assert (i = i')
+        done);
+
+    (let clock0 = !clock in
+     List.iteri
+       (fun i f ->
+         let clock = ref (0 :: i :: clock0) in
+         logf !clock "await fiber %d" i;
+         logf (TS.tick_get clock) "cur fiber[%d] is some: %b" i
+           (Option.is_some @@ F.Private_.get_cur ());
+         let res = F.await f in
+         logf (TS.tick_get clock) "cur fiber[%d] is some: %b" i
+           (Option.is_some @@ F.Private_.get_cur ());
+         F.yield ();
+         logf (TS.tick_get clock) "res %d = %d" i res)
+       subs);
+
     logf (TS.tick_get clock) "main fiber done"
   in
 
@@ -104,8 +115,9 @@ let () =
 
     logf (TS.tick_get clock) "start fibers";
     let subs =
+      let clock0 = !clock in
       List.init 10 (fun i ->
-          let clock = ref (0 :: i :: !clock) in
+          let clock = ref (0 :: i :: clock0) in
           F.spawn ~protect:false @@ fun _n ->
           let@ () =
             F.with_on_self_cancel (fun _ ->
@@ -123,7 +135,6 @@ let () =
           );
 
           F.check_if_cancelled ();
-
           i)
     in
 
