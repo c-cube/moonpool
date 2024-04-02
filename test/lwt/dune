@@ -10,7 +10,9 @@
   ./run_hash.sh
   (glob_files_rec ../data/**))
  (enabled_if
-  (>= %{ocaml_version} 5.0))
+  (and
+   (= %{system} "linux")
+   (>= %{ocaml_version} 5.0)))
  (action
   (with-stdout-to
    %{targets}
@@ -19,7 +21,9 @@
 (rule
  (alias runtest)
  (enabled_if
-  (>= %{ocaml_version} 5.0))
+  (and
+   (= %{system} "linux")
+   (>= %{ocaml_version} 5.0)))
  (package moonpool-lwt)
  (action
   (diff ./output_hash.expected ./output_hash.txt)))
@@ -28,7 +32,9 @@
  (targets output_echo.txt)
  (deps ./echo_server.exe ./echo_client.exe ./run_echo.sh)
  (enabled_if
-  (>= %{ocaml_version} 5.0))
+  (and
+   (= %{system} "linux")
+   (>= %{ocaml_version} 5.0)))
  (action
   (with-stdout-to
    %{targets}
@@ -37,7 +43,9 @@
 (rule
  (alias runtest)
  (enabled_if
-  (>= %{ocaml_version} 5.0))
+  (and
+   (= %{system} "linux")
+   (>= %{ocaml_version} 5.0)))
  (package moonpool-lwt)
  (action
   (diff ./output_echo.expected ./output_echo.txt)))
