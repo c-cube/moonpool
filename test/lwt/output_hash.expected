@@ -1,5 +1,7 @@
-listening on port 1234
-run hash client -p 1234 -d ../data/ --n-conn=2 -j=4
+running hash server on port=12345
+listening on port 12345
+listening on port=12345
+run hash client -p 12345 -d ../data/ --n-conn=2 -j=4
 ../data/d1/large: fdb479c5661572f9606266eeb280b4db5c26cc38
 ../data/d1/large: fdb479c5661572f9606266eeb280b4db5c26cc38
 ../data/d1/large_10: c31560efa1a5ad6dbf89990d51878f3bd64b13ce
@@ -440,5 +442,5 @@ run hash client -p 1234 -d ../data/ --n-conn=2 -j=4
 ../data/d9/large_9: 7893508ace6bc8a4d65e03ebf88a9be6c188af17
 ../data/d9/smol: 31416013d3060b8056a601c9f6719e94e7e9f7ed
 ../data/d9/smol: 31416013d3060b8056a601c9f6719e94e7e9f7ed
-connecting to port 1234
+connecting to port 12345
 hash dir="../data/"
