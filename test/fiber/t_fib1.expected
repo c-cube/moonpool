@@ -22,8 +22,7 @@ start
 1.4.2: cur fiber[4] is some: true
 1.4.3: res 4 = 4
 2: main fiber done
-3: other fib done
-4: main fiber exited
+3: main fiber exited
 ============
 start
 1: start fibers
