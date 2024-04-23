@@ -27,7 +27,7 @@ let rec lock_ (self : 'a t) : 'a =
   let old = A.get self.st in
   if old.locked then (
     (* suspend and add myself to the [waiters] queue *)
-    Moonpool.Private.Suspend_.suspend
+    Suspend_.suspend
       {
         handle =
           (fun ~run:_ ~resume k ->

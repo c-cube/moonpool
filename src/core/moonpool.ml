@@ -23,6 +23,7 @@ module Blocking_queue = Bb_queue
 module Background_thread = Background_thread
 module Bounded_queue = Bounded_queue
 module Chan = Chan
+module Coop_lock = Coop_lock
 module Exn_bt = Exn_bt
 module Fifo_pool = Fifo_pool
 module Fut = Fut

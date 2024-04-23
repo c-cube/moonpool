@@ -75,6 +75,7 @@ val await : 'a Fut.t -> 'a
 [@@@endif]
 
 module Lock = Lock
+module Coop_lock = Coop_lock
 module Fut = Fut
 module Chan = Chan
 module Task_local_storage = Task_local_storage
