@@ -1,58 +1,8 @@
 module A = Atomic_
+module Q = Moonpool_private.Fqueue
 
 type 'a or_error = 'a Fut.or_error
 type 'a waiter = 'a Fut.promise
-
-let[@inline] list_is_empty_ = function
-  | [] -> true
-  | _ :: _ -> false
-
-(** Simple functional queue *)
-module Q : sig
-  type 'a t
-
-  val return : 'a -> 'a t
-  val is_empty : _ t -> bool
-
-  exception Empty
-
-  val pop_exn : 'a t -> 'a * 'a t
-  val push : 'a t -> 'a -> 'a t
-  val iter : ('a -> unit) -> 'a t -> unit
-end = struct
-  type 'a t = {
-    hd: 'a list;
-    tl: 'a list;
-  }
-  (** Queue containing elements of type 'a.
-
-      invariant: if hd=[], then tl=[] *)
-
-  let[@inline] return x : _ t = { hd = [ x ]; tl = [] }
-
-  let[@inline] make_ hd tl =
-    match hd with
-    | [] -> { hd = List.rev tl; tl = [] }
-    | _ :: _ -> { hd; tl }
-
-  let[@inline] is_empty self = list_is_empty_ self.hd
-  let[@inline] push self x : _ t = make_ self.hd (x :: self.tl)
-
-  let iter f (self : _ t) : unit =
-    List.iter f self.hd;
-    List.iter f self.tl
-
-  exception Empty
-
-  let pop_exn self =
-    match self.hd with
-    | [] ->
-      assert (list_is_empty_ self.tl);
-      raise Empty
-    | x :: hd' ->
-      let self' = make_ hd' self.tl in
-      x, self'
-end
 
 exception Closed
 
