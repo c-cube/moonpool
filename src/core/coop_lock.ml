@@ -23,6 +23,8 @@ let try_lock_ (self : 'a t) : 'a option =
   else
     None
 
+[@@@ifge 5.0]
+
 let rec lock_ (self : 'a t) : 'a =
   let old = A.get self.st in
   if old.locked then (
@@ -104,3 +106,5 @@ let with_try_lock self f =
       let bt = Printexc.get_raw_backtrace () in
       unlock_ self x;
       Printexc.raise_with_backtrace e bt)
+
+[@@@endif]
