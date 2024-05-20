@@ -1,12 +1,11 @@
 open Common_
 
-class type t =
-  object
-    method output_char : char -> unit
-    method output : bytes -> int -> int -> unit
-    method flush : unit -> unit
-    method close : unit -> unit
-  end
+class type t = object
+  method output_char : char -> unit
+  method output : bytes -> int -> int -> unit
+  method flush : unit -> unit
+  method close : unit -> unit
+end
 
 let create ?(flush = ignore) ?(close = ignore) ~output_char ~output () : t =
   object

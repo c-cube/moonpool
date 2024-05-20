@@ -149,7 +149,7 @@ let () =
   Printf.printf "pi=%.6f (pi=%.6f, diff=%.3f)%s\n%!" res Float.pi
     (abs_float (Float.pi -. res))
     (if !time then
-      spf " in %.4fs" elapsed
-    else
-      "");
+       spf " in %.4fs" elapsed
+     else
+       "");
   ()

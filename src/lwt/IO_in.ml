@@ -1,14 +1,13 @@
 open Common_
 
-class type t =
-  object
-    method input : bytes -> int -> int -> int
-    (** Read into the slice. Returns [0] only if the
+class type t = object
+  method input : bytes -> int -> int -> int
+  (** Read into the slice. Returns [0] only if the
         stream is closed. *)
 
-    method close : unit -> unit
-    (** Close the input. Must be idempotent. *)
-  end
+  method close : unit -> unit
+  (** Close the input. Must be idempotent. *)
+end
 
 let create ?(close = ignore) ~input () : t =
   object
