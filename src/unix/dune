@@ -1,12 +1,16 @@
-
 (library
-  (name moonpool_unix)
-  (public_name moonpool.unix)
-  (optional)
-  (synopsis "Simple Unix-based event loop for moonpool")
-  (private_modules common_ heap_)
-  (libraries moonpool moonpool.fib unix
-             (select time.ml from
-                     (mtime mtime.os.clock -> time.mtime.ml)
-                     (-> time.unix.ml))
-             ))
+ (name moonpool_unix)
+ (public_name moonpool.unix)
+ (optional) ; iostream
+ (synopsis "Simple Unix-based event loop for moonpool")
+ (private_modules common_ heap_)
+ (libraries
+  moonpool
+  moonpool.fib
+  unix
+  iostream
+  (select
+   time.ml
+   from
+   (mtime mtime.os.clock -> time.mtime.ml)
+   (-> time.unix.ml))))

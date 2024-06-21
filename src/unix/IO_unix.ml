@@ -2,6 +2,7 @@ open Common_
 
 type file_descr = Unix.file_descr
 
+(** Non blocking read *)
 let rec read fd buf i len : int =
   if len = 0 then
     0
@@ -25,6 +26,7 @@ let rec read fd buf i len : int =
     | n -> n
   )
 
+(** Non blocking write *)
 let rec write_once fd buf i len : int =
   if len = 0 then
     0

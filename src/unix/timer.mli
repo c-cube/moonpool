@@ -1,4 +1,7 @@
+(** Simple timer *)
+
 type t
+(** A timer, running tasks after a duration or repeatedly with some frequency *)
 
 val create : unit -> t
 (** A new timer. *)
