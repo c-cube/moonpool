@@ -1,7 +1,6 @@
 (library
  (name moonpool_unix)
- (public_name moonpool.unix)
- (optional) ; iostream
+ (public_name moonpool-unix)
  (synopsis "Simple Unix-based event loop for moonpool")
  (private_modules common_ heap_)
  (libraries

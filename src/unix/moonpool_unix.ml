@@ -10,10 +10,9 @@ module Fut = Moonpool.Fut
 
 (** {2 Event loop modules} *)
 
+module Fd = Fd
 module Cancel_handle = Cancel_handle
-module IO_in = IO_in
-module IO_out = IO_out
-include IO_unix
+include Async_io
 
 let run_after_s = Ev_loop.run_after_s
 let run_every_s = Ev_loop.run_every_s

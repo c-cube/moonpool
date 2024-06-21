@@ -249,6 +249,17 @@ let with_loop ~runner f =
   (* return result of [fib] *)
   Moonpool.Fut.get_or_fail_exn @@ Fiber.res fib
 
+let start_background_loop () =
+  let run () =
+    let@ _sp = Tracing_.with_span "Moonpool_unix.bg-loop" in
+    let ev_loop = Ev_loop.create () in
+    if set_as_current_ ev_loop then
+      while true do
+        Ev_loop.run_step_ ev_loop
+      done
+  in
+  ignore (Thread.create run () : Thread.t)
+
 (* ### external inputs *)
 
 let[@inline] get_current_ () =
