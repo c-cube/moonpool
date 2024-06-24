@@ -8,6 +8,7 @@
   moonpool.fib
   unix
   iostream
+  (re_export iostream.types)
   (select
    time.ml
    from
