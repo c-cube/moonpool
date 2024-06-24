@@ -209,17 +209,10 @@ module Ev_loop = struct
     let reads, writes = IO_tbl.prepare_select self.io_tbl in
     A.set self.in_blocking_section true;
     let reads, writes, _ =
-      Tracing_.message
-        (Printf.sprintf "select: %d read (+selfpipe), %d writes"
-           (List.length reads) (List.length writes));
       let@ _sp = Tracing_.with_span "moonpool-unix.evloop.select" in
       Unix.select (self.pipe_read :: reads) writes [] delay
     in
     A.set self.in_blocking_section false;
-
-    Tracing_.message
-      (Printf.sprintf "select: %d read ready, %d writes ready"
-         (List.length reads) (List.length writes));
 
     drain_pipe_ self;
     IO_tbl.handle_ready ~ignore_read:self.pipe_read self.io_tbl reads writes;

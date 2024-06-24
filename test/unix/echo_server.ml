@@ -10,8 +10,6 @@ let main ~port ~j () : unit =
 
   let@ _main_runner = MU.main in
   Trace.set_thread_name "main";
-  Printf.printf "IN MAIN\n%!";
-  Trace.message "foo1";
 
   let@ server =
     MU.TCP_server.with_server ~runner (MU.Sockaddr.any port)
@@ -41,6 +39,8 @@ let main ~port ~j () : unit =
         (MU.Sockaddr.show @@ MU.TCP_server.endpoint server));
   Printf.printf "listening on %s\n%!"
     (MU.Sockaddr.show @@ MU.TCP_server.endpoint server);
+
+  Trace.message "awaiting server";
   MU.TCP_server.await server;
   ()
 
