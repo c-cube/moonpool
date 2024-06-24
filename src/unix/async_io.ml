@@ -161,8 +161,8 @@ module TCP_server = struct
       Ev_loop.wait_readable sock Cancel_handle.dummy ignore;
       accept_ sock
 
-  class base_server ?(listen = 32) ?(buf_pool = Buf_pool.dummy) ~runner
-    ~(handle : conn_handler) (addr : Sockaddr.t) :
+  class base_server ?(listen = 32) ?(buf_pool = Buf_pool.dummy)
+    ?(buf_size = 4096) ~runner ~(handle : conn_handler) (addr : Sockaddr.t) :
     t =
     let n_active_ = A.make 0 in
     let st = A.make Created in
@@ -214,8 +214,8 @@ module TCP_server = struct
                         Fd.close_noerr client_fd)
                   in
 
-                  let@ buf_in = buf_pool.with_buf 4096 in
-                  let@ buf_out = buf_pool.with_buf 4096 in
+                  let@ buf_in = buf_pool.with_buf buf_size in
+                  let@ buf_out = buf_pool.with_buf buf_size in
 
                   let ic = Buf_reader.of_fd client_fd ~buf:buf_in in
                   let oc = Buf_writer.of_fd client_fd ~buf:buf_out in
@@ -226,9 +226,11 @@ module TCP_server = struct
         )
     end
 
-  let create ?(after_init = ignore) ?listen ?buf_pool ~runner
+  let create ?(after_init = ignore) ?listen ?buf_pool ?buf_size ~runner
       ~(handle : conn_handler) (addr : Sockaddr.t) : t =
-    let self = new base_server ?listen ?buf_pool ~runner ~handle addr in
+    let self =
+      new base_server ?listen ?buf_pool ?buf_size ~runner ~handle addr
+    in
     after_init self;
     self
 end
@@ -256,10 +258,11 @@ module TCP_client = struct
     let@ () = Fun.protect ~finally in
     f sock
 
-  let with_connect ?(buf_pool = Buf_pool.dummy) addr (f : _ -> _ -> 'a) : 'a =
+  let with_connect ?(buf_pool = Buf_pool.dummy) ?(buf_size = 4096) addr
+      (f : _ -> _ -> 'a) : 'a =
     with_connect' addr (fun sock ->
-        let@ buf_in = buf_pool.with_buf 4096 in
-        let@ buf_out = buf_pool.with_buf 4096 in
+        let@ buf_in = buf_pool.with_buf buf_size in
+        let@ buf_out = buf_pool.with_buf buf_size in
 
         let ic = Buf_reader.of_fd ~buf:buf_in sock in
         let oc = Buf_writer.of_fd ~buf:buf_out sock in

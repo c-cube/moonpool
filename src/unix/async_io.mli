@@ -53,6 +53,7 @@ module TCP_client : sig
 
   val with_connect :
     ?buf_pool:Buf_pool.t ->
+    ?buf_size:int ->
     Sockaddr.t ->
     (Buf_reader.t -> Buf_writer.t -> 'a) ->
     'a
@@ -88,6 +89,7 @@ module TCP_server : sig
   class base_server :
     ?listen:int ->
     ?buf_pool:Buf_pool.t ->
+    ?buf_size:int ->
     runner:Moonpool.Runner.t ->
     handle:conn_handler ->
     Sockaddr.t ->
@@ -97,6 +99,7 @@ module TCP_server : sig
     ?after_init:(t -> unit) ->
     ?listen:int ->
     ?buf_pool:Buf_pool.t ->
+    ?buf_size:int ->
     runner:Moonpool.Runner.t ->
     handle:conn_handler ->
     Sockaddr.t ->
