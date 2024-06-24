@@ -207,6 +207,7 @@ module Ev_loop = struct
     let reads, writes = IO_tbl.prepare_select self.io_tbl in
     A.set self.in_blocking_section true;
     let reads, writes, _ =
+      let@ _sp = Tracing_.with_span "moonpool-unix.evloop.select" in
       Unix.select (self.pipe_read :: reads) writes [] delay
     in
     A.set self.in_blocking_section false;

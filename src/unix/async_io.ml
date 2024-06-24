@@ -196,7 +196,9 @@ module TCP_server = struct
           loop ()
         in
 
-        if can_start then (
+        if can_start then
+          let@ _sp = Tracing_.with_span "moonpool-unix.tcp-server.run" in
+
           let sock =
             try
               let sock =
@@ -213,6 +215,7 @@ module TCP_server = struct
               Fut.fulfill_idempotent promise @@ Error (Exn_bt.make e bt);
               Printexc.raise_with_backtrace e bt
           in
+
           while A.get st = Running do
             let client_sock, client_addr = accept_ sock in
             let client_fd = Fd.create client_sock in
@@ -237,7 +240,6 @@ module TCP_server = struct
             in
             ()
           done
-        )
     end
 
   let create ?(after_init = ignore) ?listen ?buf_pool ?buf_size ~runner
