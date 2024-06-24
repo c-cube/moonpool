@@ -222,50 +222,34 @@ end
 
 let current_ : Ev_loop.t option A.t = A.make None
 
-let rec set_as_current_ (ev : Ev_loop.t) : bool =
+let rec get_or_set_as_current_ (ev : Ev_loop.t) : Ev_loop.t * bool =
   match A.get current_ with
-  | Some _ -> false
+  | Some ev -> ev, false
   | None ->
     if A.compare_and_set current_ None (Some ev) then
-      true
+      ev, true
     else
-      set_as_current_ ev
+      get_or_set_as_current_ ev
 
-let with_loop ~runner f =
-  let@ _sp = Tracing_.with_span "Moonpool_unix.main" in
-
-  let ev_loop = Ev_loop.create () in
-  if not (set_as_current_ ev_loop) then
-    failwith "Moonpool_unix: the event loop is already active";
-
-  (* schedule [f] on the pool *)
-  let fib = Fiber.spawn_top ~on:runner f in
-
-  while not (Fiber.is_done fib) do
+let bg_loop_ (ev_loop : Ev_loop.t) =
+  let@ _sp = Tracing_.with_span "Moonpool_unix.bg-loop" in
+  while true do
     Ev_loop.run_step_ ev_loop
-  done;
-  A.set current_ None;
+  done
 
-  (* return result of [fib] *)
-  Moonpool.Fut.get_or_fail_exn @@ Fiber.res fib
-
-let start_background_loop () =
-  let run () =
-    let@ _sp = Tracing_.with_span "Moonpool_unix.bg-loop" in
-    let ev_loop = Ev_loop.create () in
-    if set_as_current_ ev_loop then
-      while true do
-        Ev_loop.run_step_ ev_loop
-      done
-  in
-  ignore (Thread.create run () : Thread.t)
+let[@inline never] start_background_loop () : Ev_loop.t =
+  let ev_loop = Ev_loop.create () in
+  let ev_loop, we_are_it = get_or_set_as_current_ ev_loop in
+  (* start the background thread *)
+  if we_are_it then ignore (Thread.create bg_loop_ ev_loop : Thread.t);
+  ev_loop
 
 (* ### external inputs *)
 
 let[@inline] get_current_ () =
   match A.get current_ with
-  | None -> failwith "Moonpool_unix: event loop is not active"
   | Some ev -> ev
+  | None -> start_background_loop ()
 
 let interrupt_if_in_blocking_section_ (self : Ev_loop.t) =
   if A.get self.in_blocking_section then (

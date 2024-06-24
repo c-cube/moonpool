@@ -12,8 +12,9 @@ module Fut = Moonpool.Fut
 
 module Fd = Fd
 module Cancel_handle = Cancel_handle
+module Sockaddr = Sockaddr
 include Async_io
 
 let run_after_s = Ev_loop.run_after_s
 let run_every_s = Ev_loop.run_every_s
-let main = Ev_loop.with_loop
+let main = Moonpool_fib.main

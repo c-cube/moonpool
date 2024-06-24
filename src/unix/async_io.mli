@@ -84,7 +84,15 @@ module TCP_server : sig
     method stop : unit -> unit
     (** Ask the server to stop. This might not take effect immediately,
       and is idempotent. After this [server.running()] must return [false]. *)
+
+    method await : unit -> unit
+    (** Wait for the server to stop running *)
   end
+
+  val stop : #t -> unit
+  val run : #t -> unit
+  val endpoint : #t -> Sockaddr.t
+  val await : #t -> unit
 
   class base_server :
     ?listen:int ->
@@ -105,5 +113,13 @@ module TCP_server : sig
     Sockaddr.t ->
     t
 
-  val run : #t -> unit
+  val with_server :
+    ?listen:int ->
+    ?buf_pool:Buf_pool.t ->
+    ?buf_size:int ->
+    runner:Moonpool.Runner.t ->
+    handle:conn_handler ->
+    Sockaddr.t ->
+    (t -> 'a) ->
+    'a
 end

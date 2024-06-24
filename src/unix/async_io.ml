@@ -1,5 +1,6 @@
 open Common_
 module Slice = Iostream_types.Slice
+module Fut = Moonpool.Fut
 
 let rec read (fd : Fd.t) buf i len : int =
   if len = 0 || Fd.closed fd then
@@ -145,9 +146,13 @@ module TCP_server = struct
     method running : unit -> bool
     method run : unit -> unit
     method stop : unit -> unit
+    method await : unit -> unit
   end
 
-  let run (self : #t) = self#run ()
+  let[@inline] run (self : #t) = self#run ()
+  let[@inline] stop (self : #t) = self#stop ()
+  let[@inline] endpoint (self : #t) = self#endpoint ()
+  let[@inline] await (self : #t) = self#await ()
 
   type state =
     | Created
@@ -166,12 +171,19 @@ module TCP_server = struct
     t =
     let n_active_ = A.make 0 in
     let st = A.make Created in
+    let fut, promise = Fut.make () in
 
     object
       method endpoint () = addr
       method active_connections () = A.get n_active_
       method running () = A.get st = Running
-      method stop () = if A.exchange st Stopped = Running then ( (* TODO *) )
+
+      method stop () =
+        match A.exchange st Stopped with
+        | Stopped -> ()
+        | Created | Running -> Fut.fulfill_idempotent promise @@ Ok ()
+
+      method await () = Fut.await fut
 
       method run () =
         (* set to Running *)
@@ -196,8 +208,10 @@ module TCP_server = struct
               Unix.listen sock listen;
               sock
             with e ->
+              let bt = Printexc.get_raw_backtrace () in
               A.set st Stopped;
-              raise e
+              Fut.fulfill_idempotent promise @@ Error (Exn_bt.make e bt);
+              Printexc.raise_with_backtrace e bt
           in
           while A.get st = Running do
             let client_sock, client_addr = accept_ sock in
@@ -233,6 +247,15 @@ module TCP_server = struct
     in
     after_init self;
     self
+
+  let with_server ?listen ?buf_pool ?buf_size ~runner ~handle addr (f : _ -> 'a)
+      : 'a =
+    let server =
+      new base_server ?listen ?buf_pool ?buf_size ~runner ~handle addr
+    in
+    run server;
+    let@ () = Fun.protect ~finally:(fun () -> stop server) in
+    f server
 end
 
 module TCP_client = struct
