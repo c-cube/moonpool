@@ -4,6 +4,7 @@ let enabled = Trace.enabled
 let dummy_span = Int64.min_int
 let dummy_file_ = "<unknown file>"
 let set_thread_name = Trace.set_thread_name
+let[@inline] message msg = Trace.message msg
 
 let[@inline] enter_span name : int64 =
   if name = "" then
