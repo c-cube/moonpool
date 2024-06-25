@@ -34,11 +34,12 @@
   (thread pool domain futures fork-join)))
 
 (package
- (name moonpool-unix)
+ (name moonpool-io)
  (synopsis "Non blocking IO for Moonpool based on Unix")
  (depends
   (ocaml (>= 5.0))
   dune
+  (poll (and (>= 3.0) (< 4.0)))
   (iostream (>= 0.2.2))
   (trace :with-test))
  (depopts

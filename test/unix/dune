@@ -1,4 +1,0 @@
-(executables
- (names t_hash echo_server)
- ;(package moonpool-unix)
- (libraries moonpool moonpool-unix trace.core trace-tef))

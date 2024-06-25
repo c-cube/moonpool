@@ -1,11 +1,12 @@
 (library
- (name moonpool_unix)
- (public_name moonpool-unix)
- (synopsis "Simple Unix-based event loop for moonpool")
+ (name moonpool_io)
+ (public_name moonpool-io)
+ (synopsis "Async IOs for moonpool")
  (private_modules common_ heap_)
  (libraries
   moonpool
   moonpool.fib
+  (re_export poll)
   unix
   iostream
   (re_export iostream.types)
