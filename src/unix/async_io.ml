@@ -163,8 +163,19 @@ module TCP_server = struct
     match Unix.accept sock with
     | csock, addr -> csock, addr
     | exception Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
-      Ev_loop.wait_readable sock Cancel_handle.dummy ignore;
-      accept_ sock
+      (let cancel = Cancel_handle.create () in
+       let@ () =
+         Fiber.with_on_self_cancel (fun _ -> Cancel_handle.cancel cancel)
+       in
+       Tracing_.message "accept: suspend";
+       Moonpool.Private.Suspend_.suspend
+         {
+           handle =
+             (fun ~run:_ ~resume sus ->
+               Ev_loop.wait_readable sock cancel (fun _cancel ->
+                   resume sus @@ Ok ()));
+         });
+      (accept_ [@tailcall]) sock
 
   class base_server ?(listen = 32) ?(buf_pool = Buf_pool.dummy)
     ?(buf_size = 4096) ~runner ~(handle : conn_handler) (addr : Sockaddr.t) :
@@ -268,7 +279,13 @@ module TCP_client = struct
     | exception
         Unix.Unix_error
           ((Unix.EWOULDBLOCK | Unix.EINPROGRESS | Unix.EAGAIN), _, _) ->
-      Ev_loop.wait_writable sock Cancel_handle.dummy ignore;
+      Moonpool.Private.Suspend_.suspend
+        {
+          handle =
+            (fun ~run:_ ~resume sus ->
+              Ev_loop.wait_writable sock Cancel_handle.dummy (fun _cancel ->
+                  resume sus @@ Ok ()));
+        };
       connect_ sock addr
 
   let with_connect' addr (f : Fd.t -> 'a) : 'a =
