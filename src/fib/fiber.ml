@@ -10,7 +10,7 @@ type cancel_callback = Exn_bt.t -> unit
 let prom_of_fut : 'a Fut.t -> 'a Fut.promise =
   Fut.Private_.unsafe_promise_of_fut
 
-module Private_ = struct
+module Private0 = struct
   type 'a t = {
     id: Handle.t;  (** unique identifier for this fiber *)
     state: 'a state A.t;  (** Current state in the lifetime of the fiber *)
@@ -40,13 +40,9 @@ module Private_ = struct
     match A.get self.state with
     | Alive _ -> false
     | Terminating_or_done _ -> true
-
-  let cancel_from_outside (self : _ t) ebt : unit =
-    Fut.fulfill_idempotent (Fut.Private_.unsafe_promise_of_fut self.res)
-    @@ Error ebt
 end
 
-include Private_
+include Private0
 
 let create_ ~ls ~runner () : 'a t =
   let id = Handle.generate_fresh () in
@@ -321,3 +317,9 @@ let yield () : unit =
     check_if_cancelled_ self;
     Suspend_.yield ();
     check_if_cancelled_ self
+
+module Private_ = struct
+  include Private0
+
+  let cancel_from_outside = resolve_as_failed_
+end
