@@ -17,7 +17,7 @@ let rec read (fd : Fd.t) buf i len : int =
         {
           handle =
             (fun ~run:_ ~resume sus ->
-              Ev_loop.wait_readable fd.fd cancel (fun cancel ->
+              Ev_loop.wait_readable fd cancel (fun cancel ->
                   resume sus @@ Ok ();
                   Cancel_handle.cancel cancel));
         };
@@ -40,7 +40,7 @@ let rec write_once (fd : Fd.t) buf i len : int =
         {
           handle =
             (fun ~run:_ ~resume sus ->
-              Ev_loop.wait_writable fd.fd cancel (fun cancel ->
+              Ev_loop.wait_writable fd cancel (fun cancel ->
                   resume sus @@ Ok ();
                   Cancel_handle.cancel cancel));
         };
@@ -159,8 +159,8 @@ module TCP_server = struct
     | Running
     | Stopped
 
-  let rec accept_ (sock : Unix.file_descr) =
-    match Unix.accept sock with
+  let rec accept_ (sock : Fd.t) =
+    match Unix.accept sock.fd with
     | csock, addr -> csock, addr
     | exception Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
       (let cancel = Cancel_handle.create () in
@@ -219,7 +219,7 @@ module TCP_server = struct
               Unix.set_nonblock sock;
               Unix.bind sock addr;
               Unix.listen sock listen;
-              sock
+              Fd.create sock
             with e ->
               let bt = Printexc.get_raw_backtrace () in
               A.set st Stopped;
@@ -273,8 +273,8 @@ end
 
 module TCP_client = struct
   (** connect asynchronously *)
-  let rec connect_ sock addr =
-    match Unix.connect sock addr with
+  let rec connect_ (sock : Fd.t) addr =
+    match Unix.connect sock.fd addr with
     | () -> ()
     | exception
         Unix.Unix_error
@@ -292,9 +292,9 @@ module TCP_client = struct
     let sock = Unix.socket (Sockaddr.domain addr) Unix.SOCK_STREAM 0 in
     Unix.set_nonblock sock;
     Unix.setsockopt sock Unix.TCP_NODELAY true;
+    let sock = Fd.create sock in
 
     connect_ sock addr;
-    let sock = Fd.create sock in
 
     let finally () = Fd.close_noerr sock in
     let@ () = Fun.protect ~finally in
