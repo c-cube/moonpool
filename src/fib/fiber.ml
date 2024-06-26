@@ -40,6 +40,10 @@ module Private_ = struct
     match A.get self.state with
     | Alive _ -> false
     | Terminating_or_done _ -> true
+
+  let cancel_from_outside (self : _ t) ebt : unit =
+    Fut.fulfill_idempotent (Fut.Private_.unsafe_promise_of_fut self.res)
+    @@ Error ebt
 end
 
 include Private_
