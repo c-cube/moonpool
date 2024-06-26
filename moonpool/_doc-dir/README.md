@@ -23,6 +23,9 @@ In addition, some concurrency and parallelism primitives are provided:
     provides the fork-join parallelism primitives
     to use within tasks running in the pool.
 
+On OCaml 4.xx, there is only one domain; all threads run on it, but the
+pool abstraction is still useful to provide preemptive concurrency.
+
 ## Usage
 
 The user can create several thread pools (implementing the interface `Runner.t`).
