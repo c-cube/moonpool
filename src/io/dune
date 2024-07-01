@@ -1,0 +1,17 @@
+(library
+ (name moonpool_io)
+ (public_name moonpool-io)
+ (synopsis "Async IOs for moonpool")
+ (private_modules common_ heap_)
+ (libraries
+  moonpool
+  moonpool.fib
+  (re_export poll)
+  unix
+  iostream
+  (re_export iostream.types)
+  (select
+   time.ml
+   from
+   (mtime mtime.os.clock -> time.mtime.ml)
+   (-> time.unix.ml))))

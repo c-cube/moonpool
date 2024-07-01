@@ -8,7 +8,9 @@ let main (f : Runner.t -> 'a) : 'a =
     Fiber.on_result fiber (fun _ -> Runner.shutdown_without_waiting runner);
     (* run the main thread *)
     Fifo_pool.Private_.run_thread st runner ~on_exn:(fun e bt ->
-        raise (Oh_no (Exn_bt.make e bt)));
+        let ebt = Exn_bt.make e bt in
+        Fiber.Private_.cancel_from_outside fiber ebt;
+        raise (Oh_no ebt));
     match Fiber.peek fiber with
     | Some (Ok x) -> x
     | Some (Error ebt) -> Exn_bt.raise ebt

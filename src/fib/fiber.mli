@@ -31,6 +31,7 @@ module Private_ : sig
   type any = Any : _ t -> any [@@unboxed]
 
   val get_cur : unit -> any option
+  val cancel_from_outside : _ t -> Exn_bt.t -> unit
 end
 
 (**/**)

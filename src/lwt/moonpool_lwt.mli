@@ -81,12 +81,6 @@ module IO : sig
   (** Suspend the fiber for [n] seconds. *)
 end
 
-module IO_in = IO_in
-(** Input channel *)
-
-module IO_out = IO_out
-(** Output channel *)
-
 module TCP_server : sig
   type t = Lwt_io.server
 

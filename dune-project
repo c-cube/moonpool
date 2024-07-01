@@ -34,6 +34,20 @@
   (thread pool domain futures fork-join)))
 
 (package
+ (name moonpool-io)
+ (synopsis "Non blocking IO for Moonpool based on Unix")
+ (depends
+  (ocaml (>= 5.0))
+  dune
+  (poll (and (>= 3.0) (< 4.0)))
+  (iostream (>= 0.2.2))
+  (trace :with-test))
+ (depopts
+   mtime)
+ (tags
+  (moonpool io unix async)))
+
+(package
   (name moonpool-lwt)
   (synopsis "Event loop for moonpool based on Lwt-engine (experimental)")
   (allow_empty)  ; on < 5.0
