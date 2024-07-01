@@ -11,10 +11,14 @@ let main ~port ~j () : unit =
   let@ _main_runner = MU.main in
   Trace.set_thread_name "main";
 
+  Printf.eprintf "main is thread %d\n%!" (Thread.id @@ Thread.self ());
+
   let@ server =
     MU.TCP_server.with_server ~runner (MU.Sockaddr.any port)
       ~handle:(fun ~client_addr:addr ic oc ->
         Trace.message "got new client";
+        Printf.eprintf "handle client on thread %d\n%!"
+          (Thread.id @@ Thread.self ());
         let@ _sp =
           Trace.with_span ~__FILE__ ~__LINE__ "handle.client" ~data:(fun () ->
               [ "addr", `String (MU.Sockaddr.show addr) ])
@@ -59,4 +63,7 @@ let () =
   in
   Arg.parse opts ignore "echo server";
 
-  main ~port:!port ~j:!j ()
+  try main ~port:!port ~j:!j ()
+  with Sys.Break ->
+    Printf.eprintf "got ctrl-c, exiting\n%!";
+    exit 0
