@@ -31,18 +31,17 @@ let schedule_ (self : state) (task : task_full) : unit =
 type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
 type worker_state = { mutable cur_ls: Task_local_storage.t option }
 
-let k_worker_state : worker_state option ref TLS.key =
-  TLS.new_key (fun () -> ref None)
+let k_worker_state : worker_state TLS.t = TLS.create ()
 
 let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
   let w = { cur_ls = None } in
-  TLS.get k_worker_state := Some w;
-  TLS.get Runner.For_runner_implementors.k_cur_runner := Some runner;
+  TLS.set k_worker_state w;
+  TLS.set Runner.For_runner_implementors.k_cur_runner runner;
 
   let (AT_pair (before_task, after_task)) = around_task in
 
   let on_suspend () =
-    match !(TLS.get k_worker_state) with
+    match TLS.get_opt k_worker_state with
     | Some { cur_ls = Some ls; _ } -> ls
     | _ -> assert false
   in
@@ -55,7 +54,7 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
       | T_start { ls; _ } | T_resume { ls; _ } -> ls
     in
     w.cur_ls <- Some ls;
-    TLS.get k_cur_storage := Some ls;
+    TLS.set k_cur_storage ls;
     let _ctx = before_task runner in
 
     (* run the task now, catching errors, handling effects *)
@@ -74,7 +73,7 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
        on_exn e bt);
     after_task runner _ctx;
     w.cur_ls <- None;
-    TLS.get k_cur_storage := None
+    TLS.set k_cur_storage _dummy_ls
   in
 
   let main_loop () =

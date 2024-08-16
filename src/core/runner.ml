@@ -40,7 +40,7 @@ module For_runner_implementors = struct
   let create ~size ~num_tasks ~shutdown ~run_async () : t =
     { size; num_tasks; shutdown; run_async }
 
-  let k_cur_runner : t option ref TLS.key = Types_.k_cur_runner
+  let k_cur_runner : t TLS.t = Types_.k_cur_runner
 end
 
 let dummy : t =

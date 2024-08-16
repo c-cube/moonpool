@@ -73,7 +73,7 @@ module For_runner_implementors : sig
       {b NOTE}: the runner should support DLA and {!Suspend_} on OCaml 5.x,
       so that {!Fork_join} and other 5.x features work properly. *)
 
-  val k_cur_runner : t option ref Thread_local_storage_.key
+  val k_cur_runner : t Thread_local_storage_.t
   (** Key that should be used by each runner to store itself in TLS
       on every thread it controls, so that tasks running on these threads
       can access the runner. This is necessary for {!get_current_runner}

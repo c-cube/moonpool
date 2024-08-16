@@ -22,6 +22,9 @@ depopts: [
   "trace" {>= "0.6"}
   "thread-local-storage"
 ]
+conflicts: [
+  "thread-local-storage" {< "0.2"}
+]
 build: [
   ["dune" "subst"] {dev}
   [

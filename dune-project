@@ -30,6 +30,7 @@
  (depopts
    (trace (>= 0.6))
    thread-local-storage)
+ (conflicts (thread-local-storage (< 0.2)))
  (tags
   (thread pool domain futures fork-join)))
 

@@ -65,11 +65,10 @@ let num_tasks_ (self : state) : int =
 (** TLS, used by worker to store their specific state
     and be able to retrieve it from tasks when we schedule new
     sub-tasks. *)
-let k_worker_state : worker_state option ref TLS.key =
-  TLS.new_key (fun () -> ref None)
+let k_worker_state : worker_state TLS.t = TLS.create ()
 
 let[@inline] find_current_worker_ () : worker_state option =
-  !(TLS.get k_worker_state)
+  TLS.get_opt k_worker_state
 
 (** Try to wake up a waiter, if there's any. *)
 let[@inline] try_wake_someone_ (self : state) : unit =
@@ -121,7 +120,7 @@ let run_task_now_ (self : state) ~runner ~(w : worker_state) (task : task_full)
   in
 
   w.cur_ls <- Some ls;
-  TLS.get k_cur_storage := Some ls;
+  TLS.set k_cur_storage ls;
   let _ctx = before_task runner in
 
   let[@inline] on_suspend () : _ ref =
@@ -166,7 +165,7 @@ let run_task_now_ (self : state) ~runner ~(w : worker_state) (task : task_full)
 
   after_task runner _ctx;
   w.cur_ls <- None;
-  TLS.get k_cur_storage := None
+  TLS.set k_cur_storage _dummy_ls
 
 let run_async_ (self : state) ~ls (f : task) : unit =
   let w = find_current_worker_ () in
@@ -222,8 +221,8 @@ let worker_run_self_tasks_ (self : state) ~runner w : unit =
 
 (** Main loop for a worker thread. *)
 let worker_thread_ (self : state) ~(runner : t) (w : worker_state) : unit =
-  TLS.get Runner.For_runner_implementors.k_cur_runner := Some runner;
-  TLS.get k_worker_state := Some w;
+  TLS.set Runner.For_runner_implementors.k_cur_runner runner;
+  TLS.set k_worker_state w;
 
   let rec main () : unit =
     worker_run_self_tasks_ self ~runner w;
@@ -358,7 +357,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
       let thread = Thread.self () in
       let t_id = Thread.id thread in
       on_init_thread ~dom_id:dom_idx ~t_id ();
-      TLS.get k_cur_storage := None;
+      TLS.set k_cur_storage _dummy_ls;
 
       (* set thread name *)
       Option.iter

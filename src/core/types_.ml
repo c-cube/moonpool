@@ -27,11 +27,9 @@ type runner = {
   num_tasks: unit -> int;
 }
 
-let k_cur_runner : runner option ref TLS.key = TLS.new_key (fun () -> ref None)
-
-let k_cur_storage : local_storage option ref TLS.key =
-  TLS.new_key (fun () -> ref None)
-
-let[@inline] get_current_runner () : _ option = !(TLS.get k_cur_runner)
-let[@inline] get_current_storage () : _ option = !(TLS.get k_cur_storage)
+let k_cur_runner : runner TLS.t = TLS.create ()
+let k_cur_storage : local_storage TLS.t = TLS.create ()
+let _dummy_ls : local_storage = ref [||]
+let[@inline] get_current_runner () : _ option = TLS.get_opt k_cur_runner
+let[@inline] get_current_storage () : _ option = TLS.get_opt k_cur_storage
 let[@inline] create_local_storage () = ref [||]

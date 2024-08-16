@@ -8,7 +8,7 @@ let key_count_ = A.make 0
 type t = local_storage
 type ls_value += Dummy
 
-let dummy : t = ref [||]
+let dummy : t = _dummy_ls
 
 (** Resize array of TLS values *)
 let[@inline never] resize_ (cur : ls_value array ref) n =
@@ -57,7 +57,9 @@ let new_key (type t) ~init () : t key =
 
 let[@inline] get_cur_ () : ls_value array ref =
   match get_current_storage () with
-  | Some r -> r
+  | Some r ->
+    assert (r != dummy);
+    r
   | None -> failwith "Task local storage must be accessed from within a runner."
 
 let[@inline] get (key : 'a key) : 'a =
