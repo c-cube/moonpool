@@ -14,11 +14,6 @@
    (thread-local-storage -> thread_local_storage_.stub.ml)
    (-> thread_local_storage_.real.ml))
   (select
-   dla_.ml
-   from
-   (domain-local-await -> dla_.real.ml)
-   (-> dla_.dummy.ml))
-  (select
    tracing_.ml
    from
    (trace.core -> tracing_.real.ml)

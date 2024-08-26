@@ -76,20 +76,12 @@ let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
     TLS.set k_cur_storage _dummy_ls
   in
 
-  let main_loop () =
-    let continue = ref true in
-    while !continue do
-      match Bb_queue.pop self.q with
-      | task -> run_task task
-      | exception Bb_queue.Closed -> continue := false
-    done
-  in
-
-  try
-    (* handle domain-local await *)
-    Dla_.using ~prepare_for_await:Suspend_.prepare_for_await
-      ~while_running:main_loop
-  with Bb_queue.Closed -> ()
+  let continue = ref true in
+  while !continue do
+    match Bb_queue.pop self.q with
+    | task -> run_task task
+    | exception Bb_queue.Closed -> continue := false
+  done
 
 let default_thread_init_exit_ ~dom_id:_ ~t_id:_ () = ()
 

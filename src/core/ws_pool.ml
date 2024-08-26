@@ -265,7 +265,7 @@ let worker_thread_ (self : state) ~(runner : t) (w : worker_state) : unit =
   in
 
   (* handle domain-local await *)
-  Dla_.using ~prepare_for_await:Suspend_.prepare_for_await ~while_running:main
+  main ()
 
 let default_thread_init_exit_ ~dom_id:_ ~t_id:_ () = ()
 
