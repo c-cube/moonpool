@@ -62,15 +62,14 @@ let[@inline] get_raw index : Obj.t =
   else
     sentinel_value_for_uninit_tls
 
-let[@inline never] tls_error () =
-  failwith "Thread_local_storage.get: TLS entry not initialised"
+exception Not_set
 
-let[@inline] get slot =
+let[@inline] get_exn slot =
   let v = get_raw slot in
   if v != sentinel_value_for_uninit_tls then
     Obj.obj v
   else
-    tls_error ()
+    raise_notrace Not_set
 
 let[@inline] get_opt slot =
   let v = get_raw slot in
@@ -109,3 +108,13 @@ let get_tls_with_capacity index : Obj.t array =
 let[@inline] set slot value : unit =
   let tls = get_tls_with_capacity slot in
   Array.unsafe_set tls slot (Obj.repr (Sys.opaque_identity value))
+
+let[@inline] get_default ~default slot =
+  let v = get_raw slot in
+  if v != sentinel_value_for_uninit_tls then
+    Obj.obj v
+  else (
+    let v = default () in
+    set slot v;
+    v
+  )
