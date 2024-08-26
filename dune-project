@@ -22,15 +22,14 @@
   (trace :with-test)
   (trace-tef :with-test)
   (qcheck-core (and :with-test (>= 0.19)))
+  (thread-local-storage (and (>= 0.2) (< 0.3)))
   (odoc :with-doc)
   (mdx
    (and
     (>= 1.9.0)
     :with-test)))
  (depopts
-   (trace (>= 0.6))
-   thread-local-storage)
- (conflicts (thread-local-storage (< 0.2)))
+   (trace (>= 0.6)))
  (tags
   (thread pool domain futures fork-join)))
 

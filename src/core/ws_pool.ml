@@ -1,7 +1,6 @@
 open Types_
 module WSQ = Ws_deque_
 module A = Atomic_
-module TLS = Thread_local_storage_
 include Runner
 
 let ( let@ ) = ( @@ )

@@ -9,11 +9,6 @@
   threads
   either
   (select
-   thread_local_storage_.ml
-   from
-   (thread-local-storage -> thread_local_storage_.stub.ml)
-   (-> thread_local_storage_.real.ml))
-  (select
    tracing_.ml
    from
    (trace.core -> tracing_.real.ml)

@@ -1,7 +1,12 @@
 (library
  (public_name moonpool)
  (name moonpool)
- (libraries moonpool.private moonpool.dpool picos.exn_bt picos)
+ (libraries
+  moonpool.private
+  thread-local-storage
+  moonpool.dpool
+  picos.exn_bt
+  picos)
  (flags :standard -open Moonpool_private)
  (private_modules types_ util_pool_)
  (preprocess

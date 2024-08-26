@@ -13,6 +13,7 @@ module Ws_pool = Ws_pool
 module Fifo_pool = Fifo_pool
 module Background_thread = Background_thread
 module Runner = Runner
+module Trigger = Trigger
 
 module Immediate_runner : sig end
 [@@deprecated "use Moonpool_fib.Main"]
@@ -78,7 +79,7 @@ module Lock = Lock
 module Fut = Fut
 module Chan = Chan
 module Task_local_storage = Task_local_storage
-module Thread_local_storage = Thread_local_storage_
+module Thread_local_storage = Thread_local_storage
 
 (** A simple blocking queue.
 

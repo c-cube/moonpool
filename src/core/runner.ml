@@ -1,5 +1,4 @@
 open Types_
-module TLS = Thread_local_storage_
 
 type task = unit -> unit
 
