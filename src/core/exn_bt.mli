@@ -4,8 +4,10 @@
 
     @since 0.6 *)
 
-include module type of Picos_exn_bt
 (** An exception bundled with a backtrace *)
+include module type of struct
+  include Picos_exn_bt
+end
 
 val exn : t -> exn
 val bt : t -> Printexc.raw_backtrace

@@ -1,6 +1,7 @@
 module TLS = Thread_local_storage
 module Domain_pool_ = Moonpool_dpool
 
+(* TODO: replace with Picos.Fiber.FLS *)
 type ls_value = ..
 
 (** Key for task local storage *)
