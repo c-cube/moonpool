@@ -16,7 +16,7 @@ let make () =
 
 let[@inline] of_result x : _ t = { st = A.make (Done x) }
 let[@inline] return x : _ t = of_result (Ok x)
-let[@inline] fail e bt : _ t = of_result (Error (e, bt))
+let[@inline] fail exn bt : _ t = of_result (Error { Exn_bt.exn; bt })
 let[@inline] fail_exn_bt ebt = of_result (Error ebt)
 
 let[@inline] is_resolved self : bool =
@@ -59,7 +59,7 @@ let[@inline] get_or_fail self =
 let[@inline] get_or_fail_exn self =
   match A.get self.st with
   | Done (Ok x) -> x
-  | Done (Error (exn, bt)) -> Printexc.raise_with_backtrace exn bt
+  | Done (Error { exn; bt }) -> Printexc.raise_with_backtrace exn bt
   | Waiting _ -> raise Not_ready
 
 let on_result (self : _ t) (f : _ waiter) : unit =
@@ -108,9 +108,9 @@ let spawn ~on f : _ t =
   let task () =
     let res =
       try Ok (f ())
-      with e ->
+      with exn ->
         let bt = Printexc.get_raw_backtrace () in
-        Error (e, bt)
+        Error { Exn_bt.exn; bt }
     in
     fulfill promise res
   in
@@ -141,9 +141,9 @@ let map ?on ~f fut : _ t =
     match r with
     | Ok x ->
       (try Ok (f x)
-       with e ->
+       with exn ->
          let bt = Printexc.get_raw_backtrace () in
-         Error (e, bt))
+         Error { Exn_bt.exn; bt })
     | Error e_bt -> Error e_bt
   in
 
@@ -167,7 +167,7 @@ let map ?on ~f fut : _ t =
 let join (fut : 'a t t) : 'a t =
   match peek fut with
   | Some (Ok f) -> f
-  | Some (Error (e, bt)) -> fail e bt
+  | Some (Error ebt) -> fail_exn_bt ebt
   | None ->
     let fut2, promise = make () in
     on_result fut (function
@@ -183,7 +183,7 @@ let bind ?on ~f fut : _ t =
        with e ->
          let bt = Printexc.get_raw_backtrace () in
          fail e bt)
-    | Error (e, bt) -> fail e bt
+    | Error ebt -> fail_exn_bt ebt
   in
 
   let bind_and_fulfill (r : _ result) promise () : unit =
@@ -226,7 +226,7 @@ let update_atomic_ (st : 'a A.t) f : 'a =
 let both a b : _ t =
   match peek a, peek b with
   | Some (Ok x), Some (Ok y) -> return (x, y)
-  | Some (Error (e, bt)), _ | _, Some (Error (e, bt)) -> fail e bt
+  | Some (Error ebt), _ | _, Some (Error ebt) -> fail_exn_bt ebt
   | _ ->
     let fut, promise = make () in
 
@@ -259,7 +259,7 @@ let choose a b : _ t =
   match peek a, peek b with
   | Some (Ok x), _ -> return (Either.Left x)
   | _, Some (Ok y) -> return (Either.Right y)
-  | Some (Error (e, bt)), Some (Error _) -> fail e bt
+  | Some (Error ebt), Some (Error _) -> fail_exn_bt ebt
   | _ ->
     let fut, promise = make () in
 
@@ -282,7 +282,7 @@ let choose_same a b : _ t =
   match peek a, peek b with
   | Some (Ok x), _ -> return x
   | _, Some (Ok y) -> return y
-  | Some (Error (e, bt)), Some (Error _) -> fail e bt
+  | Some (Error ebt), Some (Error _) -> fail_exn_bt ebt
   | _ ->
     let fut, promise = make () in
 
@@ -415,7 +415,7 @@ let wait_block (self : 'a t) : 'a or_error =
 let wait_block_exn self =
   match wait_block self with
   | Ok x -> x
-  | Error (e, bt) -> Printexc.raise_with_backtrace e bt
+  | Error { exn; bt } -> Printexc.raise_with_backtrace exn bt
 
 [@@@ifge 5.0]
 
@@ -425,7 +425,7 @@ let await (fut : 'a t) : 'a =
     (* fast path: peek *)
     (match res with
     | Ok x -> x
-    | Error (exn, bt) -> Printexc.raise_with_backtrace exn bt)
+    | Error { exn; bt } -> Printexc.raise_with_backtrace exn bt)
   | None ->
     (* suspend until the future is resolved *)
     Suspend_.suspend
@@ -436,9 +436,9 @@ let await (fut : 'a t) : 'a =
               | Ok _ ->
                 (* schedule continuation with the same name *)
                 resume k (Ok ())
-              | Error (exn, bt) ->
+              | Error ebt ->
                 (* fail continuation immediately *)
-                resume k (Error (exn, bt))));
+                resume k (Error ebt)));
       };
     (* un-suspended: we should have a result! *)
     get_or_fail_exn fut

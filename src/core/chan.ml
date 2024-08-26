@@ -175,7 +175,10 @@ let close (self : _ t) : unit =
       if A.compare_and_set self.st old_st St_closed then (
         (* fail all waiters with [Closed]. *)
         let bt = Printexc.get_callstack 10 in
-        Q.iter (fun w -> Fut.fulfill_idempotent w (Error (Closed, bt))) ws;
+        Q.iter
+          (fun w ->
+            Fut.fulfill_idempotent w (Error { Exn_bt.exn = Closed; bt }))
+          ws;
         false
       ) else
         true

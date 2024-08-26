@@ -44,7 +44,7 @@ let with_suspend (WSH { on_suspend; run; resume }) (f : unit -> unit) : unit =
           let state = on_suspend () in
           let k' : suspension = function
             | Ok () -> E.continue k ()
-            | Error (exn, bt) -> E.discontinue_with_backtrace k exn bt
+            | Error ebt -> Exn_bt.discontinue k ebt
           in
           h.handle ~run:(run state) ~resume:(resume state) k')
     | Yield ->
@@ -54,7 +54,7 @@ let with_suspend (WSH { on_suspend; run; resume }) (f : unit -> unit) : unit =
           let state = on_suspend () in
           let k' : suspension = function
             | Ok () -> E.continue k ()
-            | Error (exn, bt) -> E.discontinue_with_backtrace k exn bt
+            | Error ebt -> Exn_bt.discontinue k ebt
           in
           resume state k' @@ Ok ())
     | _ -> None

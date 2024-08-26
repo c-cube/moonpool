@@ -125,7 +125,7 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
           if not (A.exchange has_failed true) then
             (* first one to fail, and [missing] must be >= 2
                because we're not decreasing it. *)
-            resume suspension (Error (exn, bt))
+            resume suspension (Error { Exn_bt.exn; bt })
       in
 
       let i = ref 0 in
