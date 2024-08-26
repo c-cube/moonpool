@@ -1,5 +1,7 @@
 (* vendored from  https://github.com/c-cube/thread-local-storage *)
 
+module Atomic = Atomic_
+
 (* sanity check *)
 let () = assert (Obj.field (Obj.repr (Thread.self ())) 1 = Obj.repr ())
 
