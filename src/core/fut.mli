@@ -285,6 +285,8 @@ module Infix_local = Infix
 module Private_ : sig
   val unsafe_promise_of_fut : 'a t -> 'a promise
   (** please do not use *)
+
+  val as_computation : 'a t -> 'a Picos.Computation.t
 end
 
 (**/**)

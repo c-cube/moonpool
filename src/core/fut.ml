@@ -442,4 +442,5 @@ module Infix_local = Infix [@@deprecated "use Infix"]
 
 module Private_ = struct
   let[@inline] unsafe_promise_of_fut x = x
+  let[@inline] as_computation self = self.st
 end
