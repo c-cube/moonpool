@@ -57,10 +57,8 @@ let new_key (type t) ~init () : t key =
 
 let[@inline] get_cur_ () : ls_value array ref =
   match get_current_storage () with
-  | Some r ->
-    assert (r != dummy);
-    r
-  | None -> failwith "Task local storage must be accessed from within a runner."
+  | Some r when r != dummy -> r
+  | _ -> failwith "Task local storage must be accessed from within a runner."
 
 let[@inline] get (key : 'a key) : 'a =
   let cur = get_cur_ () in
