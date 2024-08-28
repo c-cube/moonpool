@@ -8,6 +8,7 @@
     @since 0.6
 *)
 
+(*
 type t = Types_.local_storage
 (** Underlying storage for a task. This is mutable and
     not thread-safe. *)
@@ -65,3 +66,4 @@ module Direct : sig
   val create : unit -> t
   val copy : t -> t
 end
+*)

@@ -72,7 +72,9 @@ let push (self : 'a t) (x : 'a) : bool =
     true
   with Full -> false
 
-let pop (self : 'a t) : 'a option =
+exception Empty
+
+let pop_exn (self : 'a t) : 'a =
   let b = A.get self.bottom in
   let b = b - 1 in
   A.set self.bottom b;
@@ -84,11 +86,11 @@ let pop (self : 'a t) : 'a option =
   if size < 0 then (
     (* reset to basic empty state *)
     A.set self.bottom t;
-    None
+    raise_notrace Empty
   ) else if size > 0 then (
     (* can pop without modifying [top] *)
     let x = CA.get self.arr b in
-    Some x
+    x
   ) else (
     assert (size = 0);
     (* there was exactly one slot, so we might be racing against stealers
@@ -96,12 +98,17 @@ let pop (self : 'a t) : 'a option =
     if A.compare_and_set self.top t (t + 1) then (
       let x = CA.get self.arr b in
       A.set self.bottom (t + 1);
-      Some x
+      x
     ) else (
       A.set self.bottom (t + 1);
-      None
+      raise_notrace Empty
     )
   )
+
+let[@inline] pop self : _ option =
+  match pop_exn self with
+  | exception Empty -> None
+  | t -> Some t
 
 let steal (self : 'a t) : 'a option =
   (* read [top], but do not update [top_cached]

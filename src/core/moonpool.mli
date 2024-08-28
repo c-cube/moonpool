@@ -33,13 +33,13 @@ val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
     to run the thread. This ensures that we don't always pick the same domain
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
-val run_async : ?ls:Task_local_storage.t -> Runner.t -> (unit -> unit) -> unit
+val run_async : ?fiber:Picos.Fiber.t -> Runner.t -> (unit -> unit) -> unit
 (** [run_async runner task] schedules the task to run
   on the given runner. This means [task()] will be executed
   at some point in the future, possibly in another thread.
   @since 0.5 *)
 
-val run_wait_block : ?ls:Task_local_storage.t -> Runner.t -> (unit -> 'a) -> 'a
+val run_wait_block : ?fiber:Picos.Fiber.t -> Runner.t -> (unit -> 'a) -> 'a
 (** [run_wait_block runner f] schedules [f] for later execution
     on the runner, like {!run_async}.
     It then blocks the current thread until [f()] is done executing,
@@ -212,16 +212,10 @@ module Private : sig
   module Ws_deque_ = Ws_deque_
   (** A deque for work stealing, fixed size. *)
 
-  (** {2 Suspensions} *)
-
-  module Suspend_ = Suspend_
-  [@@alert
-    unstable "this module is an implementation detail of moonpool for now"]
-  (** Suspensions.
-
-    This is only going to work on OCaml 5.x.
-
-    {b NOTE}: this is not stable for now. *)
+  module Worker_loop_ = Worker_loop_
+  (** Worker loop. This is useful to implement custom runners, it
+        should run on each thread of the runner.
+        @since NEXT_RELEASE *)
 
   module Domain_ = Domain_
   (** Utils for domains *)

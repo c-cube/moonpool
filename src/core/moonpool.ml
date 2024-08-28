@@ -36,7 +36,7 @@ module Ws_pool = Ws_pool
 
 module Private = struct
   module Ws_deque_ = Ws_deque_
-  module Suspend_ = Suspend_
+  module Worker_loop_ = Worker_loop_
   module Domain_ = Domain_
   module Tracing_ = Tracing_
 

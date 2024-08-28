@@ -1,87 +1,39 @@
 open Types_
 include Runner
+module WL = Worker_loop_
+
+type fiber = Picos.Fiber.t
+type task_full = WL.task_full
 
 let ( let@ ) = ( @@ )
-
-type task_full =
-  | T_start of {
-      ls: Task_local_storage.t;
-      f: task;
-    }
-  | T_resume : {
-      ls: Task_local_storage.t;
-      k: 'a -> unit;
-      x: 'a;
-    }
-      -> task_full
 
 type state = {
   threads: Thread.t array;
   q: task_full Bb_queue.t;  (** Queue for tasks. *)
+  around_task: WL.around_task;
+  as_runner: t lazy_t;
+  (* init options *)
+  name: string option;
+  on_init_thread: dom_id:int -> t_id:int -> unit -> unit;
+  on_exit_thread: dom_id:int -> t_id:int -> unit -> unit;
+  on_exn: exn -> Printexc.raw_backtrace -> unit;
 }
 (** internal state *)
 
+type worker_state = {
+  idx: int;
+  dom_idx: int;
+  st: state;
+  mutable current: fiber;
+}
+
 let[@inline] size_ (self : state) = Array.length self.threads
 let[@inline] num_tasks_ (self : state) : int = Bb_queue.size self.q
-
-(** Run [task] as is, on the pool. *)
-let schedule_ (self : state) (task : task_full) : unit =
-  try Bb_queue.push self.q task with Bb_queue.Closed -> raise Shutdown
-
-type around_task = AT_pair : (t -> 'a) * (t -> 'a -> unit) -> around_task
-type worker_state = { mutable cur_ls: Task_local_storage.t option }
-
 let k_worker_state : worker_state TLS.t = TLS.create ()
 
-let worker_thread_ (self : state) (runner : t) ~on_exn ~around_task : unit =
-  let w = { cur_ls = None } in
-  TLS.set k_worker_state w;
-  TLS.set Runner.For_runner_implementors.k_cur_runner runner;
-
-  let (AT_pair (before_task, after_task)) = around_task in
-
-  let on_suspend () =
-    match TLS.get_opt k_worker_state with
-    | Some { cur_ls = Some ls; _ } -> ls
-    | _ -> assert false
-  in
-  let run_another_task ls task' = schedule_ self @@ T_start { f = task'; ls } in
-  let resume ls k res = schedule_ self @@ T_resume { ls; k; x = res } in
-
-  let run_task (task : task_full) : unit =
-    let ls =
-      match task with
-      | T_start { ls; _ } | T_resume { ls; _ } -> ls
-    in
-    w.cur_ls <- Some ls;
-    TLS.set k_cur_storage ls;
-    let _ctx = before_task runner in
-
-    (* run the task now, catching errors, handling effects *)
-    (try
-       match task with
-       | T_start { f = task; _ } ->
-         (* run [task()] and handle [suspend] in it *)
-         Suspend_.with_suspend
-           (WSH { on_suspend; run = run_another_task; resume })
-           task
-       | T_resume { k; x; _ } ->
-         (* this is already in an effect handler *)
-         k x
-     with e ->
-       let bt = Printexc.get_raw_backtrace () in
-       on_exn e bt);
-    after_task runner _ctx;
-    w.cur_ls <- None;
-    TLS.set k_cur_storage _dummy_ls
-  in
-
-  let continue = ref true in
-  while !continue do
-    match Bb_queue.pop self.q with
-    | task -> run_task task
-    | exception Bb_queue.Closed -> continue := false
-  done
+(*
+get_thread_state = TLS.get_opt k_worker_state
+  *)
 
 let default_thread_init_exit_ ~dom_id:_ ~t_id:_ () = ()
 
@@ -98,10 +50,14 @@ type ('a, 'b) create_args =
   ?name:string ->
   'a
 
-let default_around_task_ : around_task = AT_pair (ignore, fun _ _ -> ())
+let default_around_task_ : WL.around_task = AT_pair (ignore, fun _ _ -> ())
+
+(** Run [task] as is, on the pool. *)
+let schedule_ (self : state) (task : task_full) : unit =
+  try Bb_queue.push self.q task with Bb_queue.Closed -> raise Shutdown
 
 let runner_of_state (pool : state) : t =
-  let run_async ~ls f = schedule_ pool @@ T_start { f; ls } in
+  let run_async ~fiber f = schedule_ pool @@ T_start { f; fiber } in
   Runner.For_runner_implementors.create
     ~shutdown:(fun ~wait () -> shutdown_ pool ~wait)
     ~run_async
@@ -109,13 +65,59 @@ let runner_of_state (pool : state) : t =
     ~num_tasks:(fun () -> num_tasks_ pool)
     ()
 
+(** Run [task] as is, on the pool. *)
+let schedule_w (self : worker_state) (task : task_full) : unit =
+  try Bb_queue.push self.st.q task with Bb_queue.Closed -> raise Shutdown
+
+let get_next_task (self : worker_state) =
+  try Bb_queue.pop self.st.q with Bb_queue.Closed -> raise WL.No_more_tasks
+
+let get_thread_state () =
+  match TLS.get_exn k_worker_state with
+  | st -> st
+  | exception TLS.Not_set ->
+    failwith "Moonpool: get_thread_state called from outside a runner."
+
+let before_start (self : worker_state) =
+  let t_id = Thread.id @@ Thread.self () in
+  self.st.on_init_thread ~dom_id:self.dom_idx ~t_id ();
+
+  (* set thread name *)
+  Option.iter
+    (fun name ->
+      Tracing_.set_thread_name (Printf.sprintf "%s.worker.%d" name self.idx))
+    self.st.name
+
+let cleanup (self : worker_state) : unit =
+  (* on termination, decrease refcount of underlying domain *)
+  Domain_pool_.decr_on self.dom_idx;
+  let t_id = Thread.id @@ Thread.self () in
+  self.st.on_exit_thread ~dom_id:self.dom_idx ~t_id ()
+
+let worker_ops : worker_state WL.ops =
+  let runner (st : worker_state) = Lazy.force st.st.as_runner in
+  let around_task st = st.st.around_task in
+  let on_exn (st : worker_state) (ebt : Exn_bt.t) =
+    st.st.on_exn ebt.exn ebt.bt
+  in
+  {
+    WL.schedule = schedule_w;
+    runner;
+    get_next_task;
+    get_thread_state;
+    around_task;
+    on_exn;
+    before_start;
+    cleanup;
+  }
+
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
     ?around_task ?num_threads ?name () : t =
   (* wrapper *)
   let around_task =
     match around_task with
-    | Some (f, g) -> AT_pair (f, g)
+    | Some (f, g) -> WL.AT_pair (f, g)
     | None -> default_around_task_
   in
 
@@ -127,9 +129,18 @@ let create ?(on_init_thread = default_thread_init_exit_)
   (* make sure we don't bias towards the first domain(s) in {!D_pool_} *)
   let offset = Random.int num_domains in
 
-  let pool =
+  let rec pool =
     let dummy_thread = Thread.self () in
-    { threads = Array.make num_threads dummy_thread; q = Bb_queue.create () }
+    {
+      threads = Array.make num_threads dummy_thread;
+      q = Bb_queue.create ();
+      around_task;
+      as_runner = lazy (runner_of_state pool);
+      name;
+      on_init_thread;
+      on_exit_thread;
+      on_exn;
+    }
   in
 
   let runner = runner_of_state pool in
@@ -142,31 +153,11 @@ let create ?(on_init_thread = default_thread_init_exit_)
   let start_thread_with_idx i =
     let dom_idx = (offset + i) mod num_domains in
 
-    (* function run in the thread itself *)
-    let main_thread_fun () : unit =
-      let thread = Thread.self () in
-      let t_id = Thread.id thread in
-      on_init_thread ~dom_id:dom_idx ~t_id ();
-
-      (* set thread name *)
-      Option.iter
-        (fun name ->
-          Tracing_.set_thread_name (Printf.sprintf "%s.worker.%d" name i))
-        name;
-
-      let run () = worker_thread_ pool runner ~on_exn ~around_task in
-
-      (* now run the main loop *)
-      Fun.protect run ~finally:(fun () ->
-          (* on termination, decrease refcount of underlying domain *)
-          Domain_pool_.decr_on dom_idx);
-      on_exit_thread ~dom_id:dom_idx ~t_id ()
-    in
-
     (* function called in domain with index [i], to
        create the thread and push it into [receive_threads] *)
     let create_thread_in_domain () =
-      let thread = Thread.create main_thread_fun () in
+      let st = { idx = i; dom_idx; st = pool; current = _dummy_fiber } in
+      let thread = Thread.create (WL.worker_loop ~ops:worker_ops) st in
       (* send the thread from the domain back to us *)
       Bb_queue.push receive_threads (i, thread)
     in
@@ -196,13 +187,3 @@ let with_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
   in
   let@ () = Fun.protect ~finally:(fun () -> shutdown pool) in
   f pool
-
-module Private_ = struct
-  type nonrec state = state
-
-  let create_state ~threads () : state = { threads; q = Bb_queue.create () }
-  let runner_of_state = runner_of_state
-
-  let run_thread (st : state) (self : t) ~on_exn : unit =
-    worker_thread_ st self ~on_exn ~around_task:default_around_task_
-end

@@ -1,4 +1,5 @@
 open Types_
+(*
 module A = Atomic_
 
 type 'a key = 'a ls_key
@@ -79,3 +80,4 @@ let with_value key x f =
   Fun.protect ~finally:(fun () -> set key old) f
 
 let get_current = get_current_storage
+*)

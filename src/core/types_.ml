@@ -1,36 +1,37 @@
 module TLS = Thread_local_storage
 module Domain_pool_ = Moonpool_dpool
 
-(* TODO: replace with Picos.Fiber.FLS *)
-type ls_value = ..
-
-(** Key for task local storage *)
-module type LS_KEY = sig
-  type t
-  type ls_value += V of t
-
-  val offset : int
-  (** Unique offset *)
-
-  val init : unit -> t
-end
-
-type 'a ls_key = (module LS_KEY with type t = 'a)
-(** A LS key (task local storage) *)
-
 type task = unit -> unit
-type local_storage = ls_value array ref
+type fiber = Picos.Fiber.t
 
 type runner = {
-  run_async: ls:local_storage -> task -> unit;
+  run_async: fiber:fiber -> task -> unit;
   shutdown: wait:bool -> unit -> unit;
   size: unit -> int;
   num_tasks: unit -> int;
 }
 
 let k_cur_runner : runner TLS.t = TLS.create ()
-let k_cur_storage : local_storage TLS.t = TLS.create ()
-let _dummy_ls : local_storage = ref [||]
+[@@alert todo "remove me asap, done via picos now"]
+
+let k_cur_fiber : fiber TLS.t = TLS.create ()
+[@@alert todo "remove me asap, done via picos now"]
+
+let _dummy_computation : Picos.Computation.packed =
+  let c = Picos.Computation.create () in
+  Picos.Computation.cancel c
+    { exn = Failure "dummy fiber"; bt = Printexc.get_callstack 0 };
+  Picos.Computation.Packed c
+
+let _dummy_fiber = Picos.Fiber.create_packed ~forbid:true _dummy_computation
 let[@inline] get_current_runner () : _ option = TLS.get_opt k_cur_runner
-let[@inline] get_current_storage () : _ option = TLS.get_opt k_cur_storage
-let[@inline] create_local_storage () = ref [||]
+
+let[@inline] get_current_fiber () : fiber option =
+  match TLS.get_exn k_cur_fiber with
+  | f when f != _dummy_fiber -> Some f
+  | _ -> None
+
+let[@inline] get_current_fiber_exn () : fiber =
+  match TLS.get_exn k_cur_fiber with
+  | f when f != _dummy_fiber -> f
+  | _ -> failwith "Moonpool: get_current_fiber was called outside of a fiber."
