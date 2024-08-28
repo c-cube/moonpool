@@ -69,6 +69,18 @@ let on_result (self : _ t) (f : _ waiter) : unit =
   in
   ignore (C.try_attach self.st trigger : bool)
 
+let on_result_ignore_cb_ _tr f (self : _ t) =
+  f (Picos.Computation.canceled self.st)
+
+let on_result_ignore (self : _ t) f : unit =
+  if Picos.Computation.is_running self.st then (
+    let trigger =
+      (Trigger.from_action f self on_result_ignore_cb_ [@alert "-handler"])
+    in
+    ignore (C.try_attach self.st trigger : bool)
+  ) else
+    on_result_ignore_cb_ () f self
+
 let[@inline] fulfill_idempotent self r =
   match r with
   | Ok x -> C.return self.st x
@@ -296,14 +308,14 @@ let barrier_on_abstract_container_of_futures ~iter ~len ~aggregate_results cont
 
     (* callback called when a future in [a] is resolved *)
     let on_res = function
-      | Ok _ ->
+      | None ->
         let n = A.fetch_and_add missing (-1) in
         if n = 1 then (
           (* last future, we know they all succeeded, so resolve [fut] *)
           let res = aggregate_results peek_or_assert_ cont in
           fulfill promise (Ok res)
         )
-      | Error e_bt ->
+      | Some e_bt ->
         (* immediately cancel all other [on_res] *)
         let n = A.exchange missing 0 in
         if n > 0 then
@@ -312,7 +324,7 @@ let barrier_on_abstract_container_of_futures ~iter ~len ~aggregate_results cont
           fulfill promise (Error e_bt)
     in
 
-    iter (fun fut -> on_result fut on_res) cont;
+    iter (fun fut -> on_result_ignore fut on_res) cont;
     fut
   )
 

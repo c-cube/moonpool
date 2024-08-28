@@ -34,6 +34,13 @@ val on_result : 'a t -> ('a or_error -> unit) -> unit
       when [fut] is set ;
       or calls [f] immediately if [fut] is already set. *)
 
+val on_result_ignore : _ t -> (Exn_bt.t option -> unit) -> unit
+(** [on_result_ignore fut f] registers [f] to be called in the future
+    when [fut] is set;
+    or calls [f] immediately if [fut] is already set.
+    It does not pass the result, only a success/error signal.
+    @since NEXT_RELEASE *)
+
 exception Already_fulfilled
 
 val fulfill : 'a promise -> 'a or_error -> unit
