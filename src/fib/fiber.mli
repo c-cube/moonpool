@@ -17,20 +17,27 @@ type cancel_callback = Exn_bt.t -> unit
 (** Do not rely on this, it is internal implementation details. *)
 module Private_ : sig
   type 'a state
+  type pfiber
 
   type 'a t = private {
     id: Handle.t;  (** unique identifier for this fiber *)
     state: 'a state Atomic.t;  (** Current state in the lifetime of the fiber *)
     res: 'a Fut.t;
     runner: Runner.t;
-    ls: Task_local_storage.t;
+    pfiber: pfiber;
   }
   (** Type definition, exposed so that {!any} can be unboxed.
       Please do not rely on that. *)
 
   type any = Any : _ t -> any [@@unboxed]
 
-  val get_cur : unit -> any option
+  exception Not_set
+
+  val get_cur_exn : unit -> any
+  (** [get_cur_exn ()] either returns the current fiber, or
+      @raise Not_set if run outside a fiber. *)
+
+  val get_cur_opt : unit -> any option
 end
 
 (**/**)

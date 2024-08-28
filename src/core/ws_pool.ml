@@ -25,7 +25,7 @@ type state = {
   mutable n_waiting_nonzero: bool;  (** [n_waiting > 0] *)
   mutex: Mutex.t;
   cond: Condition.t;
-  as_runner: t lazy_t;
+  mutable as_runner: t;
   (* init options *)
   around_task: WL.around_task;
   name: string option;
@@ -167,7 +167,9 @@ and wait_on_worker (self : worker_state) : WL.task_full =
       | task ->
         Mutex.unlock self.st.mutex;
         task
-      | exception Queue.Empty -> try_steal_from_other_workers_ self
+      | exception Queue.Empty ->
+        Mutex.unlock self.st.mutex;
+        try_steal_from_other_workers_ self
     ) else (
       (* do nothing more: no task in main queue, and we are shutting
          down so no new task should arrive.
@@ -183,8 +185,7 @@ let before_start (self : worker_state) : unit =
   let t_id = Thread.id @@ Thread.self () in
   self.st.on_init_thread ~dom_id:self.dom_id ~t_id ();
   TLS.set k_cur_fiber _dummy_fiber;
-  TLS.set Runner.For_runner_implementors.k_cur_runner
-    (Lazy.force self.st.as_runner);
+  TLS.set Runner.For_runner_implementors.k_cur_runner self.st.as_runner;
   TLS.set k_worker_state self;
 
   (* set thread name *)
@@ -200,7 +201,7 @@ let cleanup (self : worker_state) : unit =
   self.st.on_exit_thread ~dom_id:self.dom_id ~t_id ()
 
 let worker_ops : worker_state WL.ops =
-  let runner (st : worker_state) = Lazy.force st.st.as_runner in
+  let runner (st : worker_state) = st.st.as_runner in
   let around_task st = st.st.around_task in
   let on_exn (st : worker_state) (ebt : Exn_bt.t) =
     st.st.on_exn ebt.exn ebt.bt
@@ -261,7 +262,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
   (* make sure we don't bias towards the first domain(s) in {!D_pool_} *)
   let offset = Random.int num_domains in
 
-  let rec pool =
+  let pool =
     {
       id_ = pool_id_;
       active = A.make true;
@@ -276,28 +277,32 @@ let create ?(on_init_thread = default_thread_init_exit_)
       on_init_thread;
       on_exit_thread;
       name;
-      as_runner = lazy (as_runner_ pool);
+      as_runner = Runner.dummy;
     }
   in
+  pool.as_runner <- as_runner_ pool;
 
   (* temporary queue used to obtain thread handles from domains
      on which the thread are started. *)
   let receive_threads = Bb_queue.create () in
 
   (* start the thread with index [i] *)
-  let start_thread_with_idx idx =
+  let create_worker_state idx =
     let dom_id = (offset + idx) mod num_domains in
-    let st =
-      {
-        st = pool;
-        thread = (* dummy *) Thread.self ();
-        q = WSQ.create ~dummy:WL._dummy_task ();
-        rng = Random.State.make [| idx |];
-        dom_id;
-        idx;
-      }
-    in
+    {
+      st = pool;
+      thread = (* dummy *) Thread.self ();
+      q = WSQ.create ~dummy:WL._dummy_task ();
+      rng = Random.State.make [| idx |];
+      dom_id;
+      idx;
+    }
+  in
 
+  pool.workers <- Array.init num_threads create_worker_state;
+
+  (* start the thread with index [i] *)
+  let start_thread_with_idx idx (st : worker_state) =
     (* function called in domain with index [i], to
        create the thread and push it into [receive_threads] *)
     let create_thread_in_domain () =
@@ -305,15 +310,12 @@ let create ?(on_init_thread = default_thread_init_exit_)
       (* send the thread from the domain back to us *)
       Bb_queue.push receive_threads (idx, thread)
     in
-
-    Domain_pool_.run_on dom_id create_thread_in_domain;
-
-    st
+    Domain_pool_.run_on st.dom_id create_thread_in_domain
   in
 
   (* start all worker threads, placing them on the domains
      according to their index and [offset] in a round-robin fashion. *)
-  pool.workers <- Array.init num_threads start_thread_with_idx;
+  Array.iteri start_thread_with_idx pool.workers;
 
   (* receive the newly created threads back from domains *)
   for _j = 1 to num_threads do
@@ -322,7 +324,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
     worker_state.thread <- th
   done;
 
-  Lazy.force pool.as_runner
+  pool.as_runner
 
 let with_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
     ?name () f =

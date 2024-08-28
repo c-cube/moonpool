@@ -7,3 +7,7 @@ let show self = Printexc.to_string (exn self)
 let pp out self = Format.pp_print_string out (show self)
 
 type nonrec 'a result = ('a, t) result
+
+let[@inline] unwrap = function
+  | Ok x -> x
+  | Error ebt -> raise ebt

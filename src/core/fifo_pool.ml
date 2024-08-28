@@ -11,7 +11,7 @@ type state = {
   threads: Thread.t array;
   q: task_full Bb_queue.t;  (** Queue for tasks. *)
   around_task: WL.around_task;
-  as_runner: t lazy_t;
+  mutable as_runner: t;
   (* init options *)
   name: string option;
   on_init_thread: dom_id:int -> t_id:int -> unit -> unit;
@@ -24,7 +24,6 @@ type worker_state = {
   idx: int;
   dom_idx: int;
   st: state;
-  mutable current: fiber;
 }
 
 let[@inline] size_ (self : state) = Array.length self.threads
@@ -95,7 +94,7 @@ let cleanup (self : worker_state) : unit =
   self.st.on_exit_thread ~dom_id:self.dom_idx ~t_id ()
 
 let worker_ops : worker_state WL.ops =
-  let runner (st : worker_state) = Lazy.force st.st.as_runner in
+  let runner (st : worker_state) = st.st.as_runner in
   let around_task st = st.st.around_task in
   let on_exn (st : worker_state) (ebt : Exn_bt.t) =
     st.st.on_exn ebt.exn ebt.bt
@@ -111,9 +110,9 @@ let worker_ops : worker_state WL.ops =
     cleanup;
   }
 
-let create ?(on_init_thread = default_thread_init_exit_)
+let create_ ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
-    ?around_task ?num_threads ?name () : t =
+    ?around_task ~threads ?name () : state =
   (* wrapper *)
   let around_task =
     match around_task with
@@ -121,6 +120,23 @@ let create ?(on_init_thread = default_thread_init_exit_)
     | None -> default_around_task_
   in
 
+  let self =
+    {
+      threads;
+      q = Bb_queue.create ();
+      around_task;
+      as_runner = Runner.dummy;
+      name;
+      on_init_thread;
+      on_exit_thread;
+      on_exn;
+    }
+  in
+  self.as_runner <- runner_of_state self;
+  self
+
+let create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
+    ?name () : t =
   let num_domains = Domain_pool_.max_number_of_domains () in
 
   (* number of threads to run *)
@@ -129,20 +145,12 @@ let create ?(on_init_thread = default_thread_init_exit_)
   (* make sure we don't bias towards the first domain(s) in {!D_pool_} *)
   let offset = Random.int num_domains in
 
-  let rec pool =
+  let pool =
     let dummy_thread = Thread.self () in
-    {
-      threads = Array.make num_threads dummy_thread;
-      q = Bb_queue.create ();
-      around_task;
-      as_runner = lazy (runner_of_state pool);
-      name;
-      on_init_thread;
-      on_exit_thread;
-      on_exn;
-    }
+    let threads = Array.make num_threads dummy_thread in
+    create_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ~threads ?name
+      ()
   in
-
   let runner = runner_of_state pool in
 
   (* temporary queue used to obtain thread handles from domains
@@ -156,7 +164,7 @@ let create ?(on_init_thread = default_thread_init_exit_)
     (* function called in domain with index [i], to
        create the thread and push it into [receive_threads] *)
     let create_thread_in_domain () =
-      let st = { idx = i; dom_idx; st = pool; current = _dummy_fiber } in
+      let st = { idx = i; dom_idx; st = pool } in
       let thread = Thread.create (WL.worker_loop ~ops:worker_ops) st in
       (* send the thread from the domain back to us *)
       Bb_queue.push receive_threads (i, thread)
@@ -187,3 +195,14 @@ let with_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
   in
   let@ () = Fun.protect ~finally:(fun () -> shutdown pool) in
   f pool
+
+module Private_ = struct
+  type nonrec worker_state = worker_state
+
+  let worker_ops = worker_ops
+  let runner_of_state (self : worker_state) = worker_ops.runner self
+
+  let create_single_threaded_state ~thread ?on_exn () : worker_state =
+    let st : state = create_ ?on_exn ~threads:[| thread |] () in
+    { idx = 0; dom_idx = 0; st }
+end

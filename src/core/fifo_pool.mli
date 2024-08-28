@@ -44,3 +44,21 @@ val with_ : (unit -> (t -> 'a) -> 'a, _) create_args
     When [f pool] returns or fails, [pool] is shutdown and its resources
     are released.
     Most parameters are the same as in {!create}. *)
+
+(**/**)
+
+module Private_ : sig
+  type worker_state
+
+  val worker_ops : worker_state Worker_loop_.ops
+
+  val create_single_threaded_state :
+    thread:Thread.t ->
+    ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
+    unit ->
+    worker_state
+
+  val runner_of_state : worker_state -> Runner.t
+end
+
+(**/**)

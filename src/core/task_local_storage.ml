@@ -1,83 +1,41 @@
 open Types_
-(*
-module A = Atomic_
+module PF = Picos.Fiber
 
-type 'a key = 'a ls_key
+type 'a t = 'a PF.FLS.t
 
-let key_count_ = A.make 0
+exception Not_set = PF.FLS.Not_set
 
-type t = local_storage
-type ls_value += Dummy
+let create = PF.FLS.create
 
-let dummy : t = _dummy_ls
+let[@inline] get_exn k =
+  let fiber = get_current_fiber_exn () in
+  PF.FLS.get_exn fiber k
 
-(** Resize array of TLS values *)
-let[@inline never] resize_ (cur : ls_value array ref) n =
-  if n > Sys.max_array_length then failwith "too many task local storage keys";
-  let len = Array.length !cur in
-  let new_ls =
-    Array.make (min Sys.max_array_length (max n ((len * 2) + 2))) Dummy
-  in
-  Array.blit !cur 0 new_ls 0 len;
-  cur := new_ls
-
-module Direct = struct
-  type nonrec t = t
-
-  let create = create_local_storage
-  let[@inline] copy (self : t) = ref (Array.copy !self)
-
-  let get (type a) (self : t) ((module K) : a key) : a =
-    if K.offset >= Array.length !self then resize_ self (K.offset + 1);
-    match !self.(K.offset) with
-    | K.V x -> (* common case first *) x
-    | Dummy ->
-      (* first time we access this *)
-      let v = K.init () in
-      !self.(K.offset) <- K.V v;
-      v
-    | _ -> assert false
-
-  let set (type a) (self : t) ((module K) : a key) (v : a) : unit =
-    assert (self != dummy);
-    if K.offset >= Array.length !self then resize_ self (K.offset + 1);
-    !self.(K.offset) <- K.V v;
-    ()
-end
-
-let new_key (type t) ~init () : t key =
-  let offset = A.fetch_and_add key_count_ 1 in
-  (module struct
-    type nonrec t = t
-    type ls_value += V of t
-
-    let offset = offset
-    let init = init
-  end : LS_KEY
-    with type t = t)
-
-let[@inline] get_cur_ () : ls_value array ref =
-  match get_current_storage () with
-  | Some r when r != dummy -> r
-  | _ -> failwith "Task local storage must be accessed from within a runner."
-
-let[@inline] get (key : 'a key) : 'a =
-  let cur = get_cur_ () in
-  Direct.get cur key
-
-let[@inline] get_opt key =
-  match get_current_storage () with
+let get_opt k =
+  match get_current_fiber () with
   | None -> None
-  | Some cur -> Some (Direct.get cur key)
+  | Some fiber ->
+    (match PF.FLS.get_exn fiber k with
+    | x -> Some x
+    | exception Not_set -> None)
 
-let[@inline] set key v : unit =
-  let cur = get_cur_ () in
-  Direct.set cur key v
+let[@inline] get k ~default =
+  let fiber = get_current_fiber_exn () in
+  PF.FLS.get fiber ~default k
 
-let with_value key x f =
-  let old = get key in
-  set key x;
-  Fun.protect ~finally:(fun () -> set key old) f
+let[@inline] set k v : unit =
+  let fiber = get_current_fiber_exn () in
+  PF.FLS.set fiber k v
 
-let get_current = get_current_storage
-*)
+let with_value k v (f : _ -> 'b) : 'b =
+  let fiber = get_current_fiber_exn () in
+
+  match PF.FLS.get_exn fiber k with
+  | exception Not_set ->
+    PF.FLS.set fiber k v;
+    (* nothing to restore back to, just call [f] *)
+    f ()
+  | old_v ->
+    PF.FLS.set fiber k v;
+    let finally () = PF.FLS.set fiber k old_v in
+    Fun.protect f ~finally

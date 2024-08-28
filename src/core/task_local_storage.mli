@@ -8,62 +8,31 @@
     @since 0.6
 *)
 
-(*
-type t = Types_.local_storage
-(** Underlying storage for a task. This is mutable and
-    not thread-safe. *)
+type 'a t = 'a Picos.Fiber.FLS.t
 
-val dummy : t
+val create : unit -> 'a t
+(** [create ()] makes a new key. Keys are expensive and
+    should never be allocated dynamically or in a loop. *)
 
-type 'a key
-(** A key used to access a particular (typed) storage slot on every task. *)
+exception Not_set
 
-val new_key : init:(unit -> 'a) -> unit -> 'a key
-(** [new_key ~init ()] makes a new key. Keys are expensive and
-    should never be allocated dynamically or in a loop.
-    The correct pattern is, at toplevel:
-
-    {[
-      let k_foo : foo Task_ocal_storage.key =
-        Task_local_storage.new_key ~init:(fun () -> make_foo ()) ()
-
-    (* … *)
-
-    (* use it: *)
-    let … = Task_local_storage.get k_foo
-    ]}
-*)
-
-val get : 'a key -> 'a
+val get_exn : 'a t -> 'a
 (** [get k] gets the value for the current task for key [k].
     Must be run from inside a task running on a runner.
-    @raise Failure otherwise *)
+    @raise Not_set otherwise *)
 
-val get_opt : 'a key -> 'a option
+val get_opt : 'a t -> 'a option
 (** [get_opt k] gets the current task's value for key [k],
     or [None] if not run from inside the task. *)
 
-val set : 'a key -> 'a -> unit
+val get : 'a t -> default:'a -> 'a
+
+val set : 'a t -> 'a -> unit
 (** [set k v] sets the storage for [k] to [v].
     Must be run from inside a task running on a runner.
     @raise Failure otherwise *)
 
-val with_value : 'a key -> 'a -> (unit -> 'b) -> 'b
+val with_value : 'a t -> 'a -> (unit -> 'b) -> 'b
 (** [with_value k v f] sets [k] to [v] for the duration of the call
     to [f()]. When [f()] returns (or fails), [k] is restored
     to its old value. *)
-
-val get_current : unit -> t option
-(** Access the current storage, or [None] if not run from
-    within a task. *)
-
-(** Direct access to values from a storage handle *)
-module Direct : sig
-  val get : t -> 'a key -> 'a
-  (** Access a key *)
-
-  val set : t -> 'a key -> 'a -> unit
-  val create : unit -> t
-  val copy : t -> t
-end
-*)

@@ -1,6 +1,9 @@
+open Moonpool.Private.Types_
 module A = Atomic
 module FM = Handle.Map
 module Int_map = Map.Make (Int)
+module PF = Picos.Fiber
+module FLS = Picos.Fiber.FLS
 
 type 'a callback = 'a Exn_bt.result -> unit
 (** Callbacks that are called when a fiber is done. *)
@@ -10,13 +13,16 @@ type cancel_callback = Exn_bt.t -> unit
 let prom_of_fut : 'a Fut.t -> 'a Fut.promise =
   Fut.Private_.unsafe_promise_of_fut
 
+(* TODO: replace with picos structured at some point? *)
 module Private_ = struct
+  type pfiber = PF.t
+
   type 'a t = {
     id: Handle.t;  (** unique identifier for this fiber *)
     state: 'a state A.t;  (** Current state in the lifetime of the fiber *)
     res: 'a Fut.t;
     runner: Runner.t;
-    ls: Task_local_storage.t;
+    pfiber: pfiber;  (** Associated picos fiber *)
   }
 
   and 'a state =
@@ -30,11 +36,18 @@ module Private_ = struct
   and children = any FM.t
   and any = Any : _ t -> any [@@unboxed]
 
-  (** Key to access the current fiber. *)
-  let k_current_fiber : any option Task_local_storage.key =
-    Task_local_storage.new_key ~init:(fun () -> None) ()
+  (** Key to access the current moonpool.fiber. *)
+  let k_current_fiber : any FLS.t = FLS.create ()
 
-  let[@inline] get_cur () : any option = Task_local_storage.get k_current_fiber
+  exception Not_set = FLS.Not_set
+
+  let[@inline] get_cur_from_exn (pfiber : pfiber) : any =
+    FLS.get_exn pfiber k_current_fiber
+
+  let[@inline] get_cur_exn () : any =
+    get_cur_from_exn @@ get_current_fiber_exn ()
+
+  let[@inline] get_cur_opt () = try Some (get_cur_exn ()) with _ -> None
 
   let[@inline] is_closed (self : _ t) =
     match A.get self.state with
@@ -44,9 +57,9 @@ end
 
 include Private_
 
-let create_ ~ls ~runner () : 'a t =
+let create_ ~pfiber ~runner () : 'a t =
   let id = Handle.generate_fresh () in
-  let res, _promise = Fut.make () in
+  let res, _ = Fut.make () in
   {
     state =
       A.make
@@ -54,7 +67,7 @@ let create_ ~ls ~runner () : 'a t =
     id;
     res;
     runner;
-    ls;
+    pfiber;
   }
 
 let create_done_ ~res () : _ t =
@@ -66,7 +79,7 @@ let create_done_ ~res () : _ t =
     id;
     res;
     runner = Runner.dummy;
-    ls = Task_local_storage.dummy;
+    pfiber = Moonpool.Private.Types_._dummy_fiber;
   }
 
 let[@inline] return x = create_done_ ~res:(Fut.return x) ()
@@ -175,7 +188,8 @@ let with_on_cancel (self : _ t) cb (k : unit -> 'a) : 'a =
   let h = add_on_cancel self cb in
   Fun.protect k ~finally:(fun () -> remove_on_cancel self h)
 
-(** Successfully resolve the fiber *)
+(** Successfully resolve the fiber. This might still fail if
+    some children failed. *)
 let resolve_ok_ (self : 'a t) (r : 'a) : unit =
   let r = A.make @@ Ok r in
   let promise = prom_of_fut self.res in
@@ -239,15 +253,21 @@ let add_child_ ~protect (self : _ t) (child : _ t) =
     ()
   done
 
-let spawn_ ~ls ~parent ~runner (f : unit -> 'a) : 'a t =
+let spawn_ ~parent ~runner (f : unit -> 'a) : 'a t =
+  let comp = Picos.Computation.create () in
+  let pfiber = PF.create ~forbid:false comp in
+
+  (* inherit FLS from parent, if present *)
+  Option.iter (fun (p : _ t) -> PF.copy_fls p.pfiber pfiber) parent;
+
   (match parent with
   | Some p when is_closed p -> failwith "spawn: nursery is closed"
   | _ -> ());
-  let fib = create_ ~ls ~runner () in
+  let fib = create_ ~pfiber ~runner () in
 
   let run () =
     (* make sure the fiber is accessible from inside itself *)
-    Task_local_storage.set k_current_fiber (Some (Any fib));
+    FLS.set pfiber k_current_fiber (Any fib);
     try
       let res = f () in
       resolve_ok_ fib res
@@ -257,63 +277,54 @@ let spawn_ ~ls ~parent ~runner (f : unit -> 'a) : 'a t =
       resolve_as_failed_ fib ebt
   in
 
-  Runner.run_async ~ls runner run;
+  Runner.run_async ~fiber:pfiber runner run;
 
   fib
 
-let spawn_top ~on f : _ t =
-  let ls = Task_local_storage.Direct.create () in
-  spawn_ ~ls ~runner:on ~parent:None f
+let spawn_top ~on f : _ t = spawn_ ~runner:on ~parent:None f
 
 let spawn ?on ?(protect = true) f : _ t =
   (* spawn [f()] with a copy of our local storage *)
   let (Any p) =
-    match get_cur () with
-    | None -> failwith "Fiber.spawn: must be run from within another fiber."
-    | Some p -> p
+    try get_cur_exn ()
+    with Not_set ->
+      failwith "Fiber.spawn: must be run from within another fiber."
   in
-  let ls = Task_local_storage.Direct.copy p.ls in
+
   let runner =
     match on with
     | Some r -> r
     | None -> p.runner
   in
-  let child = spawn_ ~ls ~parent:(Some p) ~runner f in
+  let child = spawn_ ~parent:(Some p) ~runner f in
   add_child_ ~protect p child;
   child
 
 let[@inline] spawn_ignore ?protect f : unit = ignore (spawn ?protect f : _ t)
 
 let[@inline] self () : any =
-  match Task_local_storage.get k_current_fiber with
-  | None -> failwith "Fiber.self: must be run from inside a fiber."
-  | Some f -> f
+  match get_cur_exn () with
+  | exception Not_set -> failwith "Fiber.self: must be run from inside a fiber."
+  | f -> f
 
 let with_on_self_cancel cb (k : unit -> 'a) : 'a =
   let (Any self) = self () in
   let h = add_on_cancel self cb in
   Fun.protect k ~finally:(fun () -> remove_on_cancel self h)
 
-module Suspend_ = Moonpool.Private.Suspend_
-
-let check_if_cancelled_ (self : _ t) =
-  match A.get self.state with
-  | Terminating_or_done r ->
-    (match A.get r with
-    | Error ebt -> Exn_bt.raise ebt
-    | _ -> ())
-  | _ -> ()
+let[@inline] check_if_cancelled_ (self : _ t) = PF.check self.pfiber
 
 let check_if_cancelled () =
-  match Task_local_storage.get k_current_fiber with
-  | None ->
+  match get_cur_exn () with
+  | exception Not_set ->
     failwith "Fiber.check_if_cancelled: must be run from inside a fiber."
-  | Some (Any self) -> check_if_cancelled_ self
+  | Any self -> check_if_cancelled_ self
 
 let yield () : unit =
-  match Task_local_storage.get k_current_fiber with
-  | None -> failwith "Fiber.yield: must be run from inside a fiber."
-  | Some (Any self) ->
+  match get_cur_exn () with
+  | exception Not_set ->
+    failwith "Fiber.yield: must be run from inside a fiber."
+  | Any self ->
     check_if_cancelled_ self;
-    Suspend_.yield ();
+    PF.yield ();
     check_if_cancelled_ self

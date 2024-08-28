@@ -1,5 +1,4 @@
 module A = Moonpool.Atomic
-module Suspend_ = Moonpool.Private.Suspend_
 module Domain_ = Moonpool_private.Domain_
 
 module State_ = struct
@@ -9,7 +8,7 @@ module State_ = struct
   type ('a, 'b) t =
     | Init
     | Left_solved of 'a or_error
-    | Right_solved of 'b or_error * Suspend_.suspension
+    | Right_solved of 'b or_error * Trigger.t
     | Both_solved of 'a or_error * 'b or_error
 
   let get_exn_ (self : _ t A.t) =
@@ -28,13 +27,13 @@ module State_ = struct
         Domain_.relax ();
         set_left_ self left
       )
-    | Right_solved (right, cont) ->
+    | Right_solved (right, tr) ->
       let new_st = Both_solved (left, right) in
       if not (A.compare_and_set self old_st new_st) then (
         Domain_.relax ();
         set_left_ self left
       ) else
-        cont (Ok ())
+        Trigger.signal tr
     | Left_solved _ | Both_solved _ -> assert false
 
   let rec set_right_ (self : _ t A.t) (right : _ or_error) : unit =
@@ -45,27 +44,27 @@ module State_ = struct
       if not (A.compare_and_set self old_st new_st) then set_right_ self right
     | Init ->
       (* we are first arrived, we suspend until the left computation is done *)
-      Suspend_.suspend
-        {
-          Suspend_.handle =
-            (fun ~run:_ ~resume suspension ->
-              while
-                let old_st = A.get self in
-                match old_st with
-                | Init ->
-                  not
-                    (A.compare_and_set self old_st
-                       (Right_solved (right, suspension)))
-                | Left_solved left ->
-                  (* other thread is done, no risk of race condition *)
-                  A.set self (Both_solved (left, right));
-                  resume suspension (Ok ());
-                  false
-                | Right_solved _ | Both_solved _ -> assert false
-              do
-                ()
-              done);
-        }
+      let trigger = Trigger.create () in
+      let must_await = ref true in
+
+      while
+        let old_st = A.get self in
+        match old_st with
+        | Init ->
+          (* setup trigger so that left computation will wake us up *)
+          not (A.compare_and_set self old_st (Right_solved (right, trigger)))
+        | Left_solved left ->
+          (* other thread is done, no risk of race condition *)
+          A.set self (Both_solved (left, right));
+          must_await := false;
+          false
+        | Right_solved _ | Both_solved _ -> assert false
+      do
+        ()
+      done;
+
+      (* wait for the other computation to be done *)
+      if !must_await then Trigger.await trigger |> Option.iter Exn_bt.raise
     | Right_solved _ | Both_solved _ -> assert false
 end
 
@@ -102,7 +101,12 @@ let both_ignore f g = ignore (both f g : _ * _)
 
 let for_ ?chunk_size n (f : int -> int -> unit) : unit =
   if n > 0 then (
-    let has_failed = A.make false in
+    let runner =
+      match Runner.get_current_runner () with
+      | None -> failwith "forkjoin.for_: must be run inside a moonpool runner."
+      | Some r -> r
+    in
+    let failure = A.make None in
     let missing = A.make n in
 
     let chunk_size =
@@ -113,40 +117,36 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
         max 1 (1 + (n / Moonpool.Private.num_domains ()))
     in
 
-    let start_tasks ~run ~resume (suspension : Suspend_.suspension) =
-      let task_for ~offset ~len_range =
-        match f offset (offset + len_range - 1) with
-        | () ->
-          if A.fetch_and_add missing (-len_range) = len_range then
-            (* all tasks done successfully *)
-            resume suspension (Ok ())
-        | exception exn ->
-          let bt = Printexc.get_raw_backtrace () in
-          if not (A.exchange has_failed true) then
-            (* first one to fail, and [missing] must be >= 2
-               because we're not decreasing it. *)
-            resume suspension (Error { Exn_bt.exn; bt })
-      in
+    let trigger = Trigger.create () in
 
-      let i = ref 0 in
-      while !i < n do
-        let offset = !i in
-
-        let len_range = min chunk_size (n - offset) in
-        assert (offset + len_range <= n);
-
-        run (fun () -> task_for ~offset ~len_range);
-        i := !i + len_range
-      done
+    let task_for ~offset ~len_range =
+      match f offset (offset + len_range - 1) with
+      | () ->
+        if A.fetch_and_add missing (-len_range) = len_range then
+          (* all tasks done successfully *)
+          Trigger.signal trigger
+      | exception exn ->
+        let bt = Printexc.get_raw_backtrace () in
+        if Option.is_none (A.exchange failure (Some { Exn_bt.exn; bt })) then
+          (* first one to fail, and [missing] must be >= 2
+             because we're not decreasing it. *)
+          Trigger.signal trigger
     in
 
-    Suspend_.suspend
-      {
-        Suspend_.handle =
-          (fun ~run ~resume suspension ->
-            (* run tasks, then we'll resume [suspension] *)
-            start_tasks ~run ~resume suspension);
-      }
+    let i = ref 0 in
+    while !i < n do
+      let offset = !i in
+
+      let len_range = min chunk_size (n - offset) in
+      assert (offset + len_range <= n);
+
+      Runner.run_async runner (fun () -> task_for ~offset ~len_range);
+      i := !i + len_range
+    done;
+
+    Trigger.await trigger |> Option.iter Exn_bt.raise;
+    Option.iter Exn_bt.raise @@ A.get failure;
+    ()
   )
 
 let all_array ?chunk_size (fs : _ array) : _ array =

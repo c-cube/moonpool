@@ -1,17 +1,14 @@
 open Base
 
 let await_readable fd : unit =
-  Moonpool.Private.Suspend_.suspend
-    {
-      handle =
-        (fun ~run:_ ~resume sus ->
-          Perform_action_in_lwt.schedule
-          @@ Action.Wait_readable
-               ( fd,
-                 fun cancel ->
-                   resume sus @@ Ok ();
-                   Lwt_engine.stop_event cancel ));
-    }
+  let trigger = Trigger.create () in
+  Perform_action_in_lwt.schedule
+  @@ Action.Wait_readable
+       ( fd,
+         fun cancel ->
+           Trigger.signal trigger;
+           Lwt_engine.stop_event cancel );
+  Trigger.await_exn trigger
 
 let rec read fd buf i len : int =
   if len = 0 then
@@ -25,17 +22,14 @@ let rec read fd buf i len : int =
   )
 
 let await_writable fd =
-  Moonpool.Private.Suspend_.suspend
-    {
-      handle =
-        (fun ~run:_ ~resume sus ->
-          Perform_action_in_lwt.schedule
-          @@ Action.Wait_writable
-               ( fd,
-                 fun cancel ->
-                   resume sus @@ Ok ();
-                   Lwt_engine.stop_event cancel ));
-    }
+  let trigger = Trigger.create () in
+  Perform_action_in_lwt.schedule
+  @@ Action.Wait_writable
+       ( fd,
+         fun cancel ->
+           Trigger.signal trigger;
+           Lwt_engine.stop_event cancel );
+  Trigger.await_exn trigger
 
 let rec write_once fd buf i len : int =
   if len = 0 then
@@ -59,16 +53,14 @@ let write fd buf i len : unit =
 
 (** Sleep for the given amount of seconds *)
 let sleep_s (f : float) : unit =
-  if f > 0. then
-    Moonpool.Private.Suspend_.suspend
-      {
-        handle =
-          (fun ~run:_ ~resume sus ->
-            Perform_action_in_lwt.schedule
-            @@ Action.Sleep
-                 ( f,
-                   false,
-                   fun cancel ->
-                     resume sus @@ Ok ();
-                     Lwt_engine.stop_event cancel ));
-      }
+  if f > 0. then (
+    let trigger = Trigger.create () in
+    Perform_action_in_lwt.schedule
+    @@ Action.Sleep
+         ( f,
+           false,
+           fun cancel ->
+             Trigger.signal trigger;
+             Lwt_engine.stop_event cancel );
+    Trigger.await_exn trigger
+  )

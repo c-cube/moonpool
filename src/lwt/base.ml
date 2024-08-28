@@ -1,4 +1,5 @@
 open Common_
+module Trigger = M.Trigger
 module Fiber = Moonpool_fib.Fiber
 module FLS = Moonpool_fib.Fls
 
@@ -14,7 +15,7 @@ module Action = struct
     | Sleep of float * bool * cb
     (* TODO: provide actions with cancellation, alongside a "select" operation *)
     (* | Cancel of event *)
-    | On_termination : 'a Lwt.t * ('a Exn_bt.result -> unit) -> t
+    | On_termination : 'a Lwt.t * 'a Exn_bt.result ref * Trigger.t -> t
     | Wakeup : 'a Lwt.u * 'a -> t
     | Wakeup_exn : _ Lwt.u * exn -> t
     | Other of (unit -> unit)
@@ -26,10 +27,14 @@ module Action = struct
     | Wait_writable (fd, cb) -> ignore (Lwt_engine.on_writable fd cb : event)
     | Sleep (f, repeat, cb) -> ignore (Lwt_engine.on_timer f repeat cb : event)
     (* | Cancel ev -> Lwt_engine.stop_event ev *)
-    | On_termination (fut, f) ->
+    | On_termination (fut, res, trigger) ->
       Lwt.on_any fut
-        (fun x -> f @@ Ok x)
-        (fun exn -> f @@ Error (Exn_bt.get_callstack 10 exn))
+        (fun x ->
+          res := Ok x;
+          Trigger.signal trigger)
+        (fun exn ->
+          res := Error (Exn_bt.get_callstack 10 exn);
+          Trigger.signal trigger)
     | Wakeup (prom, x) -> Lwt.wakeup prom x
     | Wakeup_exn (prom, e) -> Lwt.wakeup_exn prom e
     | Other f -> f ()
@@ -106,23 +111,19 @@ let fut_of_lwt (lwt_fut : _ Lwt.t) : _ M.Fut.t =
         M.Fut.fulfill prom (Error { Exn_bt.exn; bt }));
     fut
 
+let _dummy_exn_bt : Exn_bt.t =
+  Exn_bt.get_callstack 0 (Failure "dummy Exn_bt from moonpool-lwt")
+
 let await_lwt (fut : _ Lwt.t) =
   match Lwt.poll fut with
   | Some x -> x
   | None ->
     (* suspend fiber, wake it up when [fut] resolves *)
-    M.Private.Suspend_.suspend
-      {
-        handle =
-          (fun ~run:_ ~resume sus ->
-            let on_lwt_done _ = resume sus @@ Ok () in
-            Perform_action_in_lwt.(
-              schedule Action.(On_termination (fut, on_lwt_done))));
-      };
-
-    (match Lwt.poll fut with
-    | Some x -> x
-    | None -> assert false)
+    let trigger = M.Trigger.create () in
+    let res = ref (Error _dummy_exn_bt) in
+    Perform_action_in_lwt.(schedule Action.(On_termination (fut, res, trigger)));
+    Trigger.await trigger |> Option.iter Exn_bt.raise;
+    Exn_bt.unwrap !res
 
 let run_in_lwt f : _ M.Fut.t =
   let fut, prom = M.Fut.make () in

@@ -21,3 +21,7 @@ val show : t -> string
 val pp : Format.formatter -> t -> unit
 
 type nonrec 'a result = ('a, t) result
+
+val unwrap : 'a result -> 'a
+(** [unwrap (Ok x)] is [x], [unwrap (Error ebt)] re-raises [ebt].
+    @since NEXT_RELEASE *)
