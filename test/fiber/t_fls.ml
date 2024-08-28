@@ -7,7 +7,7 @@ module FLS = Moonpool_fib.Fls
 
 type span_id = int
 
-let k_parent : span_id option FLS.key = FLS.new_key ~init:(fun () -> None) ()
+let k_parent : span_id option FLS.t = FLS.create ()
 let ( let@ ) = ( @@ )
 let spf = Printf.sprintf
 
@@ -39,7 +39,7 @@ module Tracer = struct
 
   let with_span self name f =
     let id = Span.new_id_ () in
-    let parent = FLS.get k_parent in
+    let parent = FLS.get ~default:None k_parent in
     let span = { Span.id; parent; msg = name } in
     add self span;
     FLS.with_value k_parent (Some id) f
