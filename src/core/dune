@@ -3,12 +3,12 @@
  (name moonpool)
  (libraries
   moonpool.private
-  thread-local-storage
+  (re_export thread-local-storage)
   moonpool.dpool
-  picos.exn_bt
-  picos)
+  (re_export picos.exn_bt)
+  (re_export picos))
  (flags :standard -open Moonpool_private)
- (private_modules types_ util_pool_)
+ (private_modules util_pool_)
  (preprocess
   (action
    (run %{project_root}/src/cpp/cpp.exe %{input-file}))))

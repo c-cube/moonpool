@@ -39,6 +39,7 @@ module Private = struct
   module Worker_loop_ = Worker_loop_
   module Domain_ = Domain_
   module Tracing_ = Tracing_
+  module Types_ = Types_
 
   let num_domains = Domain_pool_.max_number_of_domains
 end
