@@ -12,10 +12,7 @@ type runner = {
 }
 
 let k_cur_runner : runner TLS.t = TLS.create ()
-[@@alert todo "remove me asap, done via picos now"]
-
 let k_cur_fiber : fiber TLS.t = TLS.create ()
-[@@alert todo "remove me asap, done via picos now"]
 
 let _dummy_computation : Picos.Computation.packed =
   let c = Picos.Computation.create () in

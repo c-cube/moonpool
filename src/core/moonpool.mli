@@ -21,7 +21,7 @@ module Immediate_runner : sig end
 
     This is removed since 0.6, and replaced by {!Moonpool_fib.Main}. *)
 
-module Exn_bt = Exn_bt
+module Exn_bt = Moonpool_exn_bt
 
 exception Shutdown
 (** Exception raised when trying to run tasks on

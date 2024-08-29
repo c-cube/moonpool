@@ -6,7 +6,7 @@
 
 (** An exception bundled with a backtrace *)
 include module type of struct
-  include Picos_exn_bt
+  include Exn_bt
 end
 
 val exn : t -> exn

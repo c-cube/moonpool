@@ -1,4 +1,4 @@
-include Picos_exn_bt
+include Exn_bt
 
 let[@inline] make exn bt : t = { exn; bt }
 let[@inline] exn self = self.exn
