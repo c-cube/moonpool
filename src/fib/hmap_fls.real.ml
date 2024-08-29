@@ -23,15 +23,15 @@ let[@inline] update_local_hmap (f : Hmap.t -> Hmap.t) : unit =
   FLS.set fiber k_local_hmap h
 
 (** @raise Invalid_argument if not present *)
-let get_exn (k : 'a Hmap.key) : 'a =
+let get_in_local_hmap_exn (k : 'a Hmap.key) : 'a =
   let h = get_local_hmap () in
   Hmap.get k h
 
-let get_opt (k : 'a Hmap.key) : 'a option =
+let get_in_local_hmap_opt (k : 'a Hmap.key) : 'a option =
   let h = get_local_hmap () in
   Hmap.find k h
 
-let[@inline] set (k : 'a Hmap.key) (v : 'a) : unit =
+let[@inline] set_in_local_hmap (k : 'a Hmap.key) (v : 'a) : unit =
   update_local_hmap (Hmap.add k v)
 
 (**/**)
