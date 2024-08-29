@@ -24,6 +24,7 @@
   (qcheck-core (and :with-test (>= 0.19)))
   (thread-local-storage (and (>= 0.2) (< 0.3)))
   (odoc :with-doc)
+  picos
   (mdx
    (and
     (>= 1.9.0)
