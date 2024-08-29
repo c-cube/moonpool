@@ -30,6 +30,7 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
+      - run: opam pin picos --dev -y -n && opam install picos
       - run: opam install -t moonpool moonpool-lwt --deps-only
         if: matrix.ocaml-compiler == '5.2'
       - run: opam install -t moonpool --deps-only
@@ -37,7 +38,7 @@ jobs:
       - run: opam exec -- dune build @install
 
       # install some depopts
-      - run: opam pin picos --dev -y -n && opam install thread-local-storage trace domain-local-await # picos
+      - run: opam install thread-local-storage trace
         if: matrix.ocaml-compiler == '5.2'
 
       - run: opam exec -- dune build --profile=release --force @install @runtest
