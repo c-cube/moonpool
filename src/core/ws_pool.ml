@@ -16,7 +16,7 @@ end
 
 type state = {
   id_: Id.t;
-      (** Unique per pool. Used to make sure tasks stay within the same pool. *)
+      (** Unique to this pool. Used to make sure tasks stay within the same pool. *)
   active: bool A.t;  (** Becomes [false] when the pool is shutdown. *)
   mutable workers: worker_state array;  (** Fixed set of workers. *)
   main_q: WL.task_full Queue.t;

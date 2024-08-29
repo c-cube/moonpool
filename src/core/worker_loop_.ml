@@ -89,7 +89,7 @@ let with_handler (type st arg) ~(ops : st ops) (self : st) :
       Some
         (fun k ->
           (* not implemented *)
-          let exn = Failure "Moonpool: cancel_after is not implemented" in
+          let exn = Failure "Moonpool: cancel_after is not supported." in
           discontinue k exn)
     | _ -> None
   in

@@ -37,6 +37,7 @@ val run_async : ?fiber:Picos.Fiber.t -> Runner.t -> (unit -> unit) -> unit
 (** [run_async runner task] schedules the task to run
   on the given runner. This means [task()] will be executed
   at some point in the future, possibly in another thread.
+  @param fiber optional initial (picos) fiber state
   @since 0.5 *)
 
 val run_wait_block : ?fiber:Picos.Fiber.t -> Runner.t -> (unit -> 'a) -> 'a
@@ -45,6 +46,8 @@ val run_wait_block : ?fiber:Picos.Fiber.t -> Runner.t -> (unit -> 'a) -> 'a
     It then blocks the current thread until [f()] is done executing,
     and returns its result. If [f()] raises an exception, then [run_wait_block pool f]
     will raise it as well.
+
+    See {!run_async} for more details.
 
     {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}
       about the required discipline to avoid deadlocks).

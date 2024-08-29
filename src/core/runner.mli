@@ -38,7 +38,7 @@ val run_async : ?fiber:fiber -> t -> task -> unit
 (** [run_async pool f] schedules [f] for later execution on the runner
     in one of the threads. [f()] will run on one of the runner's
     worker threads/domains.
-    @param ls if provided, run the task with this initial local storage
+    @param fiber if provided, run the task with this initial fiber data
     @raise Shutdown if the runner was shut down before [run_async] was called. *)
 
 val run_wait_block : ?fiber:fiber -> t -> (unit -> 'a) -> 'a
