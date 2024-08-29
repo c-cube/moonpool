@@ -9,7 +9,7 @@ tags: ["thread" "pool" "domain" "futures" "fork-join"]
 homepage: "https://github.com/c-cube/moonpool"
 bug-reports: "https://github.com/c-cube/moonpool/issues"
 depends: [
-  "ocaml" {>= "4.08"}
+  "ocaml" {>= "4.13"}
   "dune" {>= "3.0"}
   "either" {>= "1.0"}
   "trace" {with-test}

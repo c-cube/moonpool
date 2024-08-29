@@ -16,7 +16,7 @@
  (name moonpool)
  (synopsis "Pools of threads supported by a pool of domains")
  (depends
-  (ocaml (>= 4.08))
+  (ocaml (>= 4.13))
   dune
   (either (>= 1.0))
   (trace :with-test)
