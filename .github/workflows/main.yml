@@ -64,6 +64,7 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
+      - run: opam pin picos --dev -y -n && opam install picos
       - run: opam install -t moonpool moonpool-lwt --deps-only
       - run: opam exec -- dune build @install
       # install some depopts
