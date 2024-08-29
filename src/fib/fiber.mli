@@ -147,9 +147,3 @@ val spawn_ignore : ?protect:bool -> (unit -> _) -> unit
 (** [spawn_ignore f] is [ignore (spawn f)].
   The fiber will still affect termination of the parent, ie. the
   parent will exit only after this new fiber exits. *)
-
-(** {2 Local [Hmap.t]} *)
-
-include module type of struct
-  include Hmap_fls
-end

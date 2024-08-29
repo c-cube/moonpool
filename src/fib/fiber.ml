@@ -330,5 +330,3 @@ let yield () : unit =
     check_if_cancelled_ self;
     PF.yield ();
     check_if_cancelled_ self
-
-include Hmap_fls

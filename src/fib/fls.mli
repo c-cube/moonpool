@@ -17,3 +17,11 @@
 include module type of struct
   include Task_local_storage
 end
+
+(** {2 Local [Hmap.t]}
+
+    This requires [hmap] to be installed. *)
+
+include module type of struct
+  include Hmap_fls
+end
