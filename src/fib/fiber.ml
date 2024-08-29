@@ -257,8 +257,10 @@ let spawn_ ~parent ~runner (f : unit -> 'a) : 'a t =
   let comp = Picos.Computation.create () in
   let pfiber = PF.create ~forbid:false comp in
 
-  (* inherit FLS from parent, if present *)
-  Option.iter (fun (p : _ t) -> PF.copy_fls p.pfiber pfiber) parent;
+  (* copy local hmap from parent, if present *)
+  Option.iter
+    (fun (p : _ t) -> Hmap_fls.Private_hmap_fls_.copy_fls p.pfiber pfiber)
+    parent;
 
   (match parent with
   | Some p when is_closed p -> failwith "spawn: nursery is closed"
@@ -328,3 +330,5 @@ let yield () : unit =
     check_if_cancelled_ self;
     PF.yield ();
     check_if_cancelled_ self
+
+include Hmap_fls

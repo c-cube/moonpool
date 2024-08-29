@@ -29,6 +29,7 @@
     (>= 1.9.0)
     :with-test)))
  (depopts
+   hmap
    (trace (>= 0.6)))
  (tags
   (thread pool domain futures fork-join)))

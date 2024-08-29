@@ -37,7 +37,7 @@ jobs:
       - run: opam exec -- dune build @install
 
       # install some depopts
-      - run: opam install thread-local-storage trace
+      - run: opam install thread-local-storage trace hmap
         if: matrix.ocaml-compiler == '5.2'
 
       - run: opam exec -- dune build --profile=release --force @install @runtest
