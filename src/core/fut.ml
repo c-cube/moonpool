@@ -67,7 +67,7 @@ let on_result (self : _ t) (f : _ waiter) : unit =
   let trigger =
     (Trigger.from_action f self on_result_cb_ [@alert "-handler"])
   in
-  ignore (C.try_attach self.st trigger : bool)
+  if not (C.try_attach self.st trigger) then on_result_cb_ () f self
 
 let on_result_ignore_cb_ _tr f (self : _ t) =
   f (Picos.Computation.canceled self.st)
@@ -77,7 +77,7 @@ let on_result_ignore (self : _ t) f : unit =
     let trigger =
       (Trigger.from_action f self on_result_ignore_cb_ [@alert "-handler"])
     in
-    ignore (C.try_attach self.st trigger : bool)
+    if not (C.try_attach self.st trigger) then on_result_ignore_cb_ () f self
   ) else
     on_result_ignore_cb_ () f self
 
