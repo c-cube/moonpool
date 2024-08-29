@@ -3,7 +3,7 @@ module A = Atomic
 module F = Moonpool_fib.Fiber
 
 let ( let@ ) = ( @@ )
-let runner = Ws_pool.create ~num_threads:8 ()
+let runner = Fifo_pool.create ~num_threads:1 ()
 
 module TS = struct
   type t = int list
