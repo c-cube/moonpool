@@ -20,8 +20,9 @@ let get_opt k =
     | exception Not_set -> None)
 
 let[@inline] get k ~default =
-  let fiber = get_current_fiber_exn () in
-  PF.FLS.get fiber ~default k
+  match get_current_fiber () with
+  | None -> None
+  | Some fiber -> PF.FLS.get fiber ~default k
 
 let[@inline] set k v : unit =
   let fiber = get_current_fiber_exn () in
