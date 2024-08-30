@@ -1,4 +1,4 @@
-open Moonpool.Private.Types_
+open Types_
 
 open struct
   module FLS = Picos.Fiber.FLS
@@ -36,7 +36,8 @@ let[@inline] set_in_local_hmap (k : 'a Hmap.key) (v : 'a) : unit =
 
 (**/**)
 
-module Private_hmap_fls_ = struct
+(* private functions, to be used by the rest of moonpool *)
+module Private_hmap_ls_ = struct
   (** Copy the hmap from f1.fls to f2.fls *)
   let copy_fls (f1 : Picos.Fiber.t) (f2 : Picos.Fiber.t) : unit =
     match FLS.get_exn f1 k_local_hmap with

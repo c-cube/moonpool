@@ -36,3 +36,11 @@ val with_value : 'a t -> 'a -> (unit -> 'b) -> 'b
 (** [with_value k v f] sets [k] to [v] for the duration of the call
     to [f()]. When [f()] returns (or fails), [k] is restored
     to its old value. *)
+
+(** {2 Local [Hmap.t]}
+
+    This requires [hmap] to be installed. *)
+
+include module type of struct
+  include Hmap_ls_
+end

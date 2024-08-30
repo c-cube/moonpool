@@ -39,3 +39,5 @@ let with_value k v (f : _ -> 'b) : 'b =
     PF.FLS.set fiber k v;
     let finally () = PF.FLS.set fiber k old_v in
     Fun.protect f ~finally
+
+include Hmap_ls_

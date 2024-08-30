@@ -4,12 +4,7 @@
  (synopsis "Fibers and structured concurrency for Moonpool")
  (libraries
   moonpool
-  picos
-  (select
-   hmap_fls.ml
-   from
-   (hmap -> hmap_fls.real.ml)
-   (-> hmap_fls.dummy.ml)))
+  picos)
  (enabled_if
   (>= %{ocaml_version} 5.0))
  (flags :standard -open Moonpool_private -open Moonpool)

@@ -4,6 +4,11 @@
  (libraries
   moonpool.private
   (re_export thread-local-storage)
+  (select
+   hmap_ls_.ml
+   from
+   (hmap -> hmap_ls_.real.ml)
+   (-> hmap_ls_.dummy.ml))
   moonpool.dpool
   (re_export exn_bt)
   (re_export picos))

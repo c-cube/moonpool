@@ -259,7 +259,7 @@ let spawn_ ~parent ~runner (f : unit -> 'a) : 'a t =
 
   (* copy local hmap from parent, if present *)
   Option.iter
-    (fun (p : _ t) -> Hmap_fls.Private_hmap_fls_.copy_fls p.pfiber pfiber)
+    (fun (p : _ t) -> Fls.Private_hmap_ls_.copy_fls p.pfiber pfiber)
     parent;
 
   (match parent with
