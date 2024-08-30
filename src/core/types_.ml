@@ -27,8 +27,13 @@ let[@inline] get_current_fiber () : fiber option =
   match TLS.get_exn k_cur_fiber with
   | f when f != _dummy_fiber -> Some f
   | _ -> None
+  | exception TLS.Not_set -> None
+
+let error_get_current_fiber_ =
+  "Moonpool: get_current_fiber was called outside of a fiber."
 
 let[@inline] get_current_fiber_exn () : fiber =
   match TLS.get_exn k_cur_fiber with
   | f when f != _dummy_fiber -> f
-  | _ -> failwith "Moonpool: get_current_fiber was called outside of a fiber."
+  | _ -> failwith error_get_current_fiber_
+  | exception TLS.Not_set -> failwith error_get_current_fiber_
