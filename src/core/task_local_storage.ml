@@ -21,7 +21,7 @@ let get_opt k =
 
 let[@inline] get k ~default =
   match get_current_fiber () with
-  | None -> None
+  | None -> default
   | Some fiber -> PF.FLS.get fiber ~default k
 
 let[@inline] set k v : unit =
