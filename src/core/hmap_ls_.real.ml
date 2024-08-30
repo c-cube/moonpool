@@ -38,6 +38,19 @@ let[@inline] remove_in_local_hmap (k : _ Hmap.key) : unit =
 let[@inline] set_in_local_hmap (k : 'a Hmap.key) (v : 'a) : unit =
   update_local_hmap (Hmap.add k v)
 
+(** [with_in_local_hmap k v f] calls [f()] in a context
+    where [k] is bound to [v] in the local hmap. Then it restores the
+    previous binding for [k]. *)
+let with_in_local_hmap (k : 'a Hmap.key) (v : 'a) f : unit =
+  let h = get_local_hmap () in
+  match Hmap.find k h with
+  | None ->
+    set_in_local_hmap k v;
+    Fun.protect ~finally:(fun () -> remove_in_local_hmap k) f
+  | Some old_v ->
+    set_in_local_hmap k v;
+    Fun.protect ~finally:(fun () -> set_in_local_hmap k old_v) f
+
 (**/**)
 
 (* private functions, to be used by the rest of moonpool *)
