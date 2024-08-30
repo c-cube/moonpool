@@ -7,7 +7,7 @@ module FLS = Moonpool_fib.Fls
 
 type span_id = int
 
-let k_parent : span_id option FLS.t = FLS.create ()
+let k_parent : span_id Hmap.key = Hmap.Key.create ()
 let ( let@ ) = ( @@ )
 let spf = Printf.sprintf
 
@@ -39,10 +39,10 @@ module Tracer = struct
 
   let with_span self name f =
     let id = Span.new_id_ () in
-    let parent = FLS.get ~default:None k_parent in
+    let parent = FLS.get_in_local_hmap_opt k_parent in
     let span = { Span.id; parent; msg = name } in
     add self span;
-    FLS.with_value k_parent (Some id) f
+    FLS.with_in_local_hmap k_parent id f
 end
 
 module Render = struct

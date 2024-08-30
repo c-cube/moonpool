@@ -9,6 +9,9 @@ clean:
 test:
 	@dune runtest $(DUNE_OPTS)
 
+test-autopromote:
+	@dune runtest $(DUNE_OPTS) --auto-promote
+
 doc:
 	@dune build $(DUNE_OPTS) @doc
 
