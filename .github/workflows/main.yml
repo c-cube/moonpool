@@ -29,7 +29,9 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
-      - run: opam pin picos --dev -y -n && opam install picos
+      # temporary until it's in a release
+      - run: opam pin https://github.com/c-cube/picos#simon/split-package -y -n
+
       - run: opam install -t moonpool moonpool-lwt --deps-only
         if: matrix.ocaml-compiler == '5.2'
       - run: opam install -t moonpool --deps-only
