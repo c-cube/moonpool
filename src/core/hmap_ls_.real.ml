@@ -31,6 +31,10 @@ let get_in_local_hmap_opt (k : 'a Hmap.key) : 'a option =
   let h = get_local_hmap () in
   Hmap.find k h
 
+(** Remove given key from the local hmap *)
+let[@inline] remove_in_local_hmap (k : _ Hmap.key) : unit =
+  update_local_hmap (Hmap.rem k)
+
 let[@inline] set_in_local_hmap (k : 'a Hmap.key) (v : 'a) : unit =
   update_local_hmap (Hmap.add k v)
 
