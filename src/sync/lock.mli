@@ -42,7 +42,7 @@ val update_map : 'a t -> ('a -> 'a * 'b) -> 'b
 (** [update_map l f] computes [x', y = f (get l)], then puts [x'] in [l]
     and returns [y], while protected by the mutex. *)
 
-val mutex : _ t -> Picos_sync.Mutex.t
+val mutex : _ t -> Picos_std_sync.Mutex.t
 (** Underlying mutex. *)
 
 val get : 'a t -> 'a

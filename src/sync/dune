@@ -2,4 +2,4 @@
  (name moonpool_sync)
  (public_name moonpool.sync)
  (synopsis "Cooperative synchronization primitives for Moonpool")
- (libraries moonpool picos picos.sync))
+ (libraries moonpool picos picos_std.sync picos_std.event))

@@ -5,12 +5,14 @@
     @since 0.6 *)
 
 (** An exception bundled with a backtrace *)
-include module type of struct
-  include Exn_bt
-end
+
+type t = exn * Printexc.raw_backtrace
 
 val exn : t -> exn
 val bt : t -> Printexc.raw_backtrace
+val raise : t -> 'a
+val get : exn -> t
+val get_callstack : int -> exn -> t
 
 val make : exn -> Printexc.raw_backtrace -> t
 (** Trivial builder *)

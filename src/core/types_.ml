@@ -16,8 +16,7 @@ let k_cur_fiber : fiber TLS.t = TLS.create ()
 
 let _dummy_computation : Picos.Computation.packed =
   let c = Picos.Computation.create () in
-  Picos.Computation.cancel c
-    { exn = Failure "dummy fiber"; bt = Printexc.get_callstack 0 };
+  Picos.Computation.cancel c (Failure "dummy fiber") (Printexc.get_callstack 0);
   Picos.Computation.Packed c
 
 let _dummy_fiber = Picos.Fiber.create_packed ~forbid:true _dummy_computation

@@ -95,7 +95,8 @@ let lwt_of_fut (fut : 'a M.Fut.t) : 'a Lwt.t =
   let lwt_fut, lwt_prom = Lwt.wait () in
   M.Fut.on_result fut (function
     | Ok x -> Perform_action_in_lwt.schedule @@ Action.Wakeup (lwt_prom, x)
-    | Error { exn; _ } ->
+    | Error ebt ->
+      let exn = Exn_bt.exn ebt in
       Perform_action_in_lwt.schedule @@ Action.Wakeup_exn (lwt_prom, exn));
   lwt_fut
 
@@ -108,7 +109,7 @@ let fut_of_lwt (lwt_fut : _ Lwt.t) : _ M.Fut.t =
       (fun x -> M.Fut.fulfill prom (Ok x))
       (fun exn ->
         let bt = Printexc.get_callstack 10 in
-        M.Fut.fulfill prom (Error { Exn_bt.exn; bt }));
+        M.Fut.fulfill prom (Error (Exn_bt.make exn bt)));
     fut
 
 let _dummy_exn_bt : Exn_bt.t =

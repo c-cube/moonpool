@@ -127,7 +127,7 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
           Trigger.signal trigger
       | exception exn ->
         let bt = Printexc.get_raw_backtrace () in
-        if Option.is_none (A.exchange failure (Some { Exn_bt.exn; bt })) then
+        if Option.is_none (A.exchange failure (Some (Exn_bt.make exn bt))) then
           (* first one to fail, and [missing] must be >= 2
              because we're not decreasing it. *)
           Trigger.signal trigger

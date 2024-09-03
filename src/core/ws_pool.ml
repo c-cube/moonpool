@@ -207,7 +207,7 @@ let worker_ops : worker_state WL.ops =
   let runner (st : worker_state) = st.st.as_runner in
   let around_task st = st.st.around_task in
   let on_exn (st : worker_state) (ebt : Exn_bt.t) =
-    st.st.on_exn ebt.exn ebt.bt
+    st.st.on_exn (Exn_bt.exn ebt) (Exn_bt.bt ebt)
   in
   {
     WL.schedule = schedule_from_w;

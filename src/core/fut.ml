@@ -16,12 +16,12 @@ let make () =
 
 let[@inline] return x : _ t = { st = C.returned x }
 
-let[@inline] fail_exn_bt ebt =
+let[@inline] fail exn bt : _ t =
   let st = C.create () in
-  C.cancel st ebt;
+  C.cancel st exn bt;
   { st }
 
-let[@inline] fail exn bt : _ t = fail_exn_bt { Exn_bt.exn; bt }
+let[@inline] fail_exn_bt ebt = fail (Exn_bt.exn ebt) (Exn_bt.bt ebt)
 
 let[@inline] of_result = function
   | Ok x -> return x
@@ -84,7 +84,7 @@ let on_result_ignore (self : _ t) f : unit =
 let[@inline] fulfill_idempotent self r =
   match r with
   | Ok x -> C.return self.st x
-  | Error ebt -> C.cancel self.st ebt
+  | Error ebt -> C.cancel self.st (Exn_bt.exn ebt) (Exn_bt.bt ebt)
 
 exception Already_fulfilled
 
@@ -92,7 +92,7 @@ let fulfill (self : _ t) (r : _ result) : unit =
   let ok =
     match r with
     | Ok x -> C.try_return self.st x
-    | Error ebt -> C.try_cancel self.st ebt
+    | Error ebt -> C.try_cancel self.st (Exn_bt.exn ebt) (Exn_bt.bt ebt)
   in
   if not ok then raise Already_fulfilled
 
@@ -107,8 +107,7 @@ let spawn ~on f : _ t =
       C.return fut.st res
     with exn ->
       let bt = Printexc.get_raw_backtrace () in
-      let ebt = { Exn_bt.exn; bt } in
-      C.cancel fut.st ebt
+      C.cancel fut.st exn bt
   in
 
   Runner.run_async on task;
@@ -139,7 +138,7 @@ let map ?on ~f fut : _ t =
       (try Ok (f x)
        with exn ->
          let bt = Printexc.get_raw_backtrace () in
-         Error { Exn_bt.exn; bt })
+         Error (Exn_bt.make exn bt))
     | Error e_bt -> Error e_bt
   in
 
@@ -421,7 +420,7 @@ let wait_block self =
   | x -> Ok x
   | exception exn ->
     let bt = Printexc.get_raw_backtrace () in
-    Error { Exn_bt.exn; bt }
+    Error (Exn_bt.make exn bt)
 
 [@@@ifge 5.0]
 

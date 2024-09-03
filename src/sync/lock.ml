@@ -1,4 +1,4 @@
-module Mutex = Picos_sync.Mutex
+module Mutex = Picos_std_sync.Mutex
 
 type 'a t = {
   mutex: Mutex.t;
