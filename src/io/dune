@@ -1,0 +1,5 @@
+(library
+ (name moonpool_io)
+ (public_name moonpool-io)
+ (synopsis "Async IO for moonpool, using Picos")
+ (libraries moonpool picos_stdio picos_stdio.select picos_stdio.fd))

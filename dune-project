@@ -50,4 +50,17 @@
     (trace-tef :with-test)
     (odoc :with-doc)))
 
+(package
+  (name moonpool-io)
+  (synopsis "Async IO for moonpool, relying on picos")
+  (allow_empty)  ; on < 5.0
+  (depends
+    (moonpool (= :version))
+    picos_stdio
+    (ocaml (>= 5.0))
+    (trace :with-test)
+    (trace-tef :with-test)
+    (odoc :with-doc)))
+
+
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
