@@ -22,7 +22,7 @@ jobs:
       # temporary until it's in a release
       - run: opam pin https://github.com/ocaml-multicore/picos.git -y -n
 
-      - run: opam install odig moonpool moonpool-lwt
+      - run: opam install odig moonpool moonpool-lwt moonpool-io
 
       - run: opam exec -- odig odoc --cache-dir=_doc/ moonpool moonpool-lwt
 
