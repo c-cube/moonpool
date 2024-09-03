@@ -9,6 +9,8 @@
    @since 0.3
 *)
 
+open Moonpool
+
 type 'a or_error = 'a Fut.or_error
 
 type 'a t
@@ -48,5 +50,13 @@ val pop_await : 'a t -> 'a
 (** Like {!pop} but suspends the current thread until an element is
     available. See {!Fut.await} for more details.
     @since 0.3 *)
+
+val pop_ev : 'a t -> 'a Event.t
+(** Pop from the channel, as an event.
+    @since NEXT_RELEASE *)
+
+val push_ev : 'a t -> 'a -> unit Event.t
+(** Push into the channel, as an event.
+    @since NEXT_RELEASE *)
 
 [@@@endif]

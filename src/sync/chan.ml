@@ -1,4 +1,5 @@
-module A = Atomic_
+open Moonpool
+module A = Moonpool_private.Atomic_
 
 type 'a or_error = 'a Fut.or_error
 type 'a waiter = 'a Fut.promise
@@ -97,7 +98,7 @@ let push (self : _ t) x : unit =
         true
     | Elems q -> not (A.compare_and_set self.st old_st (Elems (Q.push q x)))
   do
-    Domain_.relax ()
+    Moonpool_private.Domain_.relax ()
   done
 
 let try_pop (type elt) self : elt option =
@@ -115,7 +116,7 @@ let try_pop (type elt) self : elt option =
         if A.compare_and_set self.st old_st new_st then
           raise_notrace (M.Found x)
         else
-          Domain_.relax ()
+          Moonpool_private.Domain_.relax ()
       | _ -> raise_notrace Exit
     done;
     None
@@ -152,7 +153,7 @@ let pop (type elt) (self : _ t) : elt Fut.t =
           raise_notrace (M.Fut fut));
       true
     do
-      Domain_.relax ()
+      Moonpool_private.Domain_.relax ()
     done;
     (* never reached *)
     assert false
@@ -180,7 +181,7 @@ let close (self : _ t) : unit =
       ) else
         true
   do
-    Domain_.relax ()
+    Moonpool_private.Domain_.relax ()
   done
 
 [@@@ifge 5.0]
@@ -189,5 +190,11 @@ let pop_await self =
   match try_pop self with
   | Some x -> x
   | None -> Fut.await @@ pop self
+
+let[@inline] pop_ev self : _ Event.t =
+  Event.from_request {
+    request=fun comp k ->
+
+  }
 
 [@@@endif]

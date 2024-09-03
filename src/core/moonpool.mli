@@ -80,7 +80,6 @@ val await : 'a Fut.t -> 'a
 
 module Lock = Lock
 module Fut = Fut
-module Chan = Chan
 module Task_local_storage = Task_local_storage
 module Thread_local_storage = Thread_local_storage
 
