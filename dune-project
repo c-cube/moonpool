@@ -26,7 +26,7 @@
   (odoc :with-doc)
   (hmap :with-test)
   picos
-  picos_sync
+  picos_std
   (mdx
    (and
     (>= 1.9.0)

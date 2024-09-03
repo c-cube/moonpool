@@ -19,7 +19,7 @@ depends: [
   "odoc" {with-doc}
   "hmap" {with-test}
   "picos"
-  "picos_sync"
+  "picos_std"
   "mdx" {>= "1.9.0" & with-test}
 ]
 depopts: [
