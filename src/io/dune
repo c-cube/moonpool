@@ -2,4 +2,6 @@
  (name moonpool_io)
  (public_name moonpool-io)
  (synopsis "Async IO for moonpool, using Picos")
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
  (libraries moonpool picos_stdio picos_stdio.select picos_stdio.fd))
