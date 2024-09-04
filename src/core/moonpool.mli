@@ -13,6 +13,7 @@ module Ws_pool = Ws_pool
 module Fifo_pool = Fifo_pool
 module Background_thread = Background_thread
 module Runner = Runner
+module Trigger = Trigger
 
 module Immediate_runner : sig end
 [@@deprecated "use Moonpool_fib.Main"]
@@ -32,18 +33,21 @@ val start_thread_on_some_domain : ('a -> unit) -> 'a -> Thread.t
     to run the thread. This ensures that we don't always pick the same domain
     to run all the various threads needed in an application (timers, event loops, etc.) *)
 
-val run_async : ?ls:Task_local_storage.t -> Runner.t -> (unit -> unit) -> unit
+val run_async : ?fiber:Picos.Fiber.t -> Runner.t -> (unit -> unit) -> unit
 (** [run_async runner task] schedules the task to run
   on the given runner. This means [task()] will be executed
   at some point in the future, possibly in another thread.
+  @param fiber optional initial (picos) fiber state
   @since 0.5 *)
 
-val run_wait_block : ?ls:Task_local_storage.t -> Runner.t -> (unit -> 'a) -> 'a
+val run_wait_block : ?fiber:Picos.Fiber.t -> Runner.t -> (unit -> 'a) -> 'a
 (** [run_wait_block runner f] schedules [f] for later execution
     on the runner, like {!run_async}.
     It then blocks the current thread until [f()] is done executing,
     and returns its result. If [f()] raises an exception, then [run_wait_block pool f]
     will raise it as well.
+
+    See {!run_async} for more details.
 
     {b NOTE} be careful with deadlocks (see notes in {!Fut.wait_block}
       about the required discipline to avoid deadlocks).
@@ -78,7 +82,7 @@ module Lock = Lock
 module Fut = Fut
 module Chan = Chan
 module Task_local_storage = Task_local_storage
-module Thread_local_storage = Thread_local_storage_
+module Thread_local_storage = Thread_local_storage
 
 (** A simple blocking queue.
 
@@ -211,21 +215,16 @@ module Private : sig
   module Ws_deque_ = Ws_deque_
   (** A deque for work stealing, fixed size. *)
 
-  (** {2 Suspensions} *)
-
-  module Suspend_ = Suspend_
-  [@@alert
-    unstable "this module is an implementation detail of moonpool for now"]
-  (** Suspensions.
-
-    This is only going to work on OCaml 5.x.
-
-    {b NOTE}: this is not stable for now. *)
+  module Worker_loop_ = Worker_loop_
+  (** Worker loop. This is useful to implement custom runners, it
+        should run on each thread of the runner.
+        @since NEXT_RELEASE *)
 
   module Domain_ = Domain_
   (** Utils for domains *)
 
   module Tracing_ = Tracing_
+  module Types_ = Types_
 
   val num_domains : unit -> int
   (** Number of domains in the backing domain pool *)

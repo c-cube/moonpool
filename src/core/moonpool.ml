@@ -30,14 +30,16 @@ module Lock = Lock
 module Immediate_runner = struct end
 module Runner = Runner
 module Task_local_storage = Task_local_storage
-module Thread_local_storage = Thread_local_storage_
+module Thread_local_storage = Thread_local_storage
+module Trigger = Trigger
 module Ws_pool = Ws_pool
 
 module Private = struct
   module Ws_deque_ = Ws_deque_
-  module Suspend_ = Suspend_
+  module Worker_loop_ = Worker_loop_
   module Domain_ = Domain_
   module Tracing_ = Tracing_
+  module Types_ = Types_
 
   let num_domains = Domain_pool_.max_number_of_domains
 end

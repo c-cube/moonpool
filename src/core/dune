@@ -1,9 +1,18 @@
 (library
  (public_name moonpool)
  (name moonpool)
- (libraries moonpool.private moonpool.dpool)
+ (libraries
+  moonpool.private
+  (re_export thread-local-storage)
+  (select
+   hmap_ls_.ml
+   from
+   (hmap -> hmap_ls_.real.ml)
+   (-> hmap_ls_.dummy.ml))
+  moonpool.dpool
+  (re_export picos))
  (flags :standard -open Moonpool_private)
- (private_modules types_ util_pool_)
+ (private_modules util_pool_)
  (preprocess
   (action
    (run %{project_root}/src/cpp/cpp.exe %{input-file}))))

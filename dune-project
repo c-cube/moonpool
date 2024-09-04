@@ -16,21 +16,24 @@
  (name moonpool)
  (synopsis "Pools of threads supported by a pool of domains")
  (depends
-  (ocaml (>= 4.08))
+  (ocaml (>= 4.14))
   dune
   (either (>= 1.0))
   (trace :with-test)
   (trace-tef :with-test)
   (qcheck-core (and :with-test (>= 0.19)))
+  (thread-local-storage (and (>= 0.2) (< 0.3)))
   (odoc :with-doc)
+  (hmap :with-test)
+  (picos (and (>= 0.5) (< 0.6)))
+  (picos_std (and (>= 0.5) (< 0.6)))
   (mdx
    (and
     (>= 1.9.0)
     :with-test)))
  (depopts
-   (trace (>= 0.6))
-   thread-local-storage)
- (conflicts (thread-local-storage (< 0.2)))
+   hmap
+   (trace (>= 0.6)))
  (tags
   (thread pool domain futures fork-join)))
 
@@ -46,5 +49,18 @@
     (trace :with-test)
     (trace-tef :with-test)
     (odoc :with-doc)))
+
+(package
+  (name moonpool-io)
+  (synopsis "Async IO for moonpool, relying on picos")
+  (allow_empty)  ; on < 5.0
+  (depends
+    (moonpool (= :version))
+    (picos_io (and (>= 0.5) (< 0.6)))
+    (ocaml (>= 5.0))
+    (trace :with-test)
+    (trace-tef :with-test)
+    (odoc :with-doc)))
+
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

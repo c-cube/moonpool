@@ -3,7 +3,7 @@ module A = Atomic
 module F = Moonpool_fib.Fiber
 
 let ( let@ ) = ( @@ )
-let runner = Ws_pool.create ~num_threads:8 ()
+let runner = Fifo_pool.create ~num_threads:1 ()
 
 module TS = struct
   type t = int list
@@ -80,10 +80,10 @@ let () =
          let clock = ref (0 :: i :: clock0) in
          logf !clock "await fiber %d" i;
          logf (TS.tick_get clock) "cur fiber[%d] is some: %b" i
-           (Option.is_some @@ F.Private_.get_cur ());
+           (Option.is_some @@ F.Private_.get_cur_opt ());
          let res = F.await f in
          logf (TS.tick_get clock) "cur fiber[%d] is some: %b" i
-           (Option.is_some @@ F.Private_.get_cur ());
+           (Option.is_some @@ F.Private_.get_cur_opt ());
          F.yield ();
          logf (TS.tick_get clock) "res %d = %d" i res)
        subs);

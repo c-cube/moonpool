@@ -21,6 +21,10 @@ val pop : 'a t -> 'a option
 (** Pop value from the bottom of deque.
     This must be called only by the owner thread. *)
 
+exception Empty
+
+val pop_exn : 'a t -> 'a
+
 val steal : 'a t -> 'a option
 (** Try to steal from the top of deque. This is thread-safe. *)
 

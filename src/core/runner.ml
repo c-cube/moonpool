@@ -1,10 +1,10 @@
 open Types_
-module TLS = Thread_local_storage_
 
+type fiber = Picos.Fiber.t
 type task = unit -> unit
 
 type t = runner = {
-  run_async: ls:local_storage -> task -> unit;
+  run_async: fiber:fiber -> task -> unit;
   shutdown: wait:bool -> unit -> unit;
   size: unit -> int;
   num_tasks: unit -> int;
@@ -12,8 +12,15 @@ type t = runner = {
 
 exception Shutdown
 
-let[@inline] run_async ?(ls = create_local_storage ()) (self : t) f : unit =
-  self.run_async ~ls f
+let[@inline] run_async ?fiber (self : t) f : unit =
+  let fiber =
+    match fiber with
+    | Some f -> f
+    | None ->
+      let comp = Picos.Computation.create () in
+      Picos.Fiber.create ~forbid:false comp
+  in
+  self.run_async ~fiber f
 
 let[@inline] shutdown (self : t) : unit = self.shutdown ~wait:true ()
 
@@ -23,9 +30,9 @@ let[@inline] shutdown_without_waiting (self : t) : unit =
 let[@inline] num_tasks (self : t) : int = self.num_tasks ()
 let[@inline] size (self : t) : int = self.size ()
 
-let run_wait_block ?ls self (f : unit -> 'a) : 'a =
+let run_wait_block ?fiber self (f : unit -> 'a) : 'a =
   let q = Bb_queue.create () in
-  run_async ?ls self (fun () ->
+  run_async ?fiber self (fun () ->
       try
         let x = f () in
         Bb_queue.push q (Ok x)
@@ -48,9 +55,9 @@ let dummy : t =
     ~size:(fun () -> 0)
     ~num_tasks:(fun () -> 0)
     ~shutdown:(fun ~wait:_ () -> ())
-    ~run_async:(fun ~ls:_ _ ->
+    ~run_async:(fun ~fiber:_ _ ->
       failwith "Runner.dummy: cannot actually run tasks")
     ()
 
 let get_current_runner = get_current_runner
-let get_current_storage = get_current_storage
+let get_current_fiber = get_current_fiber

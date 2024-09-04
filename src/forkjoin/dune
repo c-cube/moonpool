@@ -6,4 +6,4 @@
  (optional)
  (enabled_if
   (>= %{ocaml_version} 5.0))
- (libraries moonpool moonpool.private))
+ (libraries moonpool moonpool.private picos))

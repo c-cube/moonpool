@@ -48,13 +48,17 @@ val with_ : (unit -> (t -> 'a) -> 'a, _) create_args
 (**/**)
 
 module Private_ : sig
-  type state
+  type worker_state
 
-  val create_state : threads:Thread.t array -> unit -> state
-  val runner_of_state : state -> Runner.t
+  val worker_ops : worker_state Worker_loop_.ops
 
-  val run_thread :
-    state -> t -> on_exn:(exn -> Printexc.raw_backtrace -> unit) -> unit
+  val create_single_threaded_state :
+    thread:Thread.t ->
+    ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
+    unit ->
+    worker_state
+
+  val runner_of_state : worker_state -> Runner.t
 end
 
 (**/**)

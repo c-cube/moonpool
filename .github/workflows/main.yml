@@ -16,7 +16,6 @@ jobs:
         os:
             - ubuntu-latest
         ocaml-compiler:
-            - '4.08'
             - '4.14'
             - '5.2'
 
@@ -30,14 +29,17 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
-      - run: opam install -t moonpool moonpool-lwt --deps-only
+      # temporary until it's in a release
+      - run: opam pin https://github.com/ocaml-multicore/picos.git -y -n
+
+      - run: opam install -t moonpool moonpool-lwt moonpool-io --deps-only
         if: matrix.ocaml-compiler == '5.2'
       - run: opam install -t moonpool --deps-only
         if: matrix.ocaml-compiler != '5.2'
       - run: opam exec -- dune build @install
 
       # install some depopts
-      - run: opam install thread-local-storage trace domain-local-await
+      - run: opam install thread-local-storage trace hmap
         if: matrix.ocaml-compiler == '5.2'
 
       - run: opam exec -- dune build --profile=release --force @install @runtest
@@ -63,7 +65,10 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
-      - run: opam install -t moonpool moonpool-lwt --deps-only
+      # temporary until it's in a release
+      - run: opam pin https://github.com/ocaml-multicore/picos.git -y -n
+
+      - run: opam install -t moonpool moonpool-lwt moonpool-io --deps-only
       - run: opam exec -- dune build @install
       # install some depopts
       - run: opam install thread-local-storage trace domain-local-await
