@@ -25,8 +25,8 @@
   (thread-local-storage (and (>= 0.2) (< 0.3)))
   (odoc :with-doc)
   (hmap :with-test)
-  picos
-  picos_std
+  (picos (and (>= 0.5) (< 0.6)))
+  (picos_std (and (>= 0.5) (< 0.6)))
   (mdx
    (and
     (>= 1.9.0)
@@ -56,7 +56,7 @@
   (allow_empty)  ; on < 5.0
   (depends
     (moonpool (= :version))
-    picos_stdio
+    (picos_io (and (>= 0.5) (< 0.6)))
     (ocaml (>= 5.0))
     (trace :with-test)
     (trace-tef :with-test)

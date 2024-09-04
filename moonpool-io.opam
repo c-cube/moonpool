@@ -10,7 +10,7 @@ bug-reports: "https://github.com/c-cube/moonpool/issues"
 depends: [
   "dune" {>= "3.0"}
   "moonpool" {= version}
-  "picos_stdio"
+  "picos_io" {>= "0.5" & < "0.6"}
   "ocaml" {>= "5.0"}
   "trace" {with-test}
   "trace-tef" {with-test}

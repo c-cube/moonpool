@@ -1,6 +1,6 @@
-module Fd = Picos_stdio_fd
-module Unix = Picos_stdio.Unix
-module Select = Picos_stdio_select
+module Fd = Picos_io_fd
+module Unix = Picos_io.Unix
+module Select = Picos_io_select
 
 let fd_of_unix_fd : Unix.file_descr -> Fd.t = Fun.id
 let configure = Select.configure
