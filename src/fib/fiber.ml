@@ -303,6 +303,7 @@ let spawn ?on ?(protect = true) f : _ t =
   child
 
 let[@inline] spawn_ignore ?protect f : unit = ignore (spawn ?protect f : _ t)
+let[@inline] spawn_top_ignore ~on f : unit = ignore (spawn_top ~on f : _ t)
 
 let[@inline] self () : any =
   match get_cur_exn () with

@@ -147,3 +147,7 @@ val spawn_ignore : ?protect:bool -> (unit -> _) -> unit
 (** [spawn_ignore f] is [ignore (spawn f)].
   The fiber will still affect termination of the parent, ie. the
   parent will exit only after this new fiber exits. *)
+
+val spawn_top_ignore : on:Runner.t -> (unit -> _) -> unit
+(** Like {!spawn_top} but ignores the result.
+    @since NEXT_RELEASE *)
