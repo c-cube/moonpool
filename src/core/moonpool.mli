@@ -69,6 +69,10 @@ val spawn_on_current_runner : (unit -> 'a) -> 'a Fut.t
 (** See {!Fut.spawn_on_current_runner}.
     @since 0.5 *)
 
+val get_current_runner : unit -> Runner.t option
+(** See {!Runner.get_current_runner}
+  @since NEXT_RELEASE *)
+
 [@@@ifge 5.0]
 
 val await : 'a Fut.t -> 'a
