@@ -4,4 +4,4 @@
  (synopsis "Async IO for moonpool, using Picos")
  (enabled_if
   (>= %{ocaml_version} 5.0))
- (libraries moonpool picos_io picos_io.select picos_io.fd))
+ (libraries moonpool moonpool.fib picos_io picos_io.select picos_io.fd))
