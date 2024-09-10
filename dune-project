@@ -2,7 +2,7 @@
 (using mdx 0.2)
 
 (name moonpool)
-(version 0.6)
+(version 0.7)
 (generate_opam_files true)
 (source
  (github c-cube/moonpool))
@@ -52,7 +52,7 @@
 
 (package
   (name moonpool-io)
-  (synopsis "Async IO for moonpool, relying on picos")
+  (synopsis "Async IO for moonpool, relying on picos (experimental)")
   (allow_empty)  ; on < 5.0
   (depends
     (moonpool (= :version))

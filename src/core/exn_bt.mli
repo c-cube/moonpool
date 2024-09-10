@@ -1,6 +1,6 @@
 (** Exception with backtrace.
 
-    Type changed @since NEXT_RELEASE
+    Type changed @since 0.7
 
     @since 0.6 *)
 
@@ -26,4 +26,4 @@ type nonrec 'a result = ('a, t) result
 
 val unwrap : 'a result -> 'a
 (** [unwrap (Ok x)] is [x], [unwrap (Error ebt)] re-raises [ebt].
-    @since NEXT_RELEASE *)
+    @since 0.7 *)

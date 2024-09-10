@@ -1,4 +1,11 @@
 
+# 0.7
+
+- add `Moonpool_fiber.spawn_top_ignore`
+- add `moonpool-io`, based on `picos_io` (still very experimental)
+- move to picos as the foundation layer for concurrency primitives (#30)
+- move to `thread-local-storage` 0.2 with get/set API
+
 # 0.6
 
 - breaking: remove `Immediate_runner` (bug prone and didn't

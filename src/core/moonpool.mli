@@ -71,7 +71,7 @@ val spawn_on_current_runner : (unit -> 'a) -> 'a Fut.t
 
 val get_current_runner : unit -> Runner.t option
 (** See {!Runner.get_current_runner}
-  @since NEXT_RELEASE *)
+  @since 0.7 *)
 
 [@@@ifge 5.0]
 
@@ -222,7 +222,7 @@ module Private : sig
   module Worker_loop_ = Worker_loop_
   (** Worker loop. This is useful to implement custom runners, it
         should run on each thread of the runner.
-        @since NEXT_RELEASE *)
+        @since 0.7 *)
 
   module Domain_ = Domain_
   (** Utils for domains *)

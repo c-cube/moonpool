@@ -39,7 +39,7 @@ val on_result_ignore : _ t -> (Exn_bt.t option -> unit) -> unit
     when [fut] is set;
     or calls [f] immediately if [fut] is already set.
     It does not pass the result, only a success/error signal.
-    @since NEXT_RELEASE *)
+    @since 0.7 *)
 
 exception Already_fulfilled
 

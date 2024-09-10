@@ -1,5 +1,5 @@
 (** Triggers from picos
-    @since NEXT_RELEASE *)
+    @since 0.7 *)
 
 include Picos.Trigger
 

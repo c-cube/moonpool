@@ -21,7 +21,7 @@
 
     This lock is based on {!Picos_sync.Mutex} so it is [await]-safe.
 
-    @since NEXT_RELEASE *)
+    @since 0.7 *)
 
 type 'a t
 (** A value protected by a cooperative mutex *)
