@@ -14,10 +14,10 @@ let filter' in_chan out_chan prime =
   in
   loop ()
 
-let main ~n ~on_prime () : unit =
+let main ~chan_size ~n ~on_prime () : unit =
   let@ runner = Moonpool.Ws_pool.with_ () in
   let@ () = Moonpool.Ws_pool.run_wait_block runner in
-  let primes = ref @@ Moonpool.Chan.create ~max_size:32 () in
+  let primes = ref @@ Moonpool.Chan.create ~max_size:chan_size () in
   Moonpool.run_async runner
     (let chan = !primes in
      fun () -> generate' chan);
@@ -25,7 +25,7 @@ let main ~n ~on_prime () : unit =
   for _i = 1 to n do
     let prime = Moonpool.Chan.pop !primes in
     on_prime prime;
-    let filtered_chan = Moonpool.Chan.create ~max_size:32 () in
+    let filtered_chan = Moonpool.Chan.create ~max_size:chan_size () in
     Moonpool.run_async runner
       (let in_chan = !primes in
        fun () -> filter' in_chan filtered_chan prime);
@@ -34,11 +34,13 @@ let main ~n ~on_prime () : unit =
 
 let () =
   let n = ref 10_000 in
+  let chan_size = ref 0 in
   let time = ref true in
   let opts =
     [
       "-n", Arg.Set_int n, " number of iterations";
       "--no-time", Arg.Clear time, " do not compute time";
+      "--chan-size", Arg.Set_int chan_size, " channel size";
     ]
     |> Arg.align
   in
@@ -48,7 +50,7 @@ let () =
   let t_start = Unix.gettimeofday () in
 
   let n_primes = Atomic.make 0 in
-  main ~n:!n ~on_prime:(fun _ -> Atomic.incr n_primes) ();
+  main ~n:!n ~chan_size:!chan_size ~on_prime:(fun _ -> Atomic.incr n_primes) ();
 
   let elapsed : float = Unix.gettimeofday () -. t_start in
   Printf.printf "computed %d primes%s\n%!" (Atomic.get n_primes)
