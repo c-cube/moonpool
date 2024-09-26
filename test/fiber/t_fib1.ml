@@ -52,14 +52,14 @@ let () =
   let clock = ref TS.init in
   let fib =
     F.spawn_top ~on:runner @@ fun () ->
-    let chan_progress = Chan.create () in
-    let chans = Array.init 5 (fun _ -> Chan.create ()) in
+    let chan_progress = Chan.create ~max_size:4 () in
+    let chans = Array.init 5 (fun _ -> Chan.create ~max_size:4 ()) in
 
     let subs =
       List.init 5 (fun i ->
           F.spawn ~protect:false @@ fun _n ->
           Thread.delay (float i *. 0.01);
-          Chan.pop_await chans.(i);
+          Chan.pop chans.(i);
           Chan.push chan_progress i;
           F.check_if_cancelled ();
           i)
@@ -70,7 +70,7 @@ let () =
     F.spawn_ignore (fun () ->
         for i = 0 to 4 do
           Chan.push chans.(i) ();
-          let i' = Chan.pop_await chan_progress in
+          let i' = Chan.pop chan_progress in
           assert (i = i')
         done);
 
@@ -110,8 +110,8 @@ let () =
           @@ Exn_bt.show ebt)
     in
 
-    let chans_unblock = Array.init 10 (fun _i -> Chan.create ()) in
-    let chan_progress = Chan.create () in
+    let chans_unblock = Array.init 10 (fun _i -> Chan.create ~max_size:4 ()) in
+    let chan_progress = Chan.create ~max_size:4 () in
 
     logf (TS.tick_get clock) "start fibers";
     let subs =
@@ -126,7 +126,7 @@ let () =
           Thread.delay 0.002;
 
           (* sync for determinism *)
-          Chan.pop_await chans_unblock.(i);
+          Chan.pop chans_unblock.(i);
           Chan.push chan_progress i;
 
           if i = 7 then (
@@ -150,7 +150,7 @@ let () =
     F.spawn_ignore (fun () ->
         for j = 0 to 9 do
           Chan.push chans_unblock.(j) ();
-          let j' = Chan.pop_await chan_progress in
+          let j' = Chan.pop chan_progress in
           assert (j = j')
         done);
 

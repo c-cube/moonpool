@@ -3,8 +3,6 @@ open Moonpool
 (* large pool, some of our tasks below are long lived *)
 let pool = Ws_pool.create ~num_threads:30 ()
 
-open Fut.Infix
-
 type event =
   | E_int of int
   | E_close
@@ -66,7 +64,9 @@ let run () =
         let sum = ref 0 in
         try
           while true do
-            match Chan.pop_block_exn oc with
+            match
+              Fut.spawn ~on:pool (fun () -> Chan.pop oc) |> Fut.wait_block_exn
+            with
             | E_close -> raise Exit
             | E_int x -> sum := !sum + x
           done;
