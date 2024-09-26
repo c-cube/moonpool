@@ -1,5 +1,3 @@
-module A = Atomic_
-
 exception Closed
 
 type 'a t = {
