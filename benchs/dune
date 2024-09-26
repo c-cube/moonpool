@@ -1,5 +1,5 @@
 (executables
- (names fib_rec pi)
+ (names fib_rec pi primes)
  (preprocess
   (action
    (run %{project_root}/src/cpp/cpp.exe %{input-file})))
