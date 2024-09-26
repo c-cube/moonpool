@@ -6,8 +6,6 @@
     The channels became bounded since @NEXT_RELEASE .
 *)
 
-type 'a or_error = 'a Fut.or_error
-
 type 'a t
 (** Channel carrying values of type ['a]. *)
 
@@ -23,7 +21,9 @@ val try_push : 'a t -> 'a -> bool
 
 val try_pop : 'a t -> 'a option
 (** [try_pop chan] pops and return an element if one is available
-    immediately. Otherwise it returns [None]. *)
+    immediately. Otherwise it returns [None].
+    @raise Closed if the channel is closed and empty.
+    *)
 
 val close : _ t -> unit
 (** Close the channel. Further push and pop calls will fail.
