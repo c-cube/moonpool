@@ -3,6 +3,7 @@
   t_fib1
   t_futs1
   t_many
+  t_chan_train
   t_fib_fork_join
   t_fib_fork_join_all
   t_sort

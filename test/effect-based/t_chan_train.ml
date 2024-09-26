@@ -10,10 +10,10 @@ type event =
   | E_close
 
 let mk_chan (ic : event Chan.t) : event Chan.t =
-  let out = Chan.create () in
+  let out = Chan.create ~max_size:16 () in
 
   let rec loop () =
-    let* ev = Chan.pop ic in
+    let ev = Chan.pop ic in
     Chan.push out ev;
     match ev with
     | E_close -> Fut.return ()
@@ -44,7 +44,7 @@ let run () =
   (* start trains *)
   let trains =
     List.init n_trains (fun _ ->
-        let c = Chan.create () in
+        let c = Chan.create ~max_size:16 () in
         let out = mk_train len_train c in
         c, out)
   in
