@@ -3,17 +3,15 @@ open Moonpool
 (* large pool, some of our tasks below are long lived *)
 let pool = Ws_pool.create ~num_threads:30 ()
 
-open Fut.Infix
-
 type event =
   | E_int of int
   | E_close
 
 let mk_chan (ic : event Chan.t) : event Chan.t =
-  let out = Chan.create () in
+  let out = Chan.create ~max_size:16 () in
 
   let rec loop () =
-    let* ev = Chan.pop ic in
+    let ev = Chan.pop ic in
     Chan.push out ev;
     match ev with
     | E_close -> Fut.return ()
@@ -44,7 +42,7 @@ let run () =
   (* start trains *)
   let trains =
     List.init n_trains (fun _ ->
-        let c = Chan.create () in
+        let c = Chan.create ~max_size:16 () in
         let out = mk_train len_train c in
         c, out)
   in
@@ -66,7 +64,9 @@ let run () =
         let sum = ref 0 in
         try
           while true do
-            match Chan.pop_block_exn oc with
+            match
+              Fut.spawn ~on:pool (fun () -> Chan.pop oc) |> Fut.wait_block_exn
+            with
             | E_close -> raise Exit
             | E_int x -> sum := !sum + x
           done;

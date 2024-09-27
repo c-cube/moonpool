@@ -7,7 +7,6 @@
   t_futs1
   t_tree_futs
   t_props
-  t_chan_train
   t_resource
   t_unfair
   t_ws_deque
