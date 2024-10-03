@@ -57,9 +57,8 @@ end
 
 include Private_
 
-let create_ ~pfiber ~runner () : 'a t =
+let create_ ~pfiber ~runner ~res () : 'a t =
   let id = Handle.generate_fresh () in
-  let res, _ = Fut.make () in
   {
     state =
       A.make
@@ -254,8 +253,8 @@ let add_child_ ~protect (self : _ t) (child : _ t) =
   done
 
 let spawn_ ~parent ~runner (f : unit -> 'a) : 'a t =
-  let comp = Picos.Computation.create () in
-  let pfiber = PF.create ~forbid:false comp in
+  let res, _ = Fut.make () in
+  let pfiber = PF.create ~forbid:false (Fut.Private_.as_computation res) in
 
   (* copy local hmap from parent, if present *)
   Option.iter
@@ -265,7 +264,7 @@ let spawn_ ~parent ~runner (f : unit -> 'a) : 'a t =
   (match parent with
   | Some p when is_closed p -> failwith "spawn: nursery is closed"
   | _ -> ());
-  let fib = create_ ~pfiber ~runner () in
+  let fib = create_ ~pfiber ~runner ~res () in
 
   let run () =
     (* make sure the fiber is accessible from inside itself *)
