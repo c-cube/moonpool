@@ -1,0 +1,12 @@
+(executables
+ (names discuss1)
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ ;(package moonpool)
+ (libraries
+  moonpool
+  moonpool.fib
+  trace
+  trace-tef
+  ;tracy-client.trace
+  ))
