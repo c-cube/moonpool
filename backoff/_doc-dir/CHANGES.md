@@ -1,6 +1,6 @@
-# Release notes
+## 0.1.1
 
-All notable changes to this project will be documented in this file.
+- Ported to 4.12 and optimized for size (@polytypic)
 
 ## 0.1.0
 
