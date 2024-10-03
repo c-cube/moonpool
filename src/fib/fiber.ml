@@ -301,7 +301,9 @@ let spawn ?on ?(protect = true) f : _ t =
   add_child_ ~protect p child;
   child
 
-let[@inline] spawn_ignore ?protect f : unit = ignore (spawn ?protect f : _ t)
+let[@inline] spawn_ignore ?on ?protect f : unit =
+  ignore (spawn ?on ?protect f : _ t)
+
 let[@inline] spawn_top_ignore ~on f : unit = ignore (spawn_top ~on f : _ t)
 
 let[@inline] self () : any =

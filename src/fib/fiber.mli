@@ -143,10 +143,11 @@ val spawn : ?on:Runner.t -> ?protect:bool -> (unit -> 'a) -> 'a t
     Must be run from inside a fiber.
     @raise Failure if not run from  inside a fiber. *)
 
-val spawn_ignore : ?protect:bool -> (unit -> _) -> unit
+val spawn_ignore : ?on:Runner.t -> ?protect:bool -> (unit -> _) -> unit
 (** [spawn_ignore f] is [ignore (spawn f)].
   The fiber will still affect termination of the parent, ie. the
-  parent will exit only after this new fiber exits. *)
+  parent will exit only after this new fiber exits.
+  @param on the optional runner to use, added since NEXT_RELEASE *)
 
 val spawn_top_ignore : on:Runner.t -> (unit -> _) -> unit
 (** Like {!spawn_top} but ignores the result.
