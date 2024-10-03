@@ -1,5 +1,4 @@
 module Mutex = Picos_std_sync.Mutex
-module Chan = Chan
 module Condition = Picos_std_sync.Condition
 module Lock = Lock
 module Event = Event
