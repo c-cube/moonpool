@@ -95,6 +95,11 @@ let domains_ : (worker_state option * Domain_.t option) Lock.t array =
       a [Pool.with_] or [Pool.create() … Pool.shutdown()] in a tight loop), and
       if nothing happens it tries to stop to free resources. *)
 let work_ idx (st : worker_state) : unit =
+  Thread.sigmask SIG_BLOCK
+    [
+      Sys.sigpipe; Sys.sigbus; Sys.sigterm; Sys.sigint; Sys.sigusr1; Sys.sigusr2;
+    ]
+  |> ignore;
   let main_loop () =
     let continue = ref true in
     while !continue do
