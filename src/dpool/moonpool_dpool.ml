@@ -15,19 +15,23 @@ module Bb_queue = struct
     if was_empty then Condition.broadcast self.cond;
     Mutex.unlock self.mutex
 
-  let pop (self : 'a t) : 'a =
-    Mutex.lock self.mutex;
-    let rec loop () =
-      if Queue.is_empty self.q then (
-        Condition.wait self.cond self.mutex;
-        (loop [@tailcall]) ()
-      ) else (
-        let x = Queue.pop self.q in
-        Mutex.unlock self.mutex;
-        x
-      )
-    in
-    loop ()
+  let pop (type a) (self : a t) : a =
+    let module M = struct
+      exception Found of a
+    end in
+    try
+      Mutex.lock self.mutex;
+      while true do
+        if Queue.is_empty self.q then
+          Condition.wait self.cond self.mutex
+        else (
+          let x = Queue.pop self.q in
+          Mutex.unlock self.mutex;
+          raise (M.Found x)
+        )
+      done;
+      assert false
+    with M.Found x -> x
 end
 
 module Lock = struct
