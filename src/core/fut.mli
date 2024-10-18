@@ -34,9 +34,9 @@ val make_promise : unit -> 'a promise
 (** Same as {!make} but returns a single promise (which can be upcast to a
     future). This is useful mostly to preserve memory.
 
-  How to upcast to a future:
+  How to upcast to a future in the worst case:
   {[let prom = Fut.make_promise();;
-    let fut: _ Fut.t = (prom :> _ Fut.t)
+    let fut = (prom : _ Fut.promise :> _ Fut.t) ;;
   ]}
   @since NEXT_RELEASE *)
 
