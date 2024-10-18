@@ -22,12 +22,23 @@ type 'a or_error = ('a, Exn_bt.t) result
 type 'a t
 (** A future with a result of type ['a]. *)
 
-type 'a promise
+type 'a promise = private 'a t
 (** A promise, which can be fulfilled exactly once to set
-      the corresponding future *)
+      the corresponding future.
+      This is a private alias of ['a t] since NEXT_RELEASE, previously it was opaque. *)
 
 val make : unit -> 'a t * 'a promise
 (** Make a new future with the associated promise. *)
+
+val make_promise : unit -> 'a promise
+(** Same as {!make} but returns a single promise (which can be upcast to a
+    future). This is useful mostly to preserve memory.
+
+  How to upcast to a future:
+  {[let prom = Fut.make_promise();;
+    let fut: _ Fut.t = (prom :> _ Fut.t)
+  ]}
+  @since NEXT_RELEASE *)
 
 val on_result : 'a t -> ('a or_error -> unit) -> unit
 (** [on_result fut f] registers [f] to be called in the future

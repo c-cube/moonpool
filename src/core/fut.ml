@@ -6,12 +6,12 @@ type 'a waiter = 'a or_error -> unit
 type 'a t = { st: 'a C.t } [@@unboxed]
 type 'a promise = 'a t
 
-let[@inline] make_ () : _ t =
+let[@inline] make_promise () : _ t =
   let fut = { st = C.create ~mode:`LIFO () } in
   fut
 
 let make () =
-  let fut = make_ () in
+  let fut = make_promise () in
   fut, fut
 
 let[@inline] return x : _ t = { st = C.returned x }
@@ -99,7 +99,7 @@ let fulfill (self : _ t) (r : _ result) : unit =
 (* ### combinators ### *)
 
 let spawn ~on f : _ t =
-  let fut = make_ () in
+  let fut = make_promise () in
 
   let task () =
     try
@@ -122,7 +122,7 @@ let reify_error (f : 'a t) : 'a or_error t =
   match peek f with
   | Some res -> return res
   | None ->
-    let fut = make_ () in
+    let fut = make_promise () in
     on_result f (fun r -> fulfill fut (Ok r));
     fut
 
