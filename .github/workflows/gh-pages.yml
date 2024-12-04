@@ -20,7 +20,7 @@ jobs:
           allow-prerelease-opam: true
 
       # temporary until it's in a release
-      - run: opam pin https://github.com/ocaml-multicore/picos.git -y -n
+      - run: opam pin picos 0.6 -y -n
 
       - run: opam install odig moonpool moonpool-lwt moonpool-io
 

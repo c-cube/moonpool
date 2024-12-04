@@ -29,8 +29,7 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
-      # temporary until it's in a release
-      - run: opam pin https://github.com/ocaml-multicore/picos.git -y -n
+      - run: opam pin picos 0.6 -y -n
 
       - run: opam install -t moonpool moonpool-lwt moonpool-io --deps-only
         if: matrix.ocaml-compiler == '5.2'
