@@ -41,7 +41,7 @@ let[@inline] set_in_local_hmap (k : 'a Hmap.key) (v : 'a) : unit =
 (** [with_in_local_hmap k v f] calls [f()] in a context
     where [k] is bound to [v] in the local hmap. Then it restores the
     previous binding for [k]. *)
-let with_in_local_hmap (k : 'a Hmap.key) (v : 'a) f : unit =
+let with_in_local_hmap (k : 'a Hmap.key) (v : 'a) f =
   let h = get_local_hmap () in
   match Hmap.find k h with
   | None ->
