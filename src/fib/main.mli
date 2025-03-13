@@ -23,3 +23,7 @@ val main : (Moonpool.Runner.t -> 'a) -> 'a
 (** [main f] runs [f()] in a scope that handles effects, including {!Fiber.await}.
 
     This scope can run background tasks as well, in a cooperative fashion. *)
+
+val main' : ?block_signals:bool -> unit -> (Moonpool.Runner.t -> 'a) -> 'a
+(** Same as {!main} but with room for optional arguments.
+    @since NEXT_RELEASE *)

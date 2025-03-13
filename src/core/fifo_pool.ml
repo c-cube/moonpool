@@ -165,7 +165,9 @@ let create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
        create the thread and push it into [receive_threads] *)
     let create_thread_in_domain () =
       let st = { idx = i; dom_idx; st = pool } in
-      let thread = Thread.create (WL.worker_loop ~ops:worker_ops) st in
+      let thread =
+        Thread.create (WL.worker_loop ~block_signals:true ~ops:worker_ops) st
+      in
       (* send the thread from the domain back to us *)
       Bb_queue.push receive_threads (i, thread)
     in

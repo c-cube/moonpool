@@ -310,7 +310,9 @@ let create ?(on_init_thread = default_thread_init_exit_)
     (* function called in domain with index [i], to
        create the thread and push it into [receive_threads] *)
     let create_thread_in_domain () =
-      let thread = Thread.create (WL.worker_loop ~ops:worker_ops) st in
+      let thread =
+        Thread.create (WL.worker_loop ~block_signals:true ~ops:worker_ops) st
+      in
       (* send the thread from the domain back to us *)
       Bb_queue.push receive_threads (idx, thread)
     in
