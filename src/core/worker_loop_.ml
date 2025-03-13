@@ -105,7 +105,7 @@ let with_handler ~ops:_ self f = f ()
 let worker_loop (type st) ~block_signals ~(ops : st ops) (self : st) : unit =
   if block_signals then
     List.iter
-      (fun signal -> Sys.set_signal signal Sys.Signal_ignore)
+      (fun signal -> try Sys.set_signal signal Sys.Signal_ignore with _ -> ())
       [
         Sys.sigterm;
         Sys.sigpipe;
