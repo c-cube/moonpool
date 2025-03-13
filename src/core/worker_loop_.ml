@@ -103,19 +103,22 @@ let with_handler ~ops:_ self f = f ()
 [@@@endif]
 
 let worker_loop (type st) ~block_signals ~(ops : st ops) (self : st) : unit =
-  if block_signals then
-    List.iter
-      (fun signal -> try Sys.set_signal signal Sys.Signal_ignore with _ -> ())
-      [
-        Sys.sigterm;
-        Sys.sigpipe;
-        Sys.sigint;
-        Sys.sigchld;
-        Sys.sigalrm;
-        Sys.sigusr1;
-        Sys.sigusr2;
-        Sys.sigvtalrm;
-      ];
+  if block_signals then (
+    try
+      ignore
+        (Unix.sigprocmask SIG_BLOCK
+           [
+             Sys.sigterm;
+             Sys.sigpipe;
+             Sys.sigint;
+             Sys.sigchld;
+             Sys.sigalrm;
+             Sys.sigusr1;
+             Sys.sigusr2;
+           ]
+          : _ list)
+    with _ -> ()
+  );
 
   let cur_fiber : fiber ref = ref _dummy_fiber in
   let runner = ops.runner self in
