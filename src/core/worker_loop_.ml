@@ -115,7 +115,6 @@ let worker_loop (type st) ~block_signals ~(ops : st ops) (self : st) : unit =
         Sys.sigusr1;
         Sys.sigusr2;
         Sys.sigvtalrm;
-        Sys.sigstop;
       ];
 
   let cur_fiber : fiber ref = ref _dummy_fiber in
