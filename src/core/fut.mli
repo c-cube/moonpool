@@ -19,7 +19,7 @@
 
 type 'a or_error = ('a, Exn_bt.t) result
 
-type 'a t
+type 'a t = 'a Picos.Computation.t
 (** A future with a result of type ['a]. *)
 
 type 'a promise = private 'a t
