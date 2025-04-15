@@ -3,7 +3,15 @@ type t = exn * Printexc.raw_backtrace
 let[@inline] make exn bt : t = exn, bt
 let[@inline] exn (e, _) = e
 let[@inline] bt (_, bt) = bt
-let show self = Printexc.to_string (exn self)
+
+let show self =
+  let bt = Printexc.raw_backtrace_to_string (bt self) in
+  let exn = Printexc.to_string (exn self) in
+  if bt = "" then
+    exn
+  else
+    Printf.sprintf "%s\n%s" exn bt
+
 let pp out self = Format.pp_print_string out (show self)
 let[@inline] raise (e, bt) = Printexc.raise_with_backtrace e bt
 
