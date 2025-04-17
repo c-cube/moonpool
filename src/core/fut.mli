@@ -25,7 +25,7 @@ type 'a t = 'a Picos.Computation.t
 type 'a promise = private 'a t
 (** A promise, which can be fulfilled exactly once to set
       the corresponding future.
-      This is a private alias of ['a t] since NEXT_RELEASE, previously it was opaque. *)
+      This is a private alias of ['a t] since 0.7, previously it was opaque. *)
 
 val make : unit -> 'a t * 'a promise
 (** Make a new future with the associated promise. *)
@@ -38,7 +38,7 @@ val make_promise : unit -> 'a promise
   {[let prom = Fut.make_promise();;
     let fut = (prom : _ Fut.promise :> _ Fut.t) ;;
   ]}
-  @since NEXT_RELEASE *)
+  @since 0.7 *)
 
 val on_result : 'a t -> ('a or_error -> unit) -> unit
 (** [on_result fut f] registers [f] to be called in the future

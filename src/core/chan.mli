@@ -3,7 +3,7 @@
     The channels have bounded size. Push/pop return futures or can use effects
     to provide an [await]-friendly version.
 
-    The channels became bounded since @NEXT_RELEASE .
+    The channels became bounded since @0.7 .
 *)
 
 type 'a t
@@ -35,13 +35,13 @@ val push : 'a t -> 'a -> unit
 (** Push the value into the channel, suspending the current task
     if the channel is currently full.
     @raise Closed if the channel is closed
-    @since NEXT_RELEASE *)
+    @since 0.7 *)
 
 val pop : 'a t -> 'a
 (** Pop an element. This might suspend the current task if the
     channel is currently empty.
     @raise Closed if the channel is empty and closed.
-    @since NEXT_RELEASE *)
+    @since 0.7 *)
 
 (*
 val pop_block_exn : 'a t -> 'a

@@ -26,4 +26,4 @@ val main : (Moonpool.Runner.t -> 'a) -> 'a
 
 val main' : ?block_signals:bool -> unit -> (Moonpool.Runner.t -> 'a) -> 'a
 (** Same as {!main} but with room for optional arguments.
-    @since NEXT_RELEASE *)
+    @since 0.7 *)
