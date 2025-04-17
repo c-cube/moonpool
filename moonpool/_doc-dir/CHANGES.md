@@ -1,4 +1,17 @@
 
+# 0.8
+
+- api(fut): make alias `'a Fut.t = 'a Picos.Computation.t` public
+- feat: add `Fut.make_promise`, have `'a promise = private 'a fut`
+- feat(exn_bt): in show/pp, do print the backtrace when present
+- feat: block signals in workers if asked to
+- relax bound on picos to 0.5-0.6
+- feat fib: `spawn_ignore` now has `?on` optional param
+- change Moonpool.Chan so it's bounded (stil experimental)
+
+- fix task local storage: type was too specific
+- fix fiber: use a single fut/computation in fibers
+
 # 0.7
 
 - add `Moonpool_fiber.spawn_top_ignore`
