@@ -1,13 +1,11 @@
 (** A simple runner with a single background thread.
 
-    Because this is guaranteed to have a single worker thread,
-    tasks scheduled in this runner always run asynchronously but
-    in a sequential fashion.
+    Because this is guaranteed to have a single worker thread, tasks scheduled
+    in this runner always run asynchronously but in a sequential fashion.
 
     This is similar to {!Fifo_pool} with exactly one thread.
 
-    @since 0.6
-*)
+    @since 0.6 *)
 
 include module type of Runner
 

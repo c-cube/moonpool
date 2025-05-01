@@ -1,4 +1,5 @@
-(** Example from https://discuss.ocaml.org/t/confused-about-moonpool-cancellation/15381 *)
+(** Example from
+    https://discuss.ocaml.org/t/confused-about-moonpool-cancellation/15381 *)
 
 let ( let@ ) = ( @@ )
 

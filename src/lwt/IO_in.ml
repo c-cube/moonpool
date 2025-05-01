@@ -2,8 +2,7 @@ open Common_
 
 class type t = object
   method input : bytes -> int -> int -> int
-  (** Read into the slice. Returns [0] only if the
-        stream is closed. *)
+  (** Read into the slice. Returns [0] only if the stream is closed. *)
 
   method close : unit -> unit
   (** Close the input. Must be idempotent. *)
@@ -47,7 +46,7 @@ let of_bytes ?(off = 0) ?len (b : bytes) : t =
 let of_string ?off ?len s : t = of_bytes ?off ?len (Bytes.unsafe_of_string s)
 
 (** Read into the given slice.
-      @return the number of bytes read, [0] means end of input. *)
+    @return the number of bytes read, [0] means end of input. *)
 let[@inline] input (self : #t) buf i len = self#input buf i len
 
 (** Close the channel. *)

@@ -187,8 +187,8 @@ let with_on_cancel (self : _ t) cb (k : unit -> 'a) : 'a =
   let h = add_on_cancel self cb in
   Fun.protect k ~finally:(fun () -> remove_on_cancel self h)
 
-(** Successfully resolve the fiber. This might still fail if
-    some children failed. *)
+(** Successfully resolve the fiber. This might still fail if some children
+    failed. *)
 let resolve_ok_ (self : 'a t) (r : 'a) : unit =
   let r = A.make @@ Ok r in
   let promise = prom_of_fut self.res in

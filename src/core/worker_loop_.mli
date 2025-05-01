@@ -1,7 +1,7 @@
 (** Internal module that is used for workers.
 
-    A thread pool should use this [worker_loop] to run tasks,
-    handle effects, etc. *)
+    A thread pool should use this [worker_loop] to run tasks, handle effects,
+    etc. *)
 
 open Types_
 

@@ -67,7 +67,7 @@ module Perform_action_in_lwt = struct
     let actions_ : Action_queue.t = Action_queue.create ()
 
     (** Gets the current set of notifications and perform them from inside the
-    Lwt thread *)
+        Lwt thread *)
     let perform_pending_actions () : unit =
       let@ _sp =
         Moonpool.Private.Tracing_.with_span

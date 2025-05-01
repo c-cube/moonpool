@@ -1,11 +1,10 @@
 (** Work-stealing deque.
 
-  Adapted from "Dynamic circular work stealing deque", Chase & Lev.
+    Adapted from "Dynamic circular work stealing deque", Chase & Lev.
 
-  However note that this one is not dynamic in the sense that there
-  is no resizing. Instead we return [false] when [push] fails, which
-  keeps the implementation fairly lightweight.
-  *)
+    However note that this one is not dynamic in the sense that there is no
+    resizing. Instead we return [false] when [push] fails, which keeps the
+    implementation fairly lightweight. *)
 
 type 'a t
 (** Deque containing values of type ['a] *)
@@ -14,12 +13,12 @@ val create : dummy:'a -> unit -> 'a t
 (** Create a new deque. *)
 
 val push : 'a t -> 'a -> bool
-(** Push value at the bottom of deque. returns [true] if it succeeds.
-    This must be called only by the owner thread. *)
+(** Push value at the bottom of deque. returns [true] if it succeeds. This must
+    be called only by the owner thread. *)
 
 val pop : 'a t -> 'a option
-(** Pop value from the bottom of deque.
-    This must be called only by the owner thread. *)
+(** Pop value from the bottom of deque. This must be called only by the owner
+    thread. *)
 
 exception Empty
 

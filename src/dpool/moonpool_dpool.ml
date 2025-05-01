@@ -76,25 +76,24 @@ type worker_state = {
 
 (** Array of (optional) workers.
 
-    Workers are started/stop on demand. For each index we have
-    the (currently active) domain's state
-    including a work queue and a thread refcount; and the domain itself,
-    if any, in a separate option because it might outlive its own state. *)
+    Workers are started/stop on demand. For each index we have the (currently
+    active) domain's state including a work queue and a thread refcount; and the
+    domain itself, if any, in a separate option because it might outlive its own
+    state. *)
 let domains_ : (worker_state option * Domain_.t option) Lock.t array =
   let n = max 1 (Domain_.recommended_number ()) in
   Array.init n (fun _ -> Lock.create (None, None))
 
 (** main work loop for a domain worker.
 
-   A domain worker does two things:
-   - run functions it's asked to (mainly, to start new threads inside it)
-   - decrease the refcount when one of these threads stops. The thread
-     will notify the domain that it's exiting, so the domain can know
-     how many threads are still using it. If all threads exit, the domain
-     polls a bit (in case new threads are created really shortly after,
-     which happens with a [Pool.with_] or [Pool.create() … Pool.shutdown()]
-     in a tight loop), and if nothing happens it tries to stop to free resources.
-*)
+    A domain worker does two things:
+    - run functions it's asked to (mainly, to start new threads inside it)
+    - decrease the refcount when one of these threads stops. The thread will
+      notify the domain that it's exiting, so the domain can know how many
+      threads are still using it. If all threads exit, the domain polls a bit
+      (in case new threads are created really shortly after, which happens with
+      a [Pool.with_] or [Pool.create() … Pool.shutdown()] in a tight loop), and
+      if nothing happens it tries to stop to free resources. *)
 let work_ idx (st : worker_state) : unit =
   let main_loop () =
     let continue = ref true in
