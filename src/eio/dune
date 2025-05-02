@@ -1,0 +1,5 @@
+(library
+ (name moonpool_eio)
+ (public_name moonpool-eio)
+ (synopsis "compatibility layer between moonpool and eio")
+ (libraries moonpool eio))

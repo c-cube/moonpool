@@ -38,6 +38,18 @@
   (thread pool domain futures fork-join)))
 
 (package
+  (name moonpool-eio)
+  (synopsis "Compatibility layer between moonpool and Eio")
+  (allow_empty)  ; on < 5.0
+  (depends
+    (moonpool (= :version))
+    (ocaml (>= 5.0))
+    eio
+    (trace :with-test)
+    (trace-tef :with-test)
+    (odoc :with-doc)))
+
+(package
   (name moonpool-lwt)
   (synopsis "Event loop for moonpool based on Lwt-engine (experimental)")
   (allow_empty)  ; on < 5.0
