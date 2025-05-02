@@ -76,9 +76,15 @@ val get_current_runner : unit -> Runner.t option
 [@@@ifge 5.0]
 
 val await : 'a Fut.t -> 'a
-(** Await a future. See {!Fut.await}.
+(** Await a future, must be run on a moonpool runner. See {!Fut.await}.
     Only on OCaml >= 5.0.
     @since 0.5 *)
+
+
+val yield : unit -> unit
+(** Yield from the current task, must be run on a moonpool runner.
+    Only on OCaml >= 5.0.
+    @since NEXT_RELEASE *)
 
 [@@@endif]
 

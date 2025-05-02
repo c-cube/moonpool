@@ -16,6 +16,7 @@ let spawn_on_current_runner = Fut.spawn_on_current_runner
 [@@@ifge 5.0]
 
 let await = Fut.await
+let yield = Picos.Fiber.yield
 
 [@@@endif]
 
