@@ -15,31 +15,30 @@ val create : max_size:int -> unit -> 'a t
 exception Closed
 
 val try_push : 'a t -> 'a -> bool
-(** [try_push chan x] pushes [x] into [chan]. This does not block.
-    Returns [true] if it succeeded in pushing.
+(** [try_push chan x] pushes [x] into [chan]. This does not block. Returns
+    [true] if it succeeded in pushing.
     @raise Closed if the channel is closed. *)
 
 val try_pop : 'a t -> 'a option
-(** [try_pop chan] pops and return an element if one is available
-    immediately. Otherwise it returns [None].
-    @raise Closed if the channel is closed and empty.
-    *)
+(** [try_pop chan] pops and return an element if one is available immediately.
+    Otherwise it returns [None].
+    @raise Closed if the channel is closed and empty. *)
 
 val close : _ t -> unit
-(** Close the channel. Further push and pop calls will fail.
-    This is idempotent. *)
+(** Close the channel. Further push and pop calls will fail. This is idempotent.
+*)
 
 [@@@ifge 5.0]
 
 val push : 'a t -> 'a -> unit
-(** Push the value into the channel, suspending the current task
-    if the channel is currently full.
+(** Push the value into the channel, suspending the current task if the channel
+    is currently full.
     @raise Closed if the channel is closed
     @since 0.7 *)
 
 val pop : 'a t -> 'a
-(** Pop an element. This might suspend the current task if the
-    channel is currently empty.
+(** Pop an element. This might suspend the current task if the channel is
+    currently empty.
     @raise Closed if the channel is empty and closed.
     @since 0.7 *)
 

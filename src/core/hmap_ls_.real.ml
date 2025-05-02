@@ -42,9 +42,8 @@ let[@inline] remove_in_local_hmap (k : _ Hmap.key) : unit =
 let[@inline] set_in_local_hmap (k : 'a Hmap.key) (v : 'a) : unit =
   update_local_hmap (Hmap.add k v)
 
-(** [with_in_local_hmap k v f] calls [f()] in a context
-    where [k] is bound to [v] in the local hmap. Then it restores the
-    previous binding for [k]. *)
+(** [with_in_local_hmap k v f] calls [f()] in a context where [k] is bound to
+    [v] in the local hmap. Then it restores the previous binding for [k]. *)
 let with_in_local_hmap (k : 'a Hmap.key) (v : 'a) f =
   let h = get_local_hmap () in
   match Hmap.find k h with

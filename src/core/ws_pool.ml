@@ -16,7 +16,8 @@ end
 
 type state = {
   id_: Id.t;
-      (** Unique to this pool. Used to make sure tasks stay within the same pool. *)
+      (** Unique to this pool. Used to make sure tasks stay within the same
+          pool. *)
   active: bool A.t;  (** Becomes [false] when the pool is shutdown. *)
   mutable workers: worker_state array;  (** Fixed set of workers. *)
   main_q: WL.task_full Queue.t;
@@ -43,9 +44,8 @@ and worker_state = {
   q: WL.task_full WSQ.t;  (** Work stealing queue *)
   rng: Random.State.t;
 }
-(** State for a given worker. Only this worker is
-    allowed to push into the queue, but other workers
-    can come and steal from it if they're idle. *)
+(** State for a given worker. Only this worker is allowed to push into the
+    queue, but other workers can come and steal from it if they're idle. *)
 
 let[@inline] size_ (self : state) = Array.length self.workers
 
@@ -55,9 +55,8 @@ let num_tasks_ (self : state) : int =
   Array.iter (fun w -> n := !n + WSQ.size w.q) self.workers;
   !n
 
-(** TLS, used by worker to store their specific state
-    and be able to retrieve it from tasks when we schedule new
-    sub-tasks. *)
+(** TLS, used by worker to store their specific state and be able to retrieve it
+    from tasks when we schedule new sub-tasks. *)
 let k_worker_state : worker_state TLS.t = TLS.create ()
 
 let[@inline] get_current_worker_ () : worker_state option =
@@ -77,8 +76,8 @@ let[@inline] try_wake_someone_ (self : state) : unit =
     Mutex.unlock self.mutex
   )
 
-(** Push into worker's local queue, open to work stealing.
-    precondition: this runs on the worker thread whose state is [self] *)
+(** Push into worker's local queue, open to work stealing. precondition: this
+    runs on the worker thread whose state is [self] *)
 let schedule_on_current_worker (self : worker_state) task : unit =
   (* we're on this same pool, schedule in the worker's state. Otherwise
      we might also be on pool A but asking to schedule on pool B,
