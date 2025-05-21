@@ -15,6 +15,8 @@ let make () =
   fut, fut
 
 let[@inline] return x : _ t = C.returned x
+let[@inline] cancel x ebt = C.cancel x (fst ebt) (snd ebt)
+let[@inline] try_cancel x ebt = C.try_cancel x (fst ebt) (snd ebt)
 
 let[@inline] fail exn bt : _ t =
   let fut = C.create () in

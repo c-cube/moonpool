@@ -51,6 +51,15 @@ val on_result_ignore : _ t -> (Exn_bt.t option -> unit) -> unit
 
 exception Already_fulfilled
 
+val try_cancel : _ promise -> Exn_bt.t -> bool
+(** [try_cancel promise ebt] tries to cancel the promise, returning [true]. It
+    returns [false] if the promise is already resolved.
+    @since NEXT_RELEASE *)
+
+val cancel : _ promise -> Exn_bt.t -> unit
+(** Silent version of {!try_cancel}, ignoring the result.
+    @since NEXT_RELEASE *)
+
 val fulfill : 'a promise -> 'a or_error -> unit
 (** Fullfill the promise, setting the future at the same time.
     @raise Already_fulfilled if the promise is already fulfilled. *)
