@@ -39,6 +39,10 @@ let[@inline] discontinue k exn =
   let bt = Printexc.get_raw_backtrace () in
   Effect.Deep.discontinue_with_backtrace k exn bt
 
+let[@inline] raise_with_bt exn =
+  let bt = Printexc.get_raw_backtrace () in
+  Printexc.raise_with_backtrace exn bt
+
 let with_handler (type st arg) ~(ops : st ops) (self : st) :
     (unit -> unit) -> unit =
   let current =
@@ -93,7 +97,7 @@ let with_handler (type st arg) ~(ops : st ops) (self : st) :
           discontinue k exn)
     | _ -> None
   in
-  let handler = Effect.Deep.{ retc = Fun.id; exnc = raise; effc } in
+  let handler = Effect.Deep.{ retc = Fun.id; exnc = raise_with_bt; effc } in
   fun f -> Effect.Deep.match_with f () handler
 
 [@@@else_]
@@ -145,7 +149,8 @@ let worker_loop (type st) ~block_signals ~(ops : st ops) (self : st) : unit =
          (* this is already in an effect handler *)
          k ()
      with e ->
-       let ebt = Exn_bt.get e in
+       let bt = Printexc.get_raw_backtrace () in
+       let ebt = Exn_bt.make e bt in
        ops.on_exn self ebt);
 
     after_task runner _ctx;
