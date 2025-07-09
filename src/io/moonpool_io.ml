@@ -1,3 +1,5 @@
+[@@@deprecated "just use lwt or eio or something else"]
+
 module Fd = Picos_io_fd
 module Unix = Picos_io.Unix
 module Select = Picos_io_select
