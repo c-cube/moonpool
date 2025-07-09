@@ -26,7 +26,7 @@ let main ~port ~runner:_ () : unit Lwt.t =
         ~data:(fun () -> [ "addr", `String (str_of_sockaddr client_addr) ])
     in
 
-    Printf.printf "got new client\n%!";
+    Printf.printf "got new client on %s\n%!" (str_of_sockaddr client_addr);
 
     let buf = Bytes.create 32 in
     let continue = ref true in
