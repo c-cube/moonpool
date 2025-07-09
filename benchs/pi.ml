@@ -66,8 +66,6 @@ let run_par1 ~kind (num_steps : int) : float =
   let pi = step *. Lock.get global_sum in
   pi
 
-[@@@ifge 5.0]
-
 let run_fork_join ~kind num_steps : float =
   let@ pool = with_pool ~kind () in
 
@@ -91,13 +89,6 @@ let run_fork_join ~kind num_steps : float =
 
   let pi = step *. Lock.get global_sum in
   pi
-
-[@@@else_]
-
-let run_fork_join _ =
-  failwith "fork join not available on this version of OCaml"
-
-[@@@endif]
 
 type mode =
   | Sequential
