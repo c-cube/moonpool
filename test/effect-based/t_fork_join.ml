@@ -1,5 +1,3 @@
-[@@@ifge 5.0]
-
 let spf = Printf.sprintf
 let ( let@ ) = ( @@ )
 
@@ -328,5 +326,3 @@ let () =
       t_for_nested ~min:1 ~chunk_size:100 ();
       t_for_nested ~min:4 ~chunk_size:100 ();
     ]
-
-[@@@endif]

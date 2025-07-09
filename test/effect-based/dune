@@ -9,9 +9,6 @@
   t_sort
   t_fork_join
   t_fork_join_heavy)
- (preprocess
-  (action
-   (run %{project_root}/src/cpp/cpp.exe %{input-file})))
  (enabled_if
   (and
    (= %{system} "linux")

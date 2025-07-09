@@ -1,5 +1,3 @@
-[@@@ifge 5.0]
-
 open Moonpool
 
 let ( let@ ) = ( @@ )
@@ -56,5 +54,3 @@ let main () =
 let () =
   let@ () = Trace_tef.with_setup () in
   main ()
-
-[@@@endif]
