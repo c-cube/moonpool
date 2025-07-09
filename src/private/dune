@@ -2,9 +2,6 @@
  (name moonpool_private)
  (public_name moonpool.private)
  (synopsis "Private internal utils for Moonpool (do not rely on)")
- (preprocess
-  (action
-   (run %{project_root}/src/cpp/cpp.exe %{input-file})))
  (libraries
   threads
   either

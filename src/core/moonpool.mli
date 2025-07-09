@@ -72,8 +72,6 @@ val get_current_runner : unit -> Runner.t option
 (** See {!Runner.get_current_runner}
     @since 0.7 *)
 
-[@@@ifge 5.0]
-
 val await : 'a Fut.t -> 'a
 (** Await a future, must be run on a moonpool runner. See {!Fut.await}. Only on
     OCaml >= 5.0.
@@ -83,8 +81,6 @@ val yield : unit -> unit
 (** Yield from the current task, must be run on a moonpool runner. Only on OCaml
     >= 5.0.
     @since NEXT_RELEASE *)
-
-[@@@endif]
 
 module Lock = Lock
 module Fut = Fut
@@ -203,7 +199,7 @@ module Blocking_queue : sig
       @since 0.4 *)
 end
 
-module Atomic = Atomic_
+module Atomic = Atomic
 (** Atomic values.
 
     This is either a shim using [ref], on pre-OCaml 5, or the standard [Atomic]

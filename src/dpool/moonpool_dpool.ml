@@ -71,7 +71,7 @@ type event =
     new threads for pools. *)
 type worker_state = {
   q: event Bb_queue.t;
-  th_count: int Atomic_.t;  (** Number of threads on this *)
+  th_count: int Atomic.t;  (** Number of threads on this *)
 }
 
 (** Array of (optional) workers.
@@ -101,14 +101,14 @@ let work_ idx (st : worker_state) : unit =
       match Bb_queue.pop st.q with
       | Run f -> (try f () with _ -> ())
       | Decr ->
-        if Atomic_.fetch_and_add st.th_count (-1) = 1 then (
+        if Atomic.fetch_and_add st.th_count (-1) = 1 then (
           continue := false;
 
           (* wait a bit, we might be needed again in a short amount of time *)
           try
             for _n_attempt = 1 to 50 do
               Thread.delay 0.001;
-              if Atomic_.get st.th_count > 0 then (
+              if Atomic.get st.th_count > 0 then (
                 (* needed again! *)
                 continue := true;
                 raise Exit
@@ -129,7 +129,7 @@ let work_ idx (st : worker_state) : unit =
         | Some _st', dom ->
           assert (st == _st');
 
-          if Atomic_.get st.th_count > 0 then
+          if Atomic.get st.th_count > 0 then
             (* still alive! *)
             (Some st, dom), true
           else
@@ -145,7 +145,7 @@ let work_ idx (st : worker_state) : unit =
 (* special case for main domain: we start a worker immediately *)
 let () =
   assert (Domain_.is_main_domain ());
-  let w = { th_count = Atomic_.make 1; q = Bb_queue.create () } in
+  let w = { th_count = Atomic.make 1; q = Bb_queue.create () } in
   (* thread that stays alive *)
   ignore (Thread.create (fun () -> work_ 0 w) () : Thread.t);
   domains_.(0) <- Lock.create (Some w, None)
@@ -157,12 +157,12 @@ let run_on (i : int) (f : unit -> unit) : unit =
   let w =
     Lock.update_map domains_.(i) (function
       | (Some w, _) as st ->
-        Atomic_.incr w.th_count;
+        Atomic.incr w.th_count;
         st, w
       | None, dying_dom ->
         (* join previous dying domain, to free its resources, if any *)
         Option.iter Domain_.join dying_dom;
-        let w = { th_count = Atomic_.make 1; q = Bb_queue.create () } in
+        let w = { th_count = Atomic.make 1; q = Bb_queue.create () } in
         let worker : domain = Domain_.spawn (fun () -> work_ i w) in
         (Some w, Some worker), w)
   in

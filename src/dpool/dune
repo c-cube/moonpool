@@ -2,8 +2,5 @@
  (name moonpool_dpool)
  (public_name moonpool.dpool)
  (synopsis "Moonpool's domain pool (used to start worker threads)")
- (preprocess
-  (action
-   (run %{project_root}/src/cpp/cpp.exe %{input-file})))
  (flags :standard -open Moonpool_private)
  (libraries moonpool.private))

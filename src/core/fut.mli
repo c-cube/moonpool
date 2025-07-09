@@ -236,8 +236,6 @@ val for_list : on:Runner.t -> 'a list -> ('a -> unit) -> unit t
 
     {b NOTE} This is only available on OCaml 5. *)
 
-[@@@ifge 5.0]
-
 val await : 'a t -> 'a
 (** [await fut] suspends the current tasks until [fut] is fulfilled, then
     resumes the task on this same runner (but possibly on a different
@@ -247,8 +245,6 @@ val await : 'a t -> 'a
 
     This must only be run from inside the runner itself. The runner must support
     {!Suspend_}. {b NOTE}: only on OCaml 5.x *)
-
-[@@@endif]
 
 (** {2 Blocking} *)
 

@@ -1,5 +1,5 @@
 open Types_
-module A = Atomic_
+module A = Atomic
 module WSQ = Ws_deque_
 module WL = Worker_loop_
 include Runner

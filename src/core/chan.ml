@@ -70,8 +70,6 @@ let close (self : _ t) : unit =
   Mutex.unlock self.mutex;
   Queue.iter Trigger.signal q
 
-[@@@ifge 5.0]
-
 let rec push (self : _ t) x : unit =
   Mutex.lock self.mutex;
 
@@ -120,5 +118,3 @@ let rec pop (self : 'a t) : 'a =
     Mutex.unlock self.mutex;
     Trigger.await_exn tr;
     pop self
-
-[@@@endif]

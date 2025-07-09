@@ -33,8 +33,6 @@ type 'st ops = {
 (** A dummy task. *)
 let _dummy_task : task_full = T_start { f = ignore; fiber = _dummy_fiber }
 
-[@@@ifge 5.0]
-
 let[@inline] discontinue k exn =
   let bt = Printexc.get_raw_backtrace () in
   Effect.Deep.discontinue_with_backtrace k exn bt
@@ -99,12 +97,6 @@ let with_handler (type st arg) ~(ops : st ops) (self : st) :
   in
   let handler = Effect.Deep.{ retc = Fun.id; exnc = raise_with_bt; effc } in
   fun f -> Effect.Deep.match_with f () handler
-
-[@@@else_]
-
-let with_handler ~ops:_ self f = f ()
-
-[@@@endif]
 
 let worker_loop (type st) ~block_signals ~(ops : st ops) (self : st) : unit =
   if block_signals then (

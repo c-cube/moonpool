@@ -12,7 +12,4 @@
   moonpool.dpool
   (re_export picos))
  (flags :standard -open Moonpool_private)
- (private_modules util_pool_)
- (preprocess
-  (action
-   (run %{project_root}/src/cpp/cpp.exe %{input-file}))))
+ (private_modules util_pool_))

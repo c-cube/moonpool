@@ -1,4 +1,4 @@
-module A = Atomic_
+module A = Atomic
 module C = Picos.Computation
 
 type 'a or_error = ('a, Exn_bt.t) result
@@ -424,8 +424,6 @@ let wait_block self =
     let bt = Printexc.get_raw_backtrace () in
     Error (Exn_bt.make exn bt)
 
-[@@@ifge 5.0]
-
 let await (self : 'a t) : 'a =
   (* fast path: peek *)
   match C.peek_exn self with
@@ -438,8 +436,6 @@ let await (self : 'a t) : 'a =
 
     (* un-suspended: we should have a result! *)
     get_or_fail_exn self
-
-[@@@endif]
 
 module Infix = struct
   let[@inline] ( >|= ) x f = map ~f x

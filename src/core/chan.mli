@@ -28,8 +28,6 @@ val close : _ t -> unit
 (** Close the channel. Further push and pop calls will fail. This is idempotent.
 *)
 
-[@@@ifge 5.0]
-
 val push : 'a t -> 'a -> unit
 (** Push the value into the channel, suspending the current task if the channel
     is currently full.
@@ -48,5 +46,3 @@ val pop_block_exn : 'a t -> 'a
     The precautions around blocking from inside a thread pool
     are the same as explained in {!Fut.wait_block}. *)
 *)
-
-[@@@endif]
