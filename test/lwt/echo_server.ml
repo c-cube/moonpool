@@ -48,7 +48,7 @@ let main ~port ~runner:_ () : unit Lwt.t =
 
   let addr = Unix.ADDR_INET (Unix.inet_addr_any, port) in
   let _server =
-    Lwt_io.establish_server_with_client_address addr handle_client
+    Lwt_io.establish_server_with_client_address addr handle_client |> await_lwt
   in
 
   lwt_fut
