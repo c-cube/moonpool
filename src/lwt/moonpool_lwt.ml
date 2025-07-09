@@ -1,6 +1,7 @@
 open Common_
 
 open struct
+  module BQ = Moonpool.Blocking_queue
   module WL = Moonpool.Private.Worker_loop_
   module M = Moonpool
 end
@@ -9,33 +10,35 @@ module Fut = Moonpool.Fut
 
 let default_around_task_ : WL.around_task = AT_pair (ignore, fun _ _ -> ())
 
-module Scheduler_state = struct
-  module BQ = Moonpool.Blocking_queue
+let on_uncaught_exn : (Moonpool.Exn_bt.t -> unit) ref =
+  ref (fun ebt ->
+      Printf.eprintf "uncaught exception in moonpool-lwt:\n%s" (Exn_bt.show ebt))
 
+module Scheduler_state = struct
   type st = {
     tasks: WL.task_full BQ.t;
-    on_exn: Exn_bt.t -> unit;
     mutable as_runner: Moonpool.Runner.t;
     mutable enter_hook: Lwt_main.Enter_iter_hooks.hook option;
     mutable leave_hook: Lwt_main.Leave_iter_hooks.hook option;
   }
 
-  let create ~on_exn () : st =
+  let st : st =
     {
       tasks = BQ.create ();
-      on_exn;
       as_runner = Moonpool.Runner.dummy;
       enter_hook = None;
       leave_hook = None;
     }
 
   let around_task _ = default_around_task_
+
+  (* FIXME: need to wakeup lwt if needed! *)
   let schedule (self : st) t = BQ.push self.tasks t
 
   let get_next_task (self : st) =
     try BQ.pop self.tasks with BQ.Closed -> raise WL.No_more_tasks
 
-  let on_exn (self : st) ebt = self.on_exn ebt
+  let on_exn _ ebt = !on_uncaught_exn ebt
   let runner self = self.as_runner
 
   let as_runner (self : st) : Moonpool.Runner.t =
@@ -65,6 +68,10 @@ module Scheduler_state = struct
       before_start;
       cleanup;
     }
+end
+
+open struct
+  module FG = WL.Fine_grained (Scheduler_state) ()
 end
 
 let _dummy_exn_bt : Exn_bt.t =
@@ -102,34 +109,34 @@ let fut_of_lwt (lwt_fut : _ Lwt.t) : _ M.Fut.t =
         M.Fut.fulfill prom (Error (Exn_bt.make exn bt)));
     fut
 
-let on_uncaught_exn : (Moonpool.Exn_bt.t -> unit) ref =
-  ref (fun ebt ->
-      Printf.eprintf "uncaught exception in moonpool-lwt:\n%s" (Exn_bt.show ebt))
+let run_in_hook () =
+  FG.run ~max_tasks:1000 ();
+  if BQ.size Scheduler_state.st.tasks > 0 then
+    ignore (Lwt.pause () : unit Lwt.t)
 
-let runner_ : Moonpool.Runner.t option ref = ref None
+let is_setup_ = ref false
 
 let setup () =
-  match !runner_ with
-  | Some r -> r
-  | None ->
-    let on_exn ebt = !on_uncaught_exn ebt in
-    let module Arg = struct
-      type nonrec st = Scheduler_state.st
-
-      let ops = Scheduler_state.ops
-      let st = Scheduler_state.create ~on_exn ()
-    end in
-    let module FG = WL.Fine_grained (Arg) () in
-    runner_ := Some Arg.st.as_runner;
-
+  if not !is_setup_ then (
+    is_setup_ := true;
     FG.setup ~block_signals:false ();
-    let run_in_hook () = FG.run ~max_tasks:1000 () in
-    Arg.st.enter_hook <- Some (Lwt_main.Enter_iter_hooks.add_last run_in_hook);
-    Arg.st.leave_hook <- Some (Lwt_main.Leave_iter_hooks.add_last run_in_hook);
+    Scheduler_state.st.enter_hook <-
+      Some (Lwt_main.Enter_iter_hooks.add_last run_in_hook);
+    Scheduler_state.st.leave_hook <-
+      Some (Lwt_main.Leave_iter_hooks.add_last run_in_hook)
+  )
 
-    Arg.st.as_runner
+let spawn_lwt f : _ Lwt.t =
+  setup ();
+  let lwt_fut, lwt_prom = Lwt.wait () in
+  M.Runner.run_async Scheduler_state.st.as_runner (fun () ->
+      try
+        let x = f () in
+        Lwt.wakeup lwt_prom x
+      with exn -> Lwt.wakeup_exn lwt_prom exn);
+  lwt_fut
 
 let lwt_main (f : _ -> 'a) : 'a =
-  let runner = setup () in
-  let fut = M.spawn ~on:runner (fun () -> f runner) in
-  Lwt_main.run (lwt_of_fut fut)
+  setup ();
+  let fut = spawn_lwt (fun () -> f Scheduler_state.st.as_runner) in
+  Lwt_main.run fut
