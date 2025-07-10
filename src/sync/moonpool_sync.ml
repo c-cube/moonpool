@@ -1,3 +1,5 @@
+[@@@ocaml.deprecated "use Picos_std_sync or single threaded solutions"]
+
 module Mutex = Picos_std_sync.Mutex
 module Condition = Picos_std_sync.Condition
 module Lock = Lock
