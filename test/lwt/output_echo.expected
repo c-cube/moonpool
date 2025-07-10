@@ -1,8 +1,9 @@
 run echo server on port=12346
 listening on port 12346
-run echo client -p 12346 -n 10 --n-conn=2 -j=4
+run echo client -p 12346 -n 10 --n-conn=2 -v
+  sent 100 messages in 0.0175s (5720.16 msg/s)
 all done
-connecting to port 12346
+connecting to port 12346 (10 msg per conn, 10 conns total, 2 max at a time)
 read: hello 1
 read: hello 1
 read: hello 1

@@ -16,7 +16,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run ./run_hash.sh -d ../data/ --n-conn=2 -j=4))))
+   (run ./run_hash.sh -d ../data/ --n-conn=2))))
 
 (rule
  (alias runtest)
@@ -38,7 +38,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run ./run_echo.sh -n 10 --n-conn=2 -j=4))))
+   (run ./run_echo.sh -n 10 --n-conn=2 -v))))
 
 (rule
  (alias runtest)
