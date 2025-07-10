@@ -36,9 +36,12 @@
    (= %{system} "linux")
    (>= %{ocaml_version} 5.0)))
  (action
-  (with-stdout-to
-   %{targets}
-   (run ./run_echo.sh -n 10 --n-conn=2 -v))))
+  (setenv
+   CI_MODE
+   1
+   (with-stdout-to
+    %{targets}
+    (run ./run_echo.sh -n 10 --n-conn=2 -v)))))
 
 (rule
  (alias runtest)

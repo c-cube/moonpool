@@ -1,6 +1,7 @@
 module M_lwt = Moonpool_lwt
 module Trace = Trace_core
 
+let ci_mode = Option.is_some @@ Sys.getenv_opt "CI_MODE"
 let spf = Printf.sprintf
 let await_lwt = Moonpool_lwt.await_lwt
 let ( let@ ) = ( @@ )
@@ -68,9 +69,10 @@ let main ~port ~n ~n_conn ~verbose ~msg_per_conn () : unit =
 
   Printf.printf "all done\n%!";
   let elapsed = Unix.gettimeofday () -. t0 in
-  Printf.printf "  sent %d messages in %.4fs (%.2f msg/s)\n%!" !n_msg_total
-    elapsed
-    (float !n_msg_total /. elapsed);
+  if not ci_mode then
+    Printf.printf "  sent %d messages in %.4fs (%.2f msg/s)\n%!" !n_msg_total
+      elapsed
+      (float !n_msg_total /. elapsed);
   ()
 
 let () =
