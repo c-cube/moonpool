@@ -83,8 +83,8 @@ let with_handler (type st) ~(ops : st ops) (self : st) : (unit -> unit) -> unit
           let fiber = get_current_fiber_exn () in
           (* when triggers is signaled, reschedule task *)
           if not (Picos.Fiber.try_suspend fiber trigger fiber k reschedule) then
-            (* trigger was already signaled, run task now *)
-            Picos.Fiber.resume fiber k)
+            (* trigger was already signaled, reschedule task now *)
+            reschedule trigger fiber k)
     | Picos.Computation.Cancel_after _r ->
       Some
         (fun k ->
