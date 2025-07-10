@@ -11,7 +11,7 @@ let str_of_sockaddr = function
   | Unix.ADDR_INET (addr, port) ->
     spf "%s:%d" (Unix.string_of_inet_addr addr) port
 
-let main ~port ~runner:_ () : unit Lwt.t =
+let main ~port ~verbose ~runner:_ () : unit Lwt.t =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "main" in
 
   let lwt_fut, _lwt_prom = Lwt.wait () in
@@ -26,7 +26,8 @@ let main ~port ~runner:_ () : unit Lwt.t =
         ~data:(fun () -> [ "addr", `String (str_of_sockaddr client_addr) ])
     in
 
-    Printf.printf "got new client on %s\n%!" (str_of_sockaddr client_addr);
+    if verbose then
+      Printf.printf "got new client on %s\n%!" (str_of_sockaddr client_addr);
 
     let buf = Bytes.create 32 in
     let continue = ref true in
@@ -42,6 +43,8 @@ let main ~port ~runner:_ () : unit Lwt.t =
         Trace.message "write"
       )
     done;
+    if verbose then
+      Printf.printf "done with client on %s\n%!" (str_of_sockaddr client_addr);
     Trace.exit_manual_span _sp;
     Trace.message "exit handle client"
   in
@@ -58,10 +61,13 @@ let () =
   Trace.set_thread_name "main";
   let port = ref 0 in
   let j = ref 4 in
+  let verbose = ref false in
 
   let opts =
     [
-      "-p", Arg.Set_int port, " port"; "-j", Arg.Set_int j, " number of threads";
+      "-v", Arg.Set verbose, " verbose";
+      "-p", Arg.Set_int port, " port";
+      "-j", Arg.Set_int j, " number of threads";
     ]
     |> Arg.align
   in
@@ -69,4 +75,4 @@ let () =
 
   let@ runner = M.Ws_pool.with_ ~name:"tpool" ~num_threads:!j () in
   (* Lwt_engine.set @@ new Lwt_engine.libev (); *)
-  Lwt_main.run @@ main ~runner ~port:!port ()
+  Lwt_main.run @@ main ~runner ~port:!port ~verbose:!verbose ()
