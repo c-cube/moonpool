@@ -39,8 +39,8 @@ let[@inline] raise_with_bt exn =
   let bt = Printexc.get_raw_backtrace () in
   Printexc.raise_with_backtrace exn bt
 
-let with_handler (type st arg) ~(ops : st ops) (self : st) :
-    (unit -> unit) -> unit =
+let with_handler (type st) ~(ops : st ops) (self : st) : (unit -> unit) -> unit
+    =
   let current =
     Some
       (fun k ->
@@ -145,7 +145,7 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
     cur_fiber := _dummy_fiber;
     TLS.set k_cur_fiber _dummy_fiber
 
-  let setup (type st) ~block_signals () : unit =
+  let setup ~block_signals () : unit =
     if !state <> New then invalid_arg "worker_loop.setup: not a new instance";
     state := Ready;
 
