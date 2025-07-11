@@ -1,4 +1,7 @@
-(* vendored from https://github.com/dbuenzli/uuidm *)
+(* vendored from https://github.com/dbuenzli/uuidm
+
+   This function is Copyright (c) 2008 The uuidm programmers.
+   SPDX-License-Identifier: ISC *)
 
 let sha_1 s =
   (* Based on pseudo-code of RFC 3174. Slow and ugly but does the job. *)
@@ -116,23 +119,10 @@ let sha_1 s =
   i2s h 16 !h4;
   Bytes.unsafe_to_string h
 
-(*---------------------------------------------------------------------------
-   Copyright (c) 2008 The uuidm programmers
+(* ================== *)
 
-   Permission to use, copy, modify, and/or distribute this software for any
-   purpose with or without fee is hereby granted, provided that the above
-   copyright notice and this permission notice appear in all copies.
-
-   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-  ---------------------------------------------------------------------------*)
-
-(* server that reads from sockets lists of files, and returns hashes of these files *)
+(* test server that reads a list of files from each client connection, and sends back
+  to the client the hashes of these files *)
 
 module M_lwt = Moonpool_lwt
 module Trace = Trace_core
