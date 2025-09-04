@@ -34,7 +34,7 @@ module Scheduler_state = struct
       tasks = Queue.create ();
       actions_from_other_threads = Queue.create ();
       mutex = Mutex.create ();
-      thread = Thread.self () |> Thread.id;
+      thread = -1;
       closed = false;
       as_runner = Moonpool.Runner.dummy;
       enter_hook = None;
@@ -157,6 +157,8 @@ let await_lwt (fut : _ Lwt.t) =
   )
 
 let lwt_of_fut (fut : 'a M.Fut.t) : 'a Lwt.t =
+  if not (Ops.on_lwt_thread_ Scheduler_state.st) then
+    failwith "lwt_of_fut: not on the lwt thread";
   let lwt_fut, lwt_prom = Lwt.wait () in
 
   (* in lwt thread, resolve [lwt_fut] *)

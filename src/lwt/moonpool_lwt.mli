@@ -18,7 +18,8 @@ val fut_of_lwt : 'a Lwt.t -> 'a Moonpool.Fut.t
 val lwt_of_fut : 'a Moonpool.Fut.t -> 'a Lwt.t
 (** [lwt_of_fut fut] makes a lwt future that completes when [fut] does. This
     must be called from the Lwt thread, and the result must always be used only
-    from inside the Lwt thread. *)
+    from inside the Lwt thread.
+    @raise Failure if not run from the lwt thread. *)
 
 (** {2 Helpers on the moonpool side} *)
 
