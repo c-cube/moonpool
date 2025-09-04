@@ -101,7 +101,17 @@ let () =
   in
   Arg.parse opts ignore "echo client";
 
-  (* Lwt_engine.set @@ new Lwt_engine.libev (); *)
-  M_lwt.lwt_main @@ fun _runner ->
-  main ~port:!port ~n:!n ~n_conn:!n_conn ~verbose:!verbose
-    ~msg_per_conn:!msg_per_conn ()
+  let main () =
+    (* Lwt_engine.set @@ new Lwt_engine.libev (); *)
+    M_lwt.lwt_main @@ fun _runner ->
+    main ~port:!port ~n:!n ~n_conn:!n_conn ~verbose:!verbose
+      ~msg_per_conn:!msg_per_conn ()
+  in
+
+  print_endline "first run";
+  main ();
+  assert (not (M_lwt.is_setup ()));
+  print_endline "second run";
+  main ();
+  assert (not (M_lwt.is_setup ()));
+  print_endline "done"

@@ -2,7 +2,21 @@ run echo server on port=12346
 listening on port 12346
 run echo client -p 12346 -n 10 --n-conn=2 -v
 all done
+all done
 connecting to port 12346 (10 msg per conn, 10 conns total, 2 max at a time)
+connecting to port 12346 (10 msg per conn, 10 conns total, 2 max at a time)
+done
+first run
+read: hello 1
+read: hello 1
+read: hello 1
+read: hello 1
+read: hello 1
+read: hello 1
+read: hello 1
+read: hello 1
+read: hello 1
+read: hello 1
 read: hello 1
 read: hello 1
 read: hello 1
@@ -23,6 +37,26 @@ read: hello 10
 read: hello 10
 read: hello 10
 read: hello 10
+read: hello 10
+read: hello 10
+read: hello 10
+read: hello 10
+read: hello 10
+read: hello 10
+read: hello 10
+read: hello 10
+read: hello 10
+read: hello 10
+read: hello 2
+read: hello 2
+read: hello 2
+read: hello 2
+read: hello 2
+read: hello 2
+read: hello 2
+read: hello 2
+read: hello 2
+read: hello 2
 read: hello 2
 read: hello 2
 read: hello 2
@@ -43,6 +77,26 @@ read: hello 3
 read: hello 3
 read: hello 3
 read: hello 3
+read: hello 3
+read: hello 3
+read: hello 3
+read: hello 3
+read: hello 3
+read: hello 3
+read: hello 3
+read: hello 3
+read: hello 3
+read: hello 3
+read: hello 4
+read: hello 4
+read: hello 4
+read: hello 4
+read: hello 4
+read: hello 4
+read: hello 4
+read: hello 4
+read: hello 4
+read: hello 4
 read: hello 4
 read: hello 4
 read: hello 4
@@ -63,6 +117,26 @@ read: hello 5
 read: hello 5
 read: hello 5
 read: hello 5
+read: hello 5
+read: hello 5
+read: hello 5
+read: hello 5
+read: hello 5
+read: hello 5
+read: hello 5
+read: hello 5
+read: hello 5
+read: hello 5
+read: hello 6
+read: hello 6
+read: hello 6
+read: hello 6
+read: hello 6
+read: hello 6
+read: hello 6
+read: hello 6
+read: hello 6
+read: hello 6
 read: hello 6
 read: hello 6
 read: hello 6
@@ -83,6 +157,26 @@ read: hello 7
 read: hello 7
 read: hello 7
 read: hello 7
+read: hello 7
+read: hello 7
+read: hello 7
+read: hello 7
+read: hello 7
+read: hello 7
+read: hello 7
+read: hello 7
+read: hello 7
+read: hello 7
+read: hello 8
+read: hello 8
+read: hello 8
+read: hello 8
+read: hello 8
+read: hello 8
+read: hello 8
+read: hello 8
+read: hello 8
+read: hello 8
 read: hello 8
 read: hello 8
 read: hello 8
@@ -103,3 +197,14 @@ read: hello 9
 read: hello 9
 read: hello 9
 read: hello 9
+read: hello 9
+read: hello 9
+read: hello 9
+read: hello 9
+read: hello 9
+read: hello 9
+read: hello 9
+read: hello 9
+read: hello 9
+read: hello 9
+second run
