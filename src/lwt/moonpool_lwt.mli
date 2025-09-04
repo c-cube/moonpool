@@ -45,3 +45,5 @@ val lwt_main_runner : unit -> Moonpool.Runner.t
 (** The runner from {!lwt_main}. The runner is only going to work if {!lwt_main}
     is currently running in some thread.
     @raise Failure if {!lwt_main} was not called. *)
+
+val is_setup : unit -> bool
