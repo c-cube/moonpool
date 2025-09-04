@@ -23,12 +23,15 @@ val lwt_of_fut : 'a Moonpool.Fut.t -> 'a Lwt.t
 (** {2 Helpers on the moonpool side} *)
 
 val spawn_lwt : (unit -> 'a) -> 'a Lwt.t
-(** This spawns a task that runs in the Lwt scheduler *)
+(** This spawns a task that runs in the Lwt scheduler.
+    @raise Failure if {!lwt_main} was not called. *)
 
 val await_lwt : 'a Lwt.t -> 'a
 (** [await_lwt fut] awaits a Lwt future from inside a task running on a moonpool
     runner. This must be run from within a Moonpool runner so that the await-ing
     effect is handled. *)
+
+val run_in_lwt_and_await : (unit -> 'a Lwt.t) -> 'a
 
 (** {2 Wrappers around Lwt_main} *)
 
@@ -39,4 +42,5 @@ val lwt_main : (Moonpool.Runner.t -> 'a) -> 'a
 
 val lwt_main_runner : unit -> Moonpool.Runner.t
 (** The runner from {!lwt_main}. The runner is only going to work if {!lwt_main}
-    is currently running in some thread. *)
+    is currently running in some thread.
+    @raise Failure if {!lwt_main} was not called. *)
