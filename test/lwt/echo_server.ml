@@ -11,7 +11,7 @@ let str_of_sockaddr = function
   | Unix.ADDR_INET (addr, port) ->
     spf "%s:%d" (Unix.string_of_inet_addr addr) port
 
-let main ~port ~verbose ~runner:_ () : unit Lwt.t =
+let main ~port ~verbose ~runner:_ () : unit =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "main" in
 
   let lwt_fut, _lwt_prom = Lwt.wait () in
@@ -54,7 +54,7 @@ let main ~port ~verbose ~runner:_ () : unit Lwt.t =
     Lwt_io.establish_server_with_client_address addr handle_client |> await_lwt
   in
 
-  lwt_fut
+  M_lwt.await_lwt lwt_fut
 
 let () =
   let@ () = Trace_tef.with_setup () in
@@ -75,4 +75,4 @@ let () =
 
   let@ runner = M.Ws_pool.with_ ~name:"tpool" ~num_threads:!j () in
   (* Lwt_engine.set @@ new Lwt_engine.libev (); *)
-  Lwt_main.run @@ main ~runner ~port:!port ~verbose:!verbose ()
+  M_lwt.lwt_main @@ fun _ -> main ~runner ~port:!port ~verbose:!verbose ()
