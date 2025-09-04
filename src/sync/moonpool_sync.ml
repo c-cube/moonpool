@@ -1,4 +1,4 @@
-[@@@ocaml.deprecated "use Picos_std_sync or single threaded solutions"]
+[@@@ocaml.deprecated "use Picos_std_sync directly or single threaded solutions"]
 
 module Mutex = Picos_std_sync.Mutex
 module Condition = Picos_std_sync.Condition
