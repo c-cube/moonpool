@@ -1,4 +1,3 @@
-
 open! Moonpool
 module A = Atomic
 module F = Moonpool_fib.Fiber
@@ -160,7 +159,7 @@ let run ~pool ~pool_name () =
   let fibs =
     List.init 8 (fun idx -> F.spawn_top ~on:pool (fun () -> top idx))
   in
-  List.iter F.wait_block_exn fibs;
+  List.iter F.await fibs;
 
   Printf.printf "tracing complete\n";
   Printf.printf "spans:\n";

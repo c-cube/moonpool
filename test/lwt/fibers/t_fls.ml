@@ -1,11 +1,8 @@
-open! Moonpool
+module M_lwt = Moonpool_lwt
 
-let (let@) = (@@)
+let ( let@ ) = ( @@ )
 
 let () =
-  (let@ pool = Ws_pool.with_ () in
-   T_fibers.Fls.run ~pool ~pool_name:"ws_pool" ());
-
-  (let@ pool = Fifo_pool.with_ () in
-   T_fibers.Fls.run ~pool ~pool_name:"fifo_pool" ());
+  (let@ runner = M_lwt.lwt_main in
+   T_fibers.Fls.run ~pool:runner ~pool_name:"lwt" ());
   ()
