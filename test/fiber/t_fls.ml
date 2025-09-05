@@ -1,6 +1,6 @@
 open! Moonpool
 
-let (let@) = (@@)
+let ( let@ ) = ( @@ )
 
 let () =
   (let@ pool = Ws_pool.with_ () in
