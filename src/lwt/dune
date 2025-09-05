@@ -5,6 +5,7 @@
   (>= %{ocaml_version} 5.0))
  (libraries
   (re_export moonpool)
+  moonpool.fib
   picos
   (re_export lwt)
   lwt.unix))
