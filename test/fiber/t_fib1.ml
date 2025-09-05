@@ -1,9 +1,6 @@
-open! Moonpool
-
 let ( let@ ) = ( @@ )
-let runner = Fifo_pool.create ~num_threads:1 ()
 
 let () =
+  let@ runner = Moonpool_fib.main in
   T_fibers.Fib.run1 ~runner ();
-  T_fibers.Fib.run2 ~runner ();
-
+  T_fibers.Fib.run2 ~runner ()

@@ -1,4 +1,3 @@
-module M = Moonpool
 module M_lwt = Moonpool_lwt
 module Trace = Trace_core
 
