@@ -39,7 +39,8 @@ val run_in_lwt_and_await : (unit -> 'a Lwt.t) -> 'a
 val on_uncaught_exn : (Moonpool.Exn_bt.t -> unit) ref
 
 val lwt_main : (Moonpool.Runner.t -> 'a) -> 'a
-(** Setup, run lwt main, return the result *)
+(** [lwt_main f] sets the moonpool-lwt bridge up, runs lwt main, calls [f],
+    destroys the bridge, and return the result of [f()]. *)
 
 val lwt_main_runner : unit -> Moonpool.Runner.t
 (** The runner from {!lwt_main}. The runner is only going to work if {!lwt_main}
@@ -47,3 +48,4 @@ val lwt_main_runner : unit -> Moonpool.Runner.t
     @raise Failure if {!lwt_main} was not called. *)
 
 val is_setup : unit -> bool
+(** Is the moonpool-lwt bridge setup? *)
