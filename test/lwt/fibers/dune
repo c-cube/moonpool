@@ -2,11 +2,12 @@
  (names t_fls t_main t_fib1)
  (enabled_if
   (>= %{ocaml_version} 5.0))
- (package moonpool)
+ (package moonpool-lwt)
  (libraries
   t_fibers
   moonpool
   moonpool.fib
+  moonpool-lwt
   trace
   trace-tef
   qcheck-core

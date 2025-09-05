@@ -1,0 +1,12 @@
+(library
+ (name t_fibers)
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (package moonpool)
+ (libraries
+  moonpool
+  moonpool.fib
+  trace
+  qcheck-core))
+
+
