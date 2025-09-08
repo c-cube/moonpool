@@ -1,4 +1,3 @@
-open! Moonpool
 module M_lwt = Moonpool_lwt
 
 let ( let@ ) = ( @@ )
