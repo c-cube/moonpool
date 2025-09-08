@@ -307,6 +307,7 @@ let spawn_lwt f : _ Lwt.t =
   lwt_fut
 
 let spawn_lwt_ignore f = ignore (spawn_lwt f : unit Lwt.t)
+let on_lwt_thread = Main_state.on_lwt_thread
 
 let lwt_main (f : _ -> 'a) : 'a =
   let st = setup () in

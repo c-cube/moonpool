@@ -45,6 +45,11 @@ val lwt_main : (Moonpool.Runner.t -> 'a) -> 'a
 (** [lwt_main f] sets the moonpool-lwt bridge up, runs lwt main, calls [f],
     destroys the bridge, and return the result of [f()]. *)
 
+val on_lwt_thread : unit -> bool
+(** [on_lwt_thread ()] is true if the current thread is the one currently
+    running {!lwt_main}.
+    @raise Failure if {!lwt_main} was not called. *)
+
 val lwt_main_runner : unit -> Moonpool.Runner.t
 (** The runner from {!lwt_main}. The runner is only going to work if {!lwt_main}
     is currently running in some thread.
