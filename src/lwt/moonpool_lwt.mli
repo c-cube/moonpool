@@ -27,6 +27,9 @@ val spawn_lwt : (unit -> 'a) -> 'a Lwt.t
 (** This spawns a task that runs in the Lwt scheduler.
     @raise Failure if {!lwt_main} was not called. *)
 
+val spawn_lwt_ignore : (unit -> unit) -> unit
+(** Like {!spawn_lwt} but ignores the result, like [Lwt.async]. *)
+
 val await_lwt : 'a Lwt.t -> 'a
 (** [await_lwt fut] awaits a Lwt future from inside a task running on a moonpool
     runner. This must be run from within a Moonpool runner so that the await-ing

@@ -306,6 +306,8 @@ let spawn_lwt f : _ Lwt.t =
       with exn -> Lwt.wakeup_exn lwt_prom exn);
   lwt_fut
 
+let spawn_lwt_ignore f = ignore (spawn_lwt f : unit Lwt.t)
+
 let lwt_main (f : _ -> 'a) : 'a =
   let st = setup () in
   (* make sure to cleanup *)
