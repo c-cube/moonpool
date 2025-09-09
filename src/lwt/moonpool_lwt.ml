@@ -229,18 +229,6 @@ let fut_of_lwt (lwt_fut : _ Lwt.t) : _ M.Fut.t =
     fut
   )
 
-let run_in_lwt_and_await (f : unit -> 'a Lwt.t) : 'a =
-  if Main_state.on_lwt_thread () then (
-    let fut = f () in
-    await_lwt fut
-  ) else (
-    let fut, prom = Fut.make () in
-    Main_state.add_action_from_another_thread (fun () ->
-        let lwt_fut = f () in
-        transfer_lwt_to_fut lwt_fut prom);
-    Fut.await fut
-  )
-
 module Setup_lwt_hooks (ARG : sig
   val st : Scheduler_state.st
 end) =
@@ -307,6 +295,7 @@ let spawn_lwt f : _ Lwt.t =
   lwt_fut
 
 let spawn_lwt_ignore f = ignore (spawn_lwt f : unit Lwt.t)
+let run_in_lwt_and_await (f : unit -> 'a) : 'a = await_lwt @@ spawn_lwt f
 let on_lwt_thread = Main_state.on_lwt_thread
 
 let lwt_main (f : _ -> 'a) : 'a =

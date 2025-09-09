@@ -35,7 +35,11 @@ val await_lwt : 'a Lwt.t -> 'a
     runner. This must be run from within a Moonpool runner so that the await-ing
     effect is handled. *)
 
-val run_in_lwt_and_await : (unit -> 'a Lwt.t) -> 'a
+val run_in_lwt_and_await : (unit -> 'a) -> 'a
+(** [run_in_lwt_and_await f] runs [f()] in the lwt thread, just like
+    [spawn_lwt f], and then calls {!await_lwt} on the result. This means [f()]
+    can use Lwt functions and libraries, use {!await_lwt} on them freely, etc,
+*)
 
 (** {2 Wrappers around Lwt_main} *)
 
