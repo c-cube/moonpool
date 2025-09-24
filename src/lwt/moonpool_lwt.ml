@@ -295,8 +295,15 @@ let spawn_lwt f : _ Lwt.t =
   lwt_fut
 
 let spawn_lwt_ignore f = ignore (spawn_lwt f : unit Lwt.t)
-let run_in_lwt_and_await (f : unit -> 'a) : 'a = await_lwt @@ spawn_lwt f
 let on_lwt_thread = Main_state.on_lwt_thread
+
+let run_in_lwt_and_await (f : unit -> 'a) : 'a =
+  let st = Main_state.get_st () in
+  if Scheduler_state.on_lwt_thread_ st then
+    (* run immediately *)
+    f ()
+  else
+    await_lwt @@ spawn_lwt f
 
 let lwt_main (f : _ -> 'a) : 'a =
   let st = setup () in
