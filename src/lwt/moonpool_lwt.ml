@@ -175,6 +175,13 @@ module Main_state = struct
     Scheduler_state.add_action_from_another_thread_ (get_st ()) f
 end
 
+let await_lwt_from_another_thread fut =
+  let tr = M.Trigger.create () in
+  Main_state.add_action_from_another_thread (fun () ->
+      register_trigger_on_lwt_termination fut tr);
+  M.Trigger.await_exn tr;
+  await_lwt_terminated fut
+
 let await_lwt (fut : _ Lwt.t) =
   if Scheduler_state.on_lwt_thread_ (Main_state.get_st ()) then (
     (* can directly access the future *)
@@ -186,13 +193,8 @@ let await_lwt (fut : _ Lwt.t) =
       register_trigger_on_lwt_termination fut tr;
       M.Trigger.await_exn tr;
       await_lwt_terminated fut
-  ) else (
-    let tr = M.Trigger.create () in
-    Main_state.add_action_from_another_thread (fun () ->
-        register_trigger_on_lwt_termination fut tr);
-    M.Trigger.await_exn tr;
-    await_lwt_terminated fut
-  )
+  ) else
+    await_lwt_from_another_thread fut
 
 let lwt_of_fut (fut : 'a M.Fut.t) : 'a Lwt.t =
   if not (Main_state.on_lwt_thread ()) then
@@ -303,7 +305,7 @@ let run_in_lwt_and_await (f : unit -> 'a) : 'a =
     (* run immediately *)
     f ()
   else
-    await_lwt @@ spawn_lwt f
+    await_lwt_from_another_thread @@ spawn_lwt f
 
 let lwt_main (f : _ -> 'a) : 'a =
   let st = setup () in
