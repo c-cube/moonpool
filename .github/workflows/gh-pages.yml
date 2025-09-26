@@ -22,7 +22,7 @@ jobs:
       # temporary until it's in a release
       - run: opam pin picos 0.6.0 -y -n
 
-      - run: opam install odig moonpool moonpool-lwt moonpool-io
+      - run: opam install odig moonpool moonpool-lwt moonpool-io -t
 
       - run: opam exec -- odig odoc --cache-dir=_doc/ moonpool moonpool-lwt
 
