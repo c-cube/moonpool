@@ -1,4 +1,21 @@
 
+# 0.9
+
+- breaking: require OCaml 5
+  * no further need for a preprocessor
+  * forkjoin not longer optional
+
+- moonpool-lwt: large changes, including a Runner that runs
+    inside `Lwt_unix`'s event loop and can thus use any `_ Lwt.t` function
+- remove bounded_queue
+- fix core: better repropagating of errors
+- add `Fut.{cancel,try_cancel}`
+- perf: `await` on immediately ready timer queues its task
+- feat: add `Moonpool.yield`
+
+- deprecate moonpool.sync
+- deprecate moonpool_io
+
 # 0.8
 
 - api(fut): make alias `'a Fut.t = 'a Picos.Computation.t` public

@@ -6,7 +6,10 @@
 
     {b NOTE}: this is experimental and might change in future versions.
 
-    @since 0.6 *)
+    @since 0.6
+
+    The API has entirely changed since 0.9 , see
+    https://github.com/c-cube/moonpool/pull/37 *)
 
 module Fut = Moonpool.Fut
 
