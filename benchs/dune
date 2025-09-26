@@ -1,6 +1,3 @@
 (executables
  (names fib_rec pi primes)
- (preprocess
-  (action
-   (run %{project_root}/src/cpp/cpp.exe %{input-file})))
  (libraries moonpool moonpool.forkjoin unix trace trace-tef domainslib))

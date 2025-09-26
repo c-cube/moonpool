@@ -12,18 +12,12 @@ let get_current_runner = Runner.get_current_runner
 let recommended_thread_count () = Domain_.recommended_number ()
 let spawn = Fut.spawn
 let spawn_on_current_runner = Fut.spawn_on_current_runner
-
-[@@@ifge 5.0]
-
 let await = Fut.await
 let yield = Picos.Fiber.yield
 
-[@@@endif]
-
-module Atomic = Atomic_
+module Atomic = Atomic
 module Blocking_queue = Bb_queue
 module Background_thread = Background_thread
-module Bounded_queue = Bounded_queue
 module Chan = Chan
 module Exn_bt = Exn_bt
 module Fifo_pool = Fifo_pool

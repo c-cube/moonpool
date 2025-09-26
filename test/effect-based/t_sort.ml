@@ -1,5 +1,3 @@
-[@@@ifge 5.0]
-
 open Moonpool
 module FJ = Moonpool_forkjoin
 
@@ -69,5 +67,3 @@ let () =
   (* Printf.printf "arr: [%s]\n%!" *)
   (*   (String.concat ", " @@ List.map string_of_int @@ Array.to_list arr); *)
   assert (sorted arr)
-
-[@@@endif]

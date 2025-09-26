@@ -1,5 +1,3 @@
-[@@@ifge 5.0]
-
 open Moonpool
 
 let ( let@ ) = ( @@ )
@@ -44,5 +42,3 @@ let () =
    run ~pool ());
 
   ()
-
-[@@@endif]

@@ -1,5 +1,3 @@
-[@@@ifge 5.0]
-
 module Q = QCheck
 
 let spf = Printf.sprintf
@@ -52,5 +50,3 @@ let () =
   run ~min:4 ();
   run ~min:1 ();
   Printf.printf "done\n%!"
-
-[@@@endif]

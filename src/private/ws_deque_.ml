@@ -1,4 +1,4 @@
-module A = Atomic_
+module A = Atomic
 
 (* terminology:
 

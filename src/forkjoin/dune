@@ -4,6 +4,4 @@
  (synopsis "Fork-join parallelism for moonpool")
  (flags :standard -open Moonpool)
  (optional)
- (enabled_if
-  (>= %{ocaml_version} 5.0))
  (libraries moonpool moonpool.private picos))
