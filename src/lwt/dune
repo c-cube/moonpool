@@ -1,12 +1,11 @@
 (library
  (name moonpool_lwt)
  (public_name moonpool-lwt)
- (private_modules common_)
  (enabled_if
   (>= %{ocaml_version} 5.0))
  (libraries
   (re_export moonpool)
-  (re_export moonpool.fib)
+  moonpool.fib
   picos
   (re_export lwt)
   lwt.unix))

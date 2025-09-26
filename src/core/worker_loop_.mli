@@ -26,12 +26,30 @@ exception No_more_tasks
 type 'st ops = {
   schedule: 'st -> task_full -> unit;
   get_next_task: 'st -> task_full;
-  get_thread_state: unit -> 'st;
   around_task: 'st -> around_task;
   on_exn: 'st -> Exn_bt.t -> unit;
   runner: 'st -> Runner.t;
   before_start: 'st -> unit;
   cleanup: 'st -> unit;
 }
+
+module type FINE_GRAINED_ARGS = sig
+  type st
+
+  val ops : st ops
+  val st : st
+end
+
+module Fine_grained (_ : FINE_GRAINED_ARGS) () : sig
+  val setup : block_signals:bool -> unit -> unit
+  (** Just initialize the loop *)
+
+  val run : ?max_tasks:int -> unit -> unit
+  (** Run the loop until no task remains or until [max_tasks] tasks have been
+      run *)
+
+  val teardown : unit -> unit
+  (** Tear down the loop *)
+end
 
 val worker_loop : block_signals:bool -> ops:'st ops -> 'st -> unit

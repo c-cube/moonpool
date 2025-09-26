@@ -62,12 +62,6 @@ let k_worker_state : worker_state TLS.t = TLS.create ()
 let[@inline] get_current_worker_ () : worker_state option =
   TLS.get_opt k_worker_state
 
-let[@inline] get_current_worker_exn () : worker_state =
-  match TLS.get_exn k_worker_state with
-  | w -> w
-  | exception TLS.Not_set ->
-    failwith "Moonpool: get_current_runner was called from outside a pool."
-
 (** Try to wake up a waiter, if there's any. *)
 let[@inline] try_wake_someone_ (self : state) : unit =
   if self.n_waiting_nonzero then (
@@ -212,7 +206,6 @@ let worker_ops : worker_state WL.ops =
     WL.schedule = schedule_from_w;
     runner;
     get_next_task;
-    get_thread_state = get_current_worker_exn;
     around_task;
     on_exn;
     before_start;

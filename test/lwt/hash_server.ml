@@ -1,4 +1,7 @@
-(* vendored from https://github.com/dbuenzli/uuidm *)
+(* vendored from https://github.com/dbuenzli/uuidm
+
+   This function is Copyright (c) 2008 The uuidm programmers.
+   SPDX-License-Identifier: ISC *)
 
 let sha_1 s =
   (* Based on pseudo-code of RFC 3174. Slow and ugly but does the job. *)
@@ -116,28 +119,16 @@ let sha_1 s =
   i2s h 16 !h4;
   Bytes.unsafe_to_string h
 
-(*---------------------------------------------------------------------------
-   Copyright (c) 2008 The uuidm programmers
+(* ================== *)
 
-   Permission to use, copy, modify, and/or distribute this software for any
-   purpose with or without fee is hereby granted, provided that the above
-   copyright notice and this permission notice appear in all copies.
+(* test server that reads a list of files from each client connection, and sends back
+  to the client the hashes of these files *)
 
-   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-  ---------------------------------------------------------------------------*)
-
-(* server that reads from sockets lists of files, and returns hashes of these files *)
-
-module M = Moonpool
 module M_lwt = Moonpool_lwt
 module Trace = Trace_core
+module Fut = Moonpool.Fut
 
+let await_lwt = Moonpool_lwt.await_lwt
 let ( let@ ) = ( @@ )
 let spf = Printf.sprintf
 
@@ -165,7 +156,7 @@ let read_file filename : string =
   in
   In_channel.with_open_bin filename In_channel.input_all
 
-let main ~port ~runner () : unit Lwt.t =
+let main ~port ~runner () : unit =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "main" in
 
   let lwt_fut, _lwt_prom = Lwt.wait () in
@@ -173,38 +164,39 @@ let main ~port ~runner () : unit Lwt.t =
   (* TODO: handle exit?? *)
   Printf.printf "listening on port %d\n%!" port;
 
-  let handle_client client_addr ic oc =
+  let handle_client client_addr (ic, oc) =
+    let@ () = Moonpool_lwt.spawn_lwt in
     let _sp =
-      Trace.enter_manual_toplevel_span ~__FILE__ ~__LINE__ "handle.client"
+      Trace.enter_manual_span ~parent:None ~__FILE__ ~__LINE__ "handle.client"
         ~data:(fun () -> [ "addr", `String (str_of_sockaddr client_addr) ])
     in
 
     try
       while true do
         Trace.message "read";
-        let filename =
-          M_lwt.run_in_lwt_and_await (fun () -> Lwt_io.read_line ic)
-          |> String.trim
-        in
+        let filename = Lwt_io.read_line ic |> await_lwt |> String.trim in
         Trace.messagef (fun k -> k "hash %S" filename);
 
         match read_file filename with
         | exception e ->
           Printf.eprintf "error while reading %S:\n%s\n" filename
             (Printexc.to_string e);
-          M_lwt.run_in_lwt_and_await (fun () ->
-              Lwt_io.write_line oc (spf "%s: error" filename));
-          M_lwt.run_in_lwt_and_await (fun () -> Lwt_io.flush oc)
+          Lwt_io.write_line oc (spf "%s: error" filename) |> await_lwt;
+          Lwt_io.flush oc |> await_lwt
         | content ->
-          (* got the content, now hash it *)
-          let hash =
-            let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "hash" in
+          (* got the content, now hash it in a background task *)
+          let hash : _ Fut.t =
+            let@ () = Moonpool.spawn ~on:runner in
+            let@ _sp =
+              Trace.with_span ~__FILE__ ~__LINE__ "hash" ~data:(fun () ->
+                  [ "file", `String filename ])
+            in
             sha_1 content |> to_hex
           in
 
-          M_lwt.run_in_lwt_and_await (fun () ->
-              Lwt_io.write_line oc (spf "%s: %s" filename hash));
-          M_lwt.run_in_lwt_and_await (fun () -> Lwt_io.flush oc)
+          let hash = Fut.await hash in
+          Lwt_io.write_line oc (spf "%s: %s" filename hash) |> await_lwt;
+          Lwt_io.flush oc |> await_lwt
       done
     with End_of_file | Unix.Unix_error (Unix.ECONNRESET, _, _) ->
       Trace.exit_manual_span _sp;
@@ -212,16 +204,17 @@ let main ~port ~runner () : unit Lwt.t =
   in
 
   let addr = Unix.ADDR_INET (Unix.inet_addr_loopback, port) in
-  let _server = M_lwt.TCP_server.establish_lwt ~runner addr handle_client in
-  Printf.printf "listening on port=%d\n%!" port;
+  let _server =
+    Lwt_io.establish_server_with_client_address addr handle_client |> await_lwt
+  in
 
-  lwt_fut
+  lwt_fut |> await_lwt
 
 let () =
   let@ () = Trace_tef.with_setup () in
   Trace.set_thread_name "main";
   let port = ref 1234 in
-  let j = ref 4 in
+  let j = ref 0 in
 
   let opts =
     [
@@ -231,6 +224,14 @@ let () =
   in
   Arg.parse opts ignore "echo server";
 
-  let@ runner = M.Ws_pool.with_ ~name:"tpool" ~num_threads:!j () in
   (* Lwt_engine.set @@ new Lwt_engine.libev (); *)
-  Lwt_main.run @@ main ~runner ~port:!port ()
+  let@ runner =
+    let num_threads =
+      if !j = 0 then
+        None
+      else
+        Some !j
+    in
+    Moonpool.Ws_pool.with_ ?num_threads ()
+  in
+  M_lwt.lwt_main @@ fun _main_runner -> main ~runner ~port:!port ()

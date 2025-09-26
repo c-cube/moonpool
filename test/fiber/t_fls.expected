@@ -1930,7 +1930,7 @@ spans:
         "iter.loop 09"
         "iter.loop 10"
 done
-run test on pool = ws_pool
+run test on pool = fifo_pool
 tracing complete
 spans:
   "top_0"

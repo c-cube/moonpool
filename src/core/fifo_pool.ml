@@ -28,7 +28,6 @@ type worker_state = {
 
 let[@inline] size_ (self : state) = Array.length self.threads
 let[@inline] num_tasks_ (self : state) : int = Bb_queue.size self.q
-let k_worker_state : worker_state TLS.t = TLS.create ()
 
 (*
 get_thread_state = TLS.get_opt k_worker_state
@@ -71,12 +70,6 @@ let schedule_w (self : worker_state) (task : task_full) : unit =
 let get_next_task (self : worker_state) =
   try Bb_queue.pop self.st.q with Bb_queue.Closed -> raise WL.No_more_tasks
 
-let get_thread_state () =
-  match TLS.get_exn k_worker_state with
-  | st -> st
-  | exception TLS.Not_set ->
-    failwith "Moonpool: get_thread_state called from outside a runner."
-
 let before_start (self : worker_state) =
   let t_id = Thread.id @@ Thread.self () in
   self.st.on_init_thread ~dom_id:self.dom_idx ~t_id ();
@@ -103,7 +96,6 @@ let worker_ops : worker_state WL.ops =
     WL.schedule = schedule_w;
     runner;
     get_next_task;
-    get_thread_state;
     around_task;
     on_exn;
     before_start;
