@@ -44,6 +44,8 @@
   (depends
     (moonpool (= :version))
     (ocaml (>= 5.0))
+    (qcheck-core (and :with-test (>= 0.19)))
+    (hmap :with-test)
     lwt
     base-unix
     (trace :with-test)

@@ -8,6 +8,7 @@
   moonpool
   moonpool.fib
   moonpool-lwt
+  hmap
   trace
   trace-tef
   qcheck-core

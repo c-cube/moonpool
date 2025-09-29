@@ -2,4 +2,4 @@
  (name t_fibers)
  (package moonpool)
  (optional)
- (libraries moonpool moonpool.fib trace qcheck-core))
+ (libraries moonpool moonpool.fib trace qcheck-core hmap))
