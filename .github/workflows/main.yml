@@ -31,7 +31,7 @@ jobs:
 
       - run: opam pin picos 0.6.0 -y -n
 
-      - run: opam install -t moonpool moonpool-lwt moonpool-io --deps-only
+      - run: opam install -t moonpool moonpool-lwt --deps-only
       - run: opam exec -- dune build @install
 
       # install some depopts
@@ -62,7 +62,7 @@ jobs:
       # temporary until it's in a release
       - run: opam pin https://github.com/ocaml-multicore/picos.git -y -n
 
-      - run: opam install -t moonpool moonpool-lwt moonpool-io --deps-only
+      - run: opam install -t moonpool moonpool-lwt --deps-only
       - run: opam exec -- dune build @install
       # install some depopts
       - run: opam install thread-local-storage trace domain-local-await
