@@ -142,10 +142,10 @@ end
 (** Resolve [prom] with the result of [lwt_fut] *)
 let transfer_lwt_to_fut (lwt_fut : 'a Lwt.t) (prom : 'a Fut.promise) : unit =
   Lwt.on_any lwt_fut
-    (fun x -> M.Fut.fulfill prom (Ok x))
+    (fun x -> M.Fut.fulfill_idempotent prom (Ok x))
     (fun exn ->
       let bt = Printexc.get_callstack 10 in
-      M.Fut.fulfill prom (Error (Exn_bt.make exn bt)))
+      M.Fut.fulfill_idempotent prom (Error (Exn_bt.make exn bt)))
 
 let[@inline] register_trigger_on_lwt_termination (lwt_fut : _ Lwt.t)
     (tr : M.Trigger.t) : unit =
