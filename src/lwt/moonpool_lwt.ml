@@ -289,7 +289,7 @@ let[@inline] is_setup () = Option.is_some @@ Atomic.get Scheduler_state.cur_st
 let spawn_lwt f : _ Lwt.t =
   let st = Main_state.get_st () in
   let lwt_fut, lwt_prom = Lwt.wait () in
-  Moonpool_fib.spawn_top_ignore ~on:st.as_runner (fun () ->
+  M.run_async st.as_runner (fun () ->
       try
         let x = f () in
         Lwt.wakeup lwt_prom x
