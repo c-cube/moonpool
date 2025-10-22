@@ -265,6 +265,10 @@ val await : 'a t -> 'a
     This must only be run from inside the runner itself. The runner must support
     {!Suspend_}. *)
 
+val yield : unit -> unit
+(** Like {!Moonpool.yield}.
+    @since NEXT_RELEASE *)
+
 (** {2 Blocking} *)
 
 val wait_block : 'a t -> 'a or_error
