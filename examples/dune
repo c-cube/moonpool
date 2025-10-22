@@ -5,7 +5,6 @@
  ;(package moonpool)
  (libraries
   moonpool
-  moonpool.fib
   trace
   trace-tef
   ;tracy-client.trace

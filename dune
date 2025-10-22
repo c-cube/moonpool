@@ -3,7 +3,7 @@
   (flags :standard -strict-sequence -warn-error -a+8 -w +a-4-40-42-70)))
 
 (mdx
- (libraries moonpool moonpool.forkjoin moonpool.fib threads)
+ (libraries moonpool moonpool.forkjoin threads)
  (package moonpool)
  (enabled_if
   (>= %{ocaml_version} 5.0)))
