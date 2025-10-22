@@ -436,6 +436,8 @@ let await (self : 'a t) : 'a =
     (* un-suspended: we should have a result! *)
     get_or_fail_exn self
 
+let yield = Picos.Fiber.yield
+
 module Infix = struct
   let[@inline] ( >|= ) x f = map ~f x
   let[@inline] ( >>= ) x f = bind ~f x
