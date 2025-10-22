@@ -80,7 +80,7 @@ val await : 'a Fut.t -> 'a
 val yield : unit -> unit
 (** Yield from the current task, must be run on a moonpool runner. Only on OCaml
     >= 5.0.
-    @since NEXT_RELEASE *)
+    @since 0.9 *)
 
 module Lock = Lock
 module Fut = Fut
