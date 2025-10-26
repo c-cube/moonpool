@@ -1,7 +1,8 @@
 (** Channels.
 
-    The channels have bounded size. Push/pop return futures or can use effects
-    to provide an [await]-friendly version.
+    The channels have bounded size. They use effects/await to provide
+    a direct style implementation. Pushing into a full channel,
+    or popping from an empty one, will suspend the current task.
 
     The channels became bounded since @0.7 .
 *)

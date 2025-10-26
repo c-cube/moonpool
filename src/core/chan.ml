@@ -21,7 +21,6 @@ let create ~max_size () : _ t =
   }
 
 let try_push (self : _ t) x : bool =
-  let res = ref false in
   if Mutex.try_lock self.mutex then (
     if self.closed then (
       Mutex.unlock self.mutex;
@@ -33,42 +32,46 @@ let try_push (self : _ t) x : bool =
       let to_awake = Queue.create () in
       Queue.push x self.q;
       Queue.transfer self.pop_waiters to_awake;
-      res := true;
       Mutex.unlock self.mutex;
       (* wake up pop triggers if needed. Be careful to do that
          outside the critical section*)
-      Queue.iter Trigger.signal to_awake
+      Queue.iter Trigger.signal to_awake;
+      true
     | n when n < self.max_size ->
       Queue.push x self.q;
-      Mutex.unlock self.mutex
-    | _ -> Mutex.unlock self.mutex
-  );
-  !res
+      Mutex.unlock self.mutex;
+      true
+    | _ ->
+      Mutex.unlock self.mutex;
+      false
+  ) else
+    false
 
 let try_pop (type elt) self : elt option =
-  let res = ref None in
   if Mutex.try_lock self.mutex then (
-    (match Queue.pop self.q with
+    match Queue.pop self.q with
     | exception Queue.Empty ->
-      if self.closed then (
-        Mutex.unlock self.mutex;
+      Mutex.unlock self.mutex;
+      if self.closed then
         raise Closed
-      )
-    | x -> res := Some x);
-    Mutex.unlock self.mutex
-  );
-  !res
+      else
+        None
+    | x ->
+      Mutex.unlock self.mutex;
+      Some x
+  ) else
+    None
 
 let close (self : _ t) : unit =
-  let q = Queue.create () in
+  let triggers_to_signal = Queue.create () in
   Mutex.lock self.mutex;
   if not self.closed then (
     self.closed <- true;
-    Queue.transfer self.pop_waiters q;
-    Queue.transfer self.push_waiters q
+    Queue.transfer self.pop_waiters triggers_to_signal;
+    Queue.transfer self.push_waiters triggers_to_signal
   );
   Mutex.unlock self.mutex;
-  Queue.iter Trigger.signal q
+  Queue.iter Trigger.signal triggers_to_signal
 
 let rec push (self : _ t) x : unit =
   Mutex.lock self.mutex;
