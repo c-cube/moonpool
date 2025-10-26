@@ -64,7 +64,7 @@ module State_ = struct
       done;
 
       (* wait for the other computation to be done *)
-      if !must_await then Trigger.await trigger |> Option.iter Exn_bt.raise
+      if !must_await then Trigger.await_exn trigger
     | Right_solved _ | Both_solved _ -> assert false
 end
 
@@ -144,7 +144,7 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
       i := !i + len_range
     done;
 
-    Trigger.await trigger |> Option.iter Exn_bt.raise;
+    Trigger.await_exn trigger;
     Option.iter Exn_bt.raise @@ A.get failure;
     ()
   )

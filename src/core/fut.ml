@@ -431,8 +431,7 @@ let await (self : 'a t) : 'a =
   | exception C.Running ->
     let trigger = Trigger.create () in
     (* suspend until the future is resolved *)
-    if C.try_attach self trigger then
-      Option.iter Exn_bt.raise @@ Trigger.await trigger;
+    if C.try_attach self trigger then Trigger.await_exn trigger;
 
     (* un-suspended: we should have a result! *)
     get_or_fail_exn self
