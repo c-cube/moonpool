@@ -1,7 +1,7 @@
 open! Moonpool
 module A = Atomic
-module F = Moonpool_fib.Fiber
-module FLS = Moonpool_fib.Fls
+module F = Moonpool.Fut
+module FLS = Moonpool.Task_local_storage
 
 (* ### dummy little tracing system with local storage *)
 
@@ -122,7 +122,7 @@ let run ~pool ~pool_name () =
 
     let subs =
       List.init 2 (fun idx_sub_sub ->
-          F.spawn ~protect:true (fun () ->
+          F.spawn ~on:pool (fun () ->
               sub_sub_child ~idx ~idx_child ~idx_sub ~idx_sub_sub ()))
     in
     List.iter F.await subs
@@ -133,8 +133,7 @@ let run ~pool ~pool_name () =
 
     let subs =
       List.init 2 (fun k ->
-          F.spawn ~protect:true @@ fun () ->
-          sub_child ~idx ~idx_child ~idx_sub:k ())
+          F.spawn ~on:pool @@ fun () -> sub_child ~idx ~idx_child ~idx_sub:k ())
     in
 
     let@ () =
@@ -149,16 +148,14 @@ let run ~pool ~pool_name () =
 
     let subs =
       List.init 5 (fun j ->
-          F.spawn ~protect:true @@ fun () -> top_child ~idx ~idx_child:j ())
+          F.spawn ~on:pool @@ fun () -> top_child ~idx ~idx_child:j ())
     in
 
     List.iter F.await subs
   in
 
   Printf.printf "run test on pool = %s\n" pool_name;
-  let fibs =
-    List.init 8 (fun idx -> F.spawn_top ~on:pool (fun () -> top idx))
-  in
+  let fibs = List.init 8 (fun idx -> F.spawn ~on:pool (fun () -> top idx)) in
   List.iter F.await fibs;
 
   Printf.printf "tracing complete\n";
