@@ -146,7 +146,7 @@ let work_ idx (st : worker_state) : unit =
 let () =
   assert (Domain_.is_main_domain ());
   let w = { th_count = Atomic.make 1; q = Bb_queue.create () } in
-  (* thread that stays alive *)
+  (* thread that stays alive since [th_count>0] will always hold *)
   ignore (Thread.create (fun () -> work_ 0 w) () : Thread.t);
   domains_.(0) <- Lock.create (Some w, None)
 
@@ -154,7 +154,8 @@ let[@inline] max_number_of_domains () : int = Array.length domains_
 
 let run_on (i : int) (f : unit -> unit) : unit =
   assert (i < Array.length domains_);
-  let w =
+
+  let w : worker_state =
     Lock.update_map domains_.(i) (function
       | (Some w, _) as st ->
         Atomic.incr w.th_count;
