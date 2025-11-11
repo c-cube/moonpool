@@ -67,6 +67,14 @@ bench-pi:
 		'./_build/default/benchs/pi.exe -n $(PI_NSTEPS) -j 16 -mode forkjoin -kind=pool' \
 		'./_build/default/benchs/pi.exe -n $(PI_NSTEPS) -j 20 -mode forkjoin -kind=pool'
 
+bench-repro-41:
+	dune build $(DUNE_OPTS_BENCH) examples/repro_41/run.exe
+	hyperfine --warmup=1 \
+		"./_build/default/examples/repro_41/run.exe 4 domainslib" \
+		"./_build/default/examples/repro_41/run.exe 4 moonpool" \
+		"./_build/default/examples/repro_41/run.exe 5 moonpool" \
+		"./_build/default/examples/repro_41/run.exe 5 seq"
+
 .PHONY: test clean bench-fib bench-pi
 
 VERSION=$(shell awk '/^version:/ {print $$2}' moonpool.opam)
