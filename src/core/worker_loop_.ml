@@ -102,7 +102,12 @@ end
 module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
   open Args
 
-  let cur_fiber : fiber ref = ref _dummy_fiber
+  let cur_st : Runner.For_runner_implementors.thread_local_state =
+    match TLS.get_exn Runner.For_runner_implementors.k_cur_st with
+    | st -> st
+    | exception TLS.Not_set ->
+      failwith "Moonpool: worker loop: no current state set"
+
   let runner = ops.runner st
 
   type state =
@@ -118,10 +123,7 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
       | T_start { fiber; _ } | T_resume { fiber; _ } -> fiber
     in
 
-    cur_fiber := fiber;
-    TLS.set k_cur_fiber fiber;
-
-    (* let _ctx = before_task runner in *)
+    cur_st.cur_fiber <- fiber;
 
     (* run the task now, catching errors, handling effects *)
     assert (task != _dummy_task);
@@ -136,9 +138,7 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
        let ebt = Exn_bt.make e bt in
        ops.on_exn st ebt);
 
-    (* after_task runner _ctx; *)
-    cur_fiber := _dummy_fiber;
-    TLS.set k_cur_fiber _dummy_fiber
+    cur_st.cur_fiber <- _dummy_fiber
 
   let setup ~block_signals () : unit =
     if !state <> New then invalid_arg "worker_loop.setup: not a new instance";
@@ -161,7 +161,7 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
       with _ -> ()
     );
 
-    TLS.set Runner.For_runner_implementors.k_cur_runner runner;
+    cur_st.runner <- runner;
 
     ops.before_start st
 
@@ -181,7 +181,7 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
   let teardown () =
     if !state <> Torn_down then (
       state := Torn_down;
-      cur_fiber := _dummy_fiber;
+      cur_st.cur_fiber <- _dummy_fiber;
       ops.cleanup st
     )
 end

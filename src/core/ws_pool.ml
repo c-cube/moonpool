@@ -55,7 +55,8 @@ let num_tasks_ (self : state) : int =
   !n
 
 (** TLS, used by worker to store their specific state and be able to retrieve it
-    from tasks when we schedule new sub-tasks. *)
+    from tasks when we schedule new sub-tasks. This way we can schedule the new
+    task directly in the local work queue, where it might be stolen. *)
 let k_worker_state : worker_state TLS.t = TLS.create ()
 
 let[@inline] get_current_worker_ () : worker_state option =
@@ -179,8 +180,8 @@ and wait_on_main_queue (self : worker_state) : WL.task_full =
 let before_start (self : worker_state) : unit =
   let t_id = Thread.id @@ Thread.self () in
   self.st.on_init_thread ~dom_id:self.dom_id ~t_id ();
-  TLS.set k_cur_fiber _dummy_fiber;
-  TLS.set Runner.For_runner_implementors.k_cur_runner self.st.as_runner;
+  TLS.set Runner.For_runner_implementors.k_cur_st
+    { cur_fiber = _dummy_fiber; runner = self.st.as_runner };
   TLS.set k_worker_state self;
 
   (* set thread name *)

@@ -9,19 +9,19 @@ let k_local_hmap : Hmap.t FLS.t = FLS.create ()
 
 (** Access the local [hmap], or an empty one if not set *)
 let[@inline] get_local_hmap () : Hmap.t =
-  match TLS.get_exn k_cur_fiber with
+  match TLS.get_exn k_cur_st with
   | exception TLS.Not_set -> Hmap.empty
-  | fiber -> FLS.get fiber ~default:Hmap.empty k_local_hmap
+  | { cur_fiber = fiber; _ } -> FLS.get fiber ~default:Hmap.empty k_local_hmap
 
 let[@inline] set_local_hmap (h : Hmap.t) : unit =
-  match TLS.get_exn k_cur_fiber with
+  match TLS.get_exn k_cur_st with
   | exception TLS.Not_set -> ()
-  | fiber -> FLS.set fiber k_local_hmap h
+  | { cur_fiber = fiber; _ } -> FLS.set fiber k_local_hmap h
 
 let[@inline] update_local_hmap (f : Hmap.t -> Hmap.t) : unit =
-  match TLS.get_exn k_cur_fiber with
+  match TLS.get_exn k_cur_st with
   | exception TLS.Not_set -> ()
-  | fiber ->
+  | { cur_fiber = fiber; _ } ->
     let h = FLS.get fiber ~default:Hmap.empty k_local_hmap in
     let h = f h in
     FLS.set fiber k_local_hmap h

@@ -11,8 +11,12 @@ type runner = {
   num_tasks: unit -> int;
 }
 
-let k_cur_runner : runner TLS.t = TLS.create ()
-let k_cur_fiber : fiber TLS.t = TLS.create ()
+type thread_local_state = {
+  mutable runner: runner;
+  mutable cur_fiber: fiber;
+}
+
+let k_cur_st : thread_local_state TLS.t = TLS.create ()
 
 let _dummy_computation : Picos.Computation.packed =
   let c = Picos.Computation.create () in
@@ -20,11 +24,15 @@ let _dummy_computation : Picos.Computation.packed =
   Picos.Computation.Packed c
 
 let _dummy_fiber = Picos.Fiber.create_packed ~forbid:true _dummy_computation
-let[@inline] get_current_runner () : _ option = TLS.get_opt k_cur_runner
+
+let[@inline] get_current_runner () : _ option =
+  match TLS.get_exn k_cur_st with
+  | st -> Some st.runner
+  | exception TLS.Not_set -> None
 
 let[@inline] get_current_fiber () : fiber option =
-  match TLS.get_exn k_cur_fiber with
-  | f when f != _dummy_fiber -> Some f
+  match TLS.get_exn k_cur_st with
+  | { cur_fiber = f; _ } when f != _dummy_fiber -> Some f
   | _ -> None
   | exception TLS.Not_set -> None
 
@@ -32,7 +40,7 @@ let error_get_current_fiber_ =
   "Moonpool: get_current_fiber was called outside of a fiber."
 
 let[@inline] get_current_fiber_exn () : fiber =
-  match TLS.get_exn k_cur_fiber with
-  | f when f != _dummy_fiber -> f
+  match TLS.get_exn k_cur_st with
+  | { cur_fiber = f; _ } when f != _dummy_fiber -> f
   | _ -> failwith error_get_current_fiber_
   | exception TLS.Not_set -> failwith error_get_current_fiber_

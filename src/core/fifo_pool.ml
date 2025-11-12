@@ -27,11 +27,6 @@ type worker_state = {
 
 let[@inline] size_ (self : state) = Array.length self.threads
 let[@inline] num_tasks_ (self : state) : int = Bb_queue.size self.q
-
-(*
-get_thread_state = TLS.get_opt k_worker_state
-  *)
-
 let default_thread_init_exit_ ~dom_id:_ ~t_id:_ () = ()
 
 let shutdown_ ~wait (self : state) : unit =

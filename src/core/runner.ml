@@ -47,7 +47,12 @@ module For_runner_implementors = struct
   let create ~size ~num_tasks ~shutdown ~run_async () : t =
     { size; num_tasks; shutdown; run_async }
 
-  let k_cur_runner : t TLS.t = Types_.k_cur_runner
+  type nonrec thread_local_state = thread_local_state = {
+    mutable runner: t;
+    mutable cur_fiber: fiber;
+  }
+
+  let k_cur_st : thread_local_state TLS.t = Types_.k_cur_st
 end
 
 let dummy : t =
