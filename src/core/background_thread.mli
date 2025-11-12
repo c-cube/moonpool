@@ -13,7 +13,6 @@ type ('a, 'b) create_args =
   ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
-  ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
   ?name:string ->
   'a
 (** Arguments used in {!create}. See {!create} for explanations. *)

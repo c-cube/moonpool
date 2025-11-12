@@ -18,15 +18,11 @@ type task_full =
 
 val _dummy_task : task_full
 
-type around_task =
-  | AT_pair : (Runner.t -> 'a) * (Runner.t -> 'a -> unit) -> around_task
-
 exception No_more_tasks
 
 type 'st ops = {
   schedule: 'st -> task_full -> unit;
   get_next_task: 'st -> task_full;
-  around_task: 'st -> around_task;
   on_exn: 'st -> Exn_bt.t -> unit;
   runner: 'st -> Runner.t;
   before_start: 'st -> unit;

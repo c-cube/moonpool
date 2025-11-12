@@ -10,7 +10,6 @@ let ( let@ ) = ( @@ )
 type state = {
   threads: Thread.t array;
   q: task_full Bb_queue.t;  (** Queue for tasks. *)
-  around_task: WL.around_task;
   mutable as_runner: t;
   (* init options *)
   name: string option;
@@ -43,12 +42,9 @@ type ('a, 'b) create_args =
   ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
-  ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
   ?num_threads:int ->
   ?name:string ->
   'a
-
-let default_around_task_ : WL.around_task = AT_pair (ignore, fun _ _ -> ())
 
 (** Run [task] as is, on the pool. *)
 let schedule_ (self : state) (task : task_full) : unit =
@@ -88,7 +84,6 @@ let cleanup (self : worker_state) : unit =
 
 let worker_ops : worker_state WL.ops =
   let runner (st : worker_state) = st.st.as_runner in
-  let around_task st = st.st.around_task in
   let on_exn (st : worker_state) (ebt : Exn_bt.t) =
     st.st.on_exn (Exn_bt.exn ebt) (Exn_bt.bt ebt)
   in
@@ -96,7 +91,6 @@ let worker_ops : worker_state WL.ops =
     WL.schedule = schedule_w;
     runner;
     get_next_task;
-    around_task;
     on_exn;
     before_start;
     cleanup;
@@ -104,19 +98,11 @@ let worker_ops : worker_state WL.ops =
 
 let create_ ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
-    ?around_task ~threads ?name () : state =
-  (* wrapper *)
-  let around_task =
-    match around_task with
-    | Some (f, g) -> WL.AT_pair (f, g)
-    | None -> default_around_task_
-  in
-
+    ~threads ?name () : state =
   let self =
     {
       threads;
       q = Bb_queue.create ();
-      around_task;
       as_runner = Runner.dummy;
       name;
       on_init_thread;
@@ -127,8 +113,7 @@ let create_ ?(on_init_thread = default_thread_init_exit_)
   self.as_runner <- runner_of_state self;
   self
 
-let create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
-    ?name () : t =
+let create ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name () : t =
   let num_domains = Domain_pool_.max_number_of_domains () in
 
   (* number of threads to run *)
@@ -140,8 +125,7 @@ let create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
   let pool =
     let dummy_thread = Thread.self () in
     let threads = Array.make num_threads dummy_thread in
-    create_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ~threads ?name
-      ()
+    create_ ?on_init_thread ?on_exit_thread ?on_exn ~threads ?name ()
   in
   let runner = runner_of_state pool in
 
@@ -181,11 +165,9 @@ let create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
 
   runner
 
-let with_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
-    ?name () f =
+let with_ ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name () f =
   let pool =
-    create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
-      ?name ()
+    create ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name ()
   in
   let@ () = Fun.protect ~finally:(fun () -> shutdown pool) in
   f pool
