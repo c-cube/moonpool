@@ -1,4 +1,16 @@
 
+# 0.10
+
+- breaking: remove `around_task` from schedulers
+- breaking: remove `moonpool.fib` entirely. Please use `picos_std.structured`
+    if you really need structured concurrency.
+- remove deprecated moonpool-io and moonpool.sync
+
+- feat core: add `Main`, salvaged from moonpool.fib
+- block signals in background threads
+- refactor `chan`; fix bug in `Chan.try_push`
+- fix: make `Moonpool_lwt.fut_of_lwt` idempotent
+
 # 0.9
 
 - breaking: require OCaml 5
