@@ -42,13 +42,13 @@ module Lock = struct
 
   let create content : _ t = { mutex = Mutex.create (); content }
 
-  let with_ (self : _ t) f =
+  let[@inline never] with_ (self : _ t) f =
     Mutex.lock self.mutex;
-    try
-      let x = f self.content in
+    match f self.content with
+    | x ->
       Mutex.unlock self.mutex;
       x
-    with e ->
+    | exception e ->
       Mutex.unlock self.mutex;
       raise e
 
