@@ -8,15 +8,15 @@ let main' ?(block_signals = false) () (f : Runner.t -> 'a) : 'a =
   in
   let runner = Fifo_pool.Private_.runner_of_state worker_st in
   try
-    let fiber = Fut.spawn ~on:runner (fun () -> f runner) in
-    Fut.on_result fiber (fun _ -> Runner.shutdown_without_waiting runner);
+    let fut = Fut.spawn ~on:runner (fun () -> f runner) in
+    Fut.on_result fut (fun _ -> Runner.shutdown_without_waiting runner);
 
     (* run the main thread *)
     Worker_loop_.worker_loop worker_st
       ~block_signals (* do not disturb existing thread *)
       ~ops:Fifo_pool.Private_.worker_ops;
 
-    match Fut.peek fiber with
+    match Fut.peek fut with
     | Some (Ok x) -> x
     | Some (Error ebt) -> Exn_bt.raise ebt
     | None -> assert false
