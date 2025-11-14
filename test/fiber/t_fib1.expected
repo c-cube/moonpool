@@ -2,33 +2,21 @@
 start
 1: wait for subs
 1.0.0: await fiber 0
-1.0.1: cur fiber[0] is some: true
-1.0.2: cur fiber[0] is some: true
-1.0.3: res 0 = 0
+1.0.1: res 0 = 0
 1.1.0: await fiber 1
-1.1.1: cur fiber[1] is some: true
-1.1.2: cur fiber[1] is some: true
-1.1.3: res 1 = 1
+1.1.1: res 1 = 1
 1.2.0: await fiber 2
-1.2.1: cur fiber[2] is some: true
-1.2.2: cur fiber[2] is some: true
-1.2.3: res 2 = 2
+1.2.1: res 2 = 2
 1.3.0: await fiber 3
-1.3.1: cur fiber[3] is some: true
-1.3.2: cur fiber[3] is some: true
-1.3.3: res 3 = 3
+1.3.1: res 3 = 3
 1.4.0: await fiber 4
-1.4.1: cur fiber[4] is some: true
-1.4.2: cur fiber[4] is some: true
-1.4.3: res 4 = 4
+1.4.1: res 4 = 4
 2: main fiber done
 3: main fiber exited
 ============
 start
 1: start fibers
 1.7.1: I'm fiber 7 and I'm about to fail…
-1.8.1: sub-fiber 8 was cancelled
-1.9.1: sub-fiber 9 was cancelled
 2.0: fiber 0 resolved as ok
 2.1: fiber 1 resolved as ok
 2.2: fiber 2 resolved as ok
@@ -37,8 +25,8 @@ start
 2.5: fiber 5 resolved as ok
 2.6: fiber 6 resolved as ok
 2.7: fiber 7 resolved as error
-2.8: fiber 8 resolved as error
-2.9: fiber 9 resolved as error
+2.8: fiber 8 resolved as ok
+2.9: fiber 9 resolved as ok
 3: wait for subs
 4: await fiber 0
 5: res 0 = 0
@@ -55,7 +43,6 @@ start
 16: await fiber 6
 17: res 6 = 6
 18: await fiber 7
-19: main fiber cancelled with Failure("oh no!")
-20: main fiber result: error Failure("oh no!")
-21: main fib failed with "oh no!"
-22: main fiber exited
+19: main fiber result: error Failure("oh no!")
+20: main fib failed with "oh no!"
+21: main fiber exited

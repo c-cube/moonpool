@@ -28,7 +28,6 @@ type state = {
   cond: Condition.t;
   mutable as_runner: t;
   (* init options *)
-  around_task: WL.around_task;
   name: string option;
   on_init_thread: dom_id:int -> t_id:int -> unit -> unit;
   on_exit_thread: dom_id:int -> t_id:int -> unit -> unit;
@@ -198,7 +197,6 @@ let cleanup (self : worker_state) : unit =
 
 let worker_ops : worker_state WL.ops =
   let runner (st : worker_state) = st.st.as_runner in
-  let around_task st = st.st.around_task in
   let on_exn (st : worker_state) (ebt : Exn_bt.t) =
     st.st.on_exn (Exn_bt.exn ebt) (Exn_bt.bt ebt)
   in
@@ -206,7 +204,6 @@ let worker_ops : worker_state WL.ops =
     WL.schedule = schedule_from_w;
     runner;
     get_next_task;
-    around_task;
     on_exn;
     before_start;
     cleanup;
@@ -235,7 +232,6 @@ type ('a, 'b) create_args =
   ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
-  ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
   ?num_threads:int ->
   ?name:string ->
   'a
@@ -243,15 +239,8 @@ type ('a, 'b) create_args =
 
 let create ?(on_init_thread = default_thread_init_exit_)
     ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
-    ?around_task ?num_threads ?name () : t =
+    ?num_threads ?name () : t =
   let pool_id_ = Id.create () in
-  (* wrapper *)
-  let around_task =
-    match around_task with
-    | Some (f, g) -> WL.AT_pair (f, g)
-    | None -> WL.AT_pair (ignore, fun _ _ -> ())
-  in
-
   let num_domains = Domain_pool_.max_number_of_domains () in
   let num_threads = Util_pool_.num_threads ?num_threads () in
 
@@ -268,7 +257,6 @@ let create ?(on_init_thread = default_thread_init_exit_)
       n_waiting_nonzero = true;
       mutex = Mutex.create ();
       cond = Condition.create ();
-      around_task;
       on_exn;
       on_init_thread;
       on_exit_thread;
@@ -324,11 +312,9 @@ let create ?(on_init_thread = default_thread_init_exit_)
 
   pool.as_runner
 
-let with_ ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
-    ?name () f =
+let with_ ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name () f =
   let pool =
-    create ?on_init_thread ?on_exit_thread ?on_exn ?around_task ?num_threads
-      ?name ()
+    create ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name ()
   in
   let@ () = Fun.protect ~finally:(fun () -> shutdown pool) in
   f pool

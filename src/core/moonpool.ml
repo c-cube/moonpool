@@ -23,12 +23,16 @@ module Exn_bt = Exn_bt
 module Fifo_pool = Fifo_pool
 module Fut = Fut
 module Lock = Lock
+module Main = Main
 module Immediate_runner = struct end
 module Runner = Runner
 module Task_local_storage = Task_local_storage
 module Thread_local_storage = Thread_local_storage
 module Trigger = Trigger
 module Ws_pool = Ws_pool
+
+(* re-export main *)
+include Main
 
 module Private = struct
   module Ws_deque_ = Ws_deque_

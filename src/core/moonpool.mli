@@ -13,6 +13,7 @@ module Fifo_pool = Fifo_pool
 module Background_thread = Background_thread
 module Runner = Runner
 module Trigger = Trigger
+module Main = Main
 
 module Immediate_runner : sig end
 [@@deprecated "use Moonpool_fib.Main"]
@@ -80,7 +81,7 @@ val await : 'a Fut.t -> 'a
 val yield : unit -> unit
 (** Yield from the current task, must be run on a moonpool runner. Only on OCaml
     >= 5.0.
-    @since NEXT_RELEASE *)
+    @since 0.9 *)
 
 module Lock = Lock
 module Fut = Fut
@@ -204,6 +205,10 @@ module Atomic = Atomic
 
     This is either a shim using [ref], on pre-OCaml 5, or the standard [Atomic]
     module on OCaml 5. *)
+
+include module type of struct
+  include Main
+end
 
 (**/**)
 

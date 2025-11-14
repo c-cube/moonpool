@@ -8,12 +8,16 @@
     (storing a [Ok x] with [x: 'a]), or fail (storing a [Error (exn, bt)] with
     an exception and the corresponding backtrace).
 
+    Using {!spawn}, it's possible to start a bunch of tasks, obtaining futures,
+    and then use {!await} to get their result in the desired order.
+
     Combinators such as {!map} and {!join_array} can be used to produce futures
     from other futures (in a monadic way). Some combinators take a [on] argument
     to specify a runner on which the intermediate computation takes place; for
     example [map ~on:pool ~f fut] maps the value in [fut] using function [f],
     applicatively; the call to [f] happens on the runner [pool] (once [fut]
-    resolves successfully with a value). *)
+    resolves successfully with a value). Be aware that these combinators do not
+    preserve local storage. *)
 
 type 'a or_error = ('a, Exn_bt.t) result
 
@@ -30,7 +34,8 @@ val make : unit -> 'a t * 'a promise
 
 val make_promise : unit -> 'a promise
 (** Same as {!make} but returns a single promise (which can be upcast to a
-    future). This is useful mostly to preserve memory.
+    future). This is useful mostly to preserve memory, you probably don't need
+    it.
 
     How to upcast to a future in the worst case:
     {[
@@ -40,8 +45,11 @@ val make_promise : unit -> 'a promise
     @since 0.7 *)
 
 val on_result : 'a t -> ('a or_error -> unit) -> unit
-(** [on_result fut f] registers [f] to be called in the future when [fut] is set
-    ; or calls [f] immediately if [fut] is already set. *)
+(** [on_result fut f] registers [f] to be called in the future when [fut] is
+    set; or calls [f] immediately if [fut] is already set.
+
+    {b NOTE:} it's ill advised to do meaningful work inside the callback [f].
+    Instead, try to spawn another task on the runner, or use {!await}. *)
 
 val on_result_ignore : _ t -> (Exn_bt.t option -> unit) -> unit
 (** [on_result_ignore fut f] registers [f] to be called in the future when [fut]
@@ -52,13 +60,14 @@ val on_result_ignore : _ t -> (Exn_bt.t option -> unit) -> unit
 exception Already_fulfilled
 
 val try_cancel : _ promise -> Exn_bt.t -> bool
-(** [try_cancel promise ebt] tries to cancel the promise, returning [true]. It
-    returns [false] if the promise is already resolved.
-    @since NEXT_RELEASE *)
+(** [try_cancel promise ebt] tries to cancel the promise using the given
+    exception, returning [true]. It returns [false] if the promise is already
+    resolved.
+    @since 0.9 *)
 
 val cancel : _ promise -> Exn_bt.t -> unit
 (** Silent version of {!try_cancel}, ignoring the result.
-    @since NEXT_RELEASE *)
+    @since 0.9 *)
 
 val fulfill : 'a promise -> 'a or_error -> unit
 (** Fullfill the promise, setting the future at the same time.
@@ -79,6 +88,7 @@ val fail_exn_bt : Exn_bt.t -> _ t
     @since 0.6 *)
 
 val of_result : 'a or_error -> 'a t
+(** Already resolved future from a result. *)
 
 val is_resolved : _ t -> bool
 (** [is_resolved fut] is [true] iff [fut] is resolved. *)
@@ -136,7 +146,7 @@ val spawn_on_current_runner : (unit -> 'a) -> 'a t
 
 val reify_error : 'a t -> 'a or_error t
 (** [reify_error fut] turns a failing future into a non-failing one that contain
-    [Error (exn, bt)]. A non-failing future returning [x] is turned into [Ok x]
+    [Error (exn, bt)]. A non-failing future returning [x] is turned into [Ok x].
     @since 0.4 *)
 
 val map : ?on:Runner.t -> f:('a -> 'b) -> 'a t -> 'b t
@@ -149,12 +159,18 @@ val bind : ?on:Runner.t -> f:('a -> 'b t) -> 'a t -> 'b t
 (** [bind ?on ~f fut] returns a new future [fut2] that resolves like the future
     [f x] if [fut] resolved with [x]; and fails with [e] if [fut] fails with [e]
     or [f x] raises [e].
+
+    This does not preserve local storage of [fut] inside [f].
+
     @param on if provided, [f] runs on the given runner *)
 
 val bind_reify_error : ?on:Runner.t -> f:('a or_error -> 'b t) -> 'a t -> 'b t
 (** [bind_reify_error ?on ~f fut] returns a new future [fut2] that resolves like
     the future [f (Ok x)] if [fut] resolved with [x]; and resolves like the
     future [f (Error (exn, bt))] if [fut] fails with [exn] and backtrace [bt].
+
+    This does not preserve local storage of [fut] inside [f].
+
     @param on if provided, [f] runs on the given runner
     @since 0.4 *)
 
@@ -182,6 +198,7 @@ val join_array : 'a t array -> 'a array t
 val join_list : 'a t list -> 'a list t
 (** Wait for all the futures in the list. Fails if any future fails. *)
 
+(** Advanced primitives for synchronization *)
 module Advanced : sig
   val barrier_on_abstract_container_of_futures :
     iter:(('a t -> unit) -> 'cont -> unit) ->
@@ -234,7 +251,9 @@ val for_list : on:Runner.t -> 'a list -> ('a -> unit) -> unit t
 
 (** {2 Await}
 
-    {b NOTE} This is only available on OCaml 5. *)
+    This suspends the current task using an OCaml 5 algebraic effect, and makes
+    preparations for the task to be resumed once the future has been resolved.
+*)
 
 val await : 'a t -> 'a
 (** [await fut] suspends the current tasks until [fut] is fulfilled, then
@@ -244,7 +263,11 @@ val await : 'a t -> 'a
     @since 0.3
 
     This must only be run from inside the runner itself. The runner must support
-    {!Suspend_}. {b NOTE}: only on OCaml 5.x *)
+    {!Suspend_}. *)
+
+val yield : unit -> unit
+(** Like {!Moonpool.yield}.
+    @since NEXT_RELEASE *)
 
 (** {2 Blocking} *)
 
@@ -252,7 +275,7 @@ val wait_block : 'a t -> 'a or_error
 (** [wait_block fut] blocks the current thread until [fut] is resolved, and
     returns its value.
 
-    {b NOTE}: A word of warning: this will monopolize the calling thread until
+    {b NOTE:} A word of warning: this will monopolize the calling thread until
     the future resolves. This can also easily cause deadlocks, if enough threads
     in a pool call [wait_block] on futures running on the same pool or a pool
     depending on it.
@@ -265,7 +288,10 @@ val wait_block : 'a t -> 'a or_error
     the deadlock. *)
 
 val wait_block_exn : 'a t -> 'a
-(** Same as {!wait_block} but re-raises the exception if the future failed. *)
+(** Same as {!wait_block} but re-raises the exception if the future failed.
+
+    {b NOTE:} do check the cautionary note in {!wait_block} concerning
+    deadlocks. *)
 
 (** {2 Infix operators}
 
@@ -297,9 +323,10 @@ module Infix_local = Infix
 
 module Private_ : sig
   val unsafe_promise_of_fut : 'a t -> 'a promise
-  (** please do not use *)
+  (** Do not use unless you know exactly what you are doing. *)
 
   val as_computation : 'a t -> 'a Picos.Computation.t
+  (** Picos compat *)
 end
 
 (**/**)

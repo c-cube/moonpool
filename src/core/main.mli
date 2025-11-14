@@ -13,16 +13,18 @@
     to {!Background_thread} in that there's a single worker to process
     tasks/fibers.
 
-    This handles effects, including the ones in {!Fiber}.
+    This handles the concurency effects used in moonpool, including [await] and
+    [yield].
 
-    @since 0.6 *)
+    This module was migrated from the late [Moonpool_fib].
 
-val main : (Moonpool.Runner.t -> 'a) -> 'a
+    @since NEXT_RELEASE *)
+
+val main : (Runner.t -> 'a) -> 'a
 (** [main f] runs [f()] in a scope that handles effects, including
     {!Fiber.await}.
 
     This scope can run background tasks as well, in a cooperative fashion. *)
 
-val main' : ?block_signals:bool -> unit -> (Moonpool.Runner.t -> 'a) -> 'a
-(** Same as {!main} but with room for optional arguments.
-    @since 0.7 *)
+val main' : ?block_signals:bool -> unit -> (Runner.t -> 'a) -> 'a
+(** Same as {!main} but with room for optional arguments. *)

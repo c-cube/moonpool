@@ -14,14 +14,11 @@ let run ~kind () =
   let pool =
     let on_init_thread ~dom_id:_ ~t_id () =
       Trace.set_thread_name (Printf.sprintf "pool worker %d" t_id)
-    and around_task =
-      ( (fun self -> Trace.counter_int "n_tasks" (Ws_pool.num_tasks self)),
-        fun self () -> Trace.counter_int "n_tasks" (Ws_pool.num_tasks self) )
     in
 
     match kind with
-    | `Simple -> Fifo_pool.create ~num_threads:3 ~on_init_thread ~around_task ()
-    | `Ws_pool -> Ws_pool.create ~num_threads:3 ~on_init_thread ~around_task ()
+    | `Simple -> Fifo_pool.create ~num_threads:3 ~on_init_thread ()
+    | `Ws_pool -> Ws_pool.create ~num_threads:3 ~on_init_thread ()
   in
 
   (* make all threads busy *)

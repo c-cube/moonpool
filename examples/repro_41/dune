@@ -1,0 +1,5 @@
+(executables
+ (names run)
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (libraries moonpool trace trace-tef domainslib))

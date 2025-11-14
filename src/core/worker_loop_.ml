@@ -13,15 +13,11 @@ type task_full =
     }
       -> task_full
 
-type around_task =
-  | AT_pair : (Runner.t -> 'a) * (Runner.t -> 'a -> unit) -> around_task
-
 exception No_more_tasks
 
 type 'st ops = {
   schedule: 'st -> task_full -> unit;
   get_next_task: 'st -> task_full;  (** @raise No_more_tasks *)
-  around_task: 'st -> around_task;
   on_exn: 'st -> Exn_bt.t -> unit;
   runner: 'st -> Runner.t;
   before_start: 'st -> unit;
@@ -117,7 +113,6 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
   let state = ref New
 
   let run_task (task : task_full) : unit =
-    let (AT_pair (before_task, after_task)) = ops.around_task st in
     let fiber =
       match task with
       | T_start { fiber; _ } | T_resume { fiber; _ } -> fiber
@@ -125,7 +120,8 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
 
     cur_fiber := fiber;
     TLS.set k_cur_fiber fiber;
-    let _ctx = before_task runner in
+
+    (* let _ctx = before_task runner in *)
 
     (* run the task now, catching errors, handling effects *)
     assert (task != _dummy_task);
@@ -140,8 +136,7 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
        let ebt = Exn_bt.make e bt in
        ops.on_exn st ebt);
 
-    after_task runner _ctx;
-
+    (* after_task runner _ctx; *)
     cur_fiber := _dummy_fiber;
     TLS.set k_cur_fiber _dummy_fiber
 

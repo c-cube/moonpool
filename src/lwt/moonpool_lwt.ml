@@ -7,8 +7,6 @@ end
 
 module Fut = Moonpool.Fut
 
-let default_around_task_ : WL.around_task = AT_pair (ignore, fun _ _ -> ())
-
 let on_uncaught_exn : (Moonpool.Exn_bt.t -> unit) ref =
   ref (fun ebt ->
       Printf.eprintf "uncaught exception in moonpool-lwt:\n%s" (Exn_bt.show ebt))
@@ -90,8 +88,6 @@ end
 module Ops = struct
   type st = Scheduler_state.st
 
-  let around_task _ = default_around_task_
-
   let schedule (self : st) t =
     if Atomic.get self.closed then
       failwith "moonpool-lwt.schedule: scheduler is closed";
@@ -122,15 +118,7 @@ module Ops = struct
     ()
 
   let ops : st WL.ops =
-    {
-      schedule;
-      around_task;
-      get_next_task;
-      on_exn;
-      runner;
-      before_start;
-      cleanup;
-    }
+    { schedule; get_next_task; on_exn; runner; before_start; cleanup }
 
   let setup st =
     if Atomic.compare_and_set Scheduler_state.cur_st None (Some st) then
@@ -289,7 +277,7 @@ let[@inline] is_setup () = Option.is_some @@ Atomic.get Scheduler_state.cur_st
 let spawn_lwt f : _ Lwt.t =
   let st = Main_state.get_st () in
   let lwt_fut, lwt_prom = Lwt.wait () in
-  Moonpool_fib.spawn_top_ignore ~on:st.as_runner (fun () ->
+  M.run_async st.as_runner (fun () ->
       try
         let x = f () in
         Lwt.wakeup lwt_prom x

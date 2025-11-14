@@ -24,7 +24,6 @@ type ('a, 'b) create_args =
   ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
-  ?around_task:(t -> 'b) * (t -> 'b -> unit) ->
   ?num_threads:int ->
   ?name:string ->
   'a
@@ -40,11 +39,6 @@ val create : (unit -> t, _) create_args
       [Domain.recommended_domain_count()], ie one worker thread per CPU core. On
       OCaml 4 the default is [4] (since there is only one domain).
     @param on_exit_thread called at the end of each thread in the pool
-    @param around_task
-      a pair of [before, after], where [before pool] is called before a task is
-      processed, on the worker thread about to run it, and returns [x]; and
-      [after pool x] is called by the same thread after the task is over. (since
-      0.2)
     @param name
       a name for this thread pool, used if tracing is enabled (since 0.6) *)
 
