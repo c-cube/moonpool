@@ -267,7 +267,7 @@ val await : 'a t -> 'a
 
 val yield : unit -> unit
 (** Like {!Moonpool.yield}.
-    @since NEXT_RELEASE *)
+    @since 0.10 *)
 
 (** {2 Blocking} *)
 

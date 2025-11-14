@@ -18,7 +18,7 @@
 
     This module was migrated from the late [Moonpool_fib].
 
-    @since NEXT_RELEASE *)
+    @since 0.10 *)
 
 val main : (Runner.t -> 'a) -> 'a
 (** [main f] runs [f()] in a scope that handles effects, including
