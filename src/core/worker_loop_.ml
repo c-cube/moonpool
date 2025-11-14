@@ -144,22 +144,7 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
     if !state <> New then invalid_arg "worker_loop.setup: not a new instance";
     state := Ready;
 
-    if block_signals then (
-      try
-        ignore
-          (Unix.sigprocmask SIG_BLOCK
-             [
-               Sys.sigterm;
-               Sys.sigpipe;
-               Sys.sigint;
-               Sys.sigchld;
-               Sys.sigalrm;
-               Sys.sigusr1;
-               Sys.sigusr2;
-             ]
-            : _ list)
-      with _ -> ()
-    );
+    if block_signals then Signals_.ignore_signals_ ();
 
     TLS.set Runner.For_runner_implementors.k_cur_runner runner;
 

@@ -15,19 +15,23 @@ module Bb_queue = struct
     if was_empty then Condition.broadcast self.cond;
     Mutex.unlock self.mutex
 
-  let pop (self : 'a t) : 'a =
-    Mutex.lock self.mutex;
-    let rec loop () =
-      if Queue.is_empty self.q then (
-        Condition.wait self.cond self.mutex;
-        (loop [@tailcall]) ()
-      ) else (
-        let x = Queue.pop self.q in
-        Mutex.unlock self.mutex;
-        x
-      )
-    in
-    loop ()
+  let pop (type a) (self : a t) : a =
+    let module M = struct
+      exception Found of a
+    end in
+    try
+      Mutex.lock self.mutex;
+      while true do
+        if Queue.is_empty self.q then
+          Condition.wait self.cond self.mutex
+        else (
+          let x = Queue.pop self.q in
+          Mutex.unlock self.mutex;
+          raise (M.Found x)
+        )
+      done;
+      assert false
+    with M.Found x -> x
 end
 
 module Lock = struct
@@ -38,13 +42,13 @@ module Lock = struct
 
   let create content : _ t = { mutex = Mutex.create (); content }
 
-  let with_ (self : _ t) f =
+  let[@inline never] with_ (self : _ t) f =
     Mutex.lock self.mutex;
-    try
-      let x = f self.content in
+    match f self.content with
+    | x ->
       Mutex.unlock self.mutex;
       x
-    with e ->
+    | exception e ->
       Mutex.unlock self.mutex;
       raise e
 
@@ -95,6 +99,7 @@ let domains_ : (worker_state option * Domain_.t option) Lock.t array =
       a [Pool.with_] or [Pool.create() … Pool.shutdown()] in a tight loop), and
       if nothing happens it tries to stop to free resources. *)
 let work_ idx (st : worker_state) : unit =
+  Signals_.ignore_signals_ ();
   let main_loop () =
     let continue = ref true in
     while !continue do
