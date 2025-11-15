@@ -16,15 +16,12 @@ In addition, some concurrency and parallelism primitives are provided:
 - `Moonpool.Chan` provides simple cooperative and thread-safe channels
     to use within pool-bound tasks. They're essentially re-usable futures.
 
-    On OCaml 5 (meaning there's actual domains and effects, not just threads),
-    a `Fut.await` primitive is provided. It's simpler and more powerful
+    Moonpool now requires OCaml 5 (meaning there's actual domains and effects, not just threads),
+    so the `Fut.await` primitive is always provided. It's simpler and more powerful
     than the monadic combinators.
 - `Moonpool_forkjoin`, in the library `moonpool.forkjoin`
     provides the fork-join parallelism primitives
     to use within tasks running in the pool.
-
-On OCaml 4.xx, there is only one domain; all threads run on it, but the
-pool abstraction is still useful to provide preemptive concurrency.
 
 ## Usage
 
@@ -182,7 +179,7 @@ scope).
 
 ### Fork-join
 
-On OCaml 5, again using effect handlers, the sublibrary `moonpool.forkjoin`
+The sub-library `moonpool.forkjoin`
 provides a module `Moonpool_forkjoin`
 implements the [fork-join model](https://en.wikipedia.org/wiki/Fork%E2%80%93join_model).
 It must run on a pool (using `Runner.run_async` or inside a future via `Fut.spawn`).
@@ -296,21 +293,18 @@ You are assuming that, if pool P1 has 5000 tasks, and pool P2 has 10 other tasks
 
 ## OCaml versions
 
-This works for OCaml >= 4.08.
-- On OCaml 4.xx, there are no domains, so this is just a library for regular thread pools
-    with not actual parallelism (except for threads that call C code that releases the runtime lock, that is).
-    C calls that do release the runtime lock (e.g. to call [Z3](https://github.com/Z3Prover/z3), hash a file, etc.)
-    will still run in parallel.
-- on OCaml 5.xx, there is a fixed pool of domains (using the recommended domain count).
-    These domains do not do much by themselves, but we schedule new threads on them, and form pools
-    of threads that contain threads from each domain.
-    Each domain might thus have multiple threads that belong to distinct pools (and several threads from
-    the same pool, too — this is useful for threads blocking on IO); Each pool will have threads
-    running on distinct domains, which enables parallelism.
+This works for OCaml >= 5.00.
 
-    A useful analogy is that each domain is a bit like a CPU core, and `Thread.t` is a logical thread running on a core.
-    Multiple threads have to share a single core and do not run in parallel on it[^2].
-    We can therefore build pools that spread their worker threads on multiple cores to enable parallelism within each pool.
+Internally, there is a fixed pool of domains (using the recommended domain count).
+These domains do not do much by themselves, but we schedule new threads on them, and form pools
+of threads that contain threads from each domain.
+Each domain might thus have multiple threads that belong to distinct pools (and several threads from
+the same pool, too — this is useful for threads blocking on IO); Each pool will have threads
+running on distinct domains, which enables parallelism.
+
+A useful analogy is that each domain is a bit like a CPU core, and `Thread.t` is a logical thread running on a core.
+Multiple threads have to share a single core and do not run in parallel on it[^2].
+We can therefore build pools that spread their worker threads on multiple cores to enable parallelism within each pool.
 
 TODO: actually use https://github.com/haesbaert/ocaml-processor to pin domains to cores,
 possibly optionally using `select` in dune.
@@ -326,3 +320,4 @@ $ opam install moonpool
 ```
 
 [^2]: ignoring hyperthreading for the sake of the analogy.
+
