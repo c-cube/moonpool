@@ -5,13 +5,13 @@ type 'a t = {
 
 let create content : _ t = { mutex = Mutex.create (); content }
 
-let with_ (self : _ t) f =
+let[@inline never] with_ (self : _ t) f =
   Mutex.lock self.mutex;
-  try
-    let x = f self.content in
+  match f self.content with
+  | x ->
     Mutex.unlock self.mutex;
     x
-  with e ->
+  | exception e ->
     Mutex.unlock self.mutex;
     raise e
 
@@ -24,13 +24,13 @@ let[@inline] update_map l f =
       l.content <- x';
       y)
 
-let get l =
+let[@inline never] get l =
   Mutex.lock l.mutex;
   let x = l.content in
   Mutex.unlock l.mutex;
   x
 
-let set l x =
+let[@inline never] set l x =
   Mutex.lock l.mutex;
   l.content <- x;
   Mutex.unlock l.mutex
