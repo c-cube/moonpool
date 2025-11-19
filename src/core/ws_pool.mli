@@ -1,8 +1,8 @@
 (** Work-stealing thread pool.
 
     A pool of threads with a worker-stealing scheduler. The pool contains a
-    fixed number of threads that wait for work items to come, process these, and
-    loop.
+    fixed number of worker threads that wait for work items to come, process
+    these, and loop.
 
     This is good for CPU-intensive tasks that feature a lot of small tasks. Note
     that tasks will not always be processed in the order they are scheduled, so
@@ -15,8 +15,8 @@
     in it to stop (after they finish their work), and wait for them to stop.
 
     The threads are distributed across a fixed domain pool (whose size is
-    determined by {!Domain.recommended_domain_count} on OCaml 5, and simply the
-    single runtime on OCaml 4). *)
+    determined by {!Domain.recommended_domain_count}. See {!create} for more
+    details. *)
 
 include module type of Runner
 
@@ -36,8 +36,14 @@ val create : (unit -> t, _) create_args
     @param num_threads
       size of the pool, ie. number of worker threads. It will be at least [1]
       internally, so [0] or negative values make no sense. The default is
-      [Domain.recommended_domain_count()], ie one worker thread per CPU core. On
-      OCaml 4 the default is [4] (since there is only one domain).
+      [Domain.recommended_domain_count()], ie one worker thread per CPU core.
+
+    Note that specifying [num_threads=n] means that the degree of parallelism is
+    at most [n]. This behavior is different than the one of [Domainslib], see
+    https://github.com/c-cube/moonpool/issues/41 for context.
+
+    If you want to use all cores, use [Domain.recommended_domain_count()].
+
     @param on_exit_thread called at the end of each thread in the pool
     @param name
       a name for this thread pool, used if tracing is enabled (since 0.6) *)

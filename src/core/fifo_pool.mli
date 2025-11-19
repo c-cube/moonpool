@@ -29,10 +29,8 @@ val create : (unit -> t, _) create_args
 (** [create ()] makes a new thread pool.
     @param on_init_thread
       called at the beginning of each new thread in the pool.
-    @param min
-      minimum size of the pool. See {!Pool.create_args}. The default is
-      [Domain.recommended_domain_count()], ie one worker per CPU core. On OCaml
-      4 the default is [4] (since there is only one domain).
+    @param num_threads
+      number of worker threads. See {!Ws_pool.create} for more details.
     @param on_exit_thread called at the end of each worker thread in the pool.
     @param name name for the pool, used in tracing (since 0.6) *)
 
