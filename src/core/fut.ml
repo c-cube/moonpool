@@ -377,6 +377,42 @@ let for_list ~on l f : unit t =
   let futs = List.rev_map (fun x -> spawn ~on (fun () -> f x)) l in
   wait_list futs
 
+type 'a iter = ('a -> unit) -> unit
+
+let for_iter ~on (it : _ iter) f : unit t =
+  let fut, promise = make () in
+
+  (* start at one for the task that traverses [it] *)
+  let missing = A.make 1 in
+
+  (* callback called when a future is resolved *)
+  let on_res = function
+    | None ->
+      let n = A.fetch_and_add missing (-1) in
+      if n = 1 then
+        (* last future, we know they all succeeded, so resolve [fut] *)
+        fulfill promise (Ok ())
+    | Some e_bt ->
+      (* immediately cancel all other [on_res] *)
+      let n = A.exchange missing 0 in
+      if n > 0 then
+        (* we're the only one to set to 0, so we can fulfill [fut]
+             with an error. *)
+        fulfill promise (Error e_bt)
+  in
+
+  let fut_iter =
+    spawn ~on (fun () ->
+        it (fun item ->
+            A.incr missing;
+            let fut = spawn ~on (fun () -> f item) in
+            on_result_ignore fut on_res))
+  in
+
+  on_result_ignore fut_iter on_res;
+
+  fut
+
 (* ### blocking ### *)
 
 let push_queue_ _tr q () = Bb_queue.push q ()

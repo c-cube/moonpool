@@ -249,6 +249,14 @@ val for_list : on:Runner.t -> 'a list -> ('a -> unit) -> unit t
 (** [for_list ~on l f] is like [for_array ~on (Array.of_list l) f].
     @since 0.2 *)
 
+type 'a iter = ('a -> unit) -> unit
+(** ['a iter] is an iterator on ['a].
+    @since NEXT_RELEASE *)
+
+val for_iter : on:Runner.t -> 'a iter -> ('a -> unit) -> unit t
+(** [for_iter ~on iter f] runs [f] on every item in [iter] in parallel.
+    @since NEXT_RELEASE *)
+
 (** {2 Await}
 
     This suspends the current task using an OCaml 5 algebraic effect, and makes
