@@ -143,3 +143,24 @@ let () =
   in
 
   List.iter run_for [ 1; 10; 50; 1_000 ]
+
+let () =
+  let n_items = Atomic.make 0 in
+  let fut =
+    Fut.for_iter ~on:pool (fun _yield -> ()) (fun _item -> Atomic.incr n_items)
+  in
+  Fut.wait_block_exn fut;
+  assert (Atomic.get n_items = 0)
+
+let () =
+  let run_for n =
+    let l = List.init n (fun x -> x) in
+    let sum = Atomic.make 0 in
+    let iter = fun yield -> List.iter yield l in
+    Fut.for_iter ~on:pool iter (fun x ->
+        ignore (Atomic.fetch_and_add sum x : int))
+    |> Fut.wait_block_exn;
+    assert (Atomic.get sum = List.fold_left ( + ) 0 l)
+  in
+
+  List.iter run_for [ 0; 1; 2; 3; 10; 50; 1_000 ]
