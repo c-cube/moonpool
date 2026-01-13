@@ -73,7 +73,7 @@
     :with-test
     (>= 0.19)))
   (hmap :with-test)
-  lwt
+  (lwt (and (>= 5.0) (< 6.0)))
   base-unix
   (trace :with-test)
   (trace-tef :with-test)
