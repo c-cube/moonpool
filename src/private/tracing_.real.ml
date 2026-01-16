@@ -1,11 +1,13 @@
 module Trace = Trace_core
 
+type span = Trace.span
+
 let enabled = Trace.enabled
-let dummy_span = Int64.min_int
+let dummy_span = Trace_core.Collector.dummy_span
 let dummy_file_ = "<unknown file>"
 let set_thread_name = Trace.set_thread_name
 
-let[@inline] enter_span name : int64 =
+let[@inline] enter_span name : span =
   if name = "" then
     dummy_span
   else
