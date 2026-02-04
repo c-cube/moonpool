@@ -1,4 +1,14 @@
 
+# 0.11
+
+- feat: add `Fut.for_iter`
+- fix: in Lock, prevent flambda from reordering mutex-protected operations
+
+- document how many threads are used for work in `Ws_pool`
+- remove mentions of ocaml4 in readme
+- chore: for now, add bound for lwt 5.xx only
+- abstract type for Tracing_ stub (for new `trace`)
+
 # 0.10
 
 - breaking: remove `around_task` from schedulers
