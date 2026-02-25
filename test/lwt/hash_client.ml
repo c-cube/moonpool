@@ -21,9 +21,7 @@ let main ~port ~ext ~dir ~n_conn () : unit =
   (* TODO: *)
   let run_task () : unit Lwt.t =
     let@ () = M_lwt.spawn_lwt in
-    let _sp =
-      Trace.enter_manual_span ~parent:None ~__FILE__ ~__LINE__ "run-task"
-    in
+    let _sp = Trace.enter_span ~parent:None ~__FILE__ ~__LINE__ "run-task" in
 
     let seen = Str_tbl.create 16 in
 
@@ -35,9 +33,7 @@ let main ~port ~ext ~dir ~n_conn () : unit =
         ()
       else if Sys.is_directory file then (
         let _sp =
-          Trace.enter_manual_span
-            ~parent:(Some (Trace.ctx_of_span _sp))
-            ~__FILE__ ~__LINE__ "walk-dir"
+          Trace.enter_span ~parent:(Some _sp) ~__FILE__ ~__LINE__ "walk-dir"
             ~data:(fun () -> [ "d", `String file ])
         in
 
@@ -55,7 +51,7 @@ let main ~port ~ext ~dir ~n_conn () : unit =
       )
     in
     walk dir;
-    Trace.exit_manual_span _sp
+    Trace.exit_span _sp
   in
 
   (* start the first [n_conn] tasks *)

@@ -28,12 +28,18 @@
   dune
   (either
    (>= 1.0))
-  (trace :with-test)
-  (trace-tef :with-test)
-  (qcheck-core
-   (and
-    :with-test
-    (>= 0.19)))
+   (trace
+    (and
+     (>= 0.11)
+     :with-test))
+   (trace-tef
+    (and
+     (>= 0.11)
+     :with-test))
+   (qcheck-core
+    (and
+     :with-test
+     (>= 0.21)))
   (thread-local-storage
    (and
     (>= 0.2)
@@ -71,12 +77,18 @@
   (qcheck-core
    (and
     :with-test
-    (>= 0.19)))
+    (>= 0.21)))
   (hmap :with-test)
   (lwt (and (>= 5.0) (< 6.0)))
   base-unix
-  (trace :with-test)
-  (trace-tef :with-test)
+  (trace
+   (and
+    (>= 0.11)
+    :with-test))
+  (trace-tef
+   (and
+    (>= 0.11)
+    :with-test))
   (odoc :with-doc)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

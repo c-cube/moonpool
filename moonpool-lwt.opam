@@ -11,12 +11,12 @@ depends: [
   "dune" {>= "3.0"}
   "moonpool" {= version}
   "ocaml" {>= "5.0"}
-  "qcheck-core" {with-test & >= "0.19"}
+  "qcheck-core" {with-test & >= "0.21"}
   "hmap" {with-test}
   "lwt" {>= "5.0" & < "6.0"}
   "base-unix"
-  "trace" {with-test}
-  "trace-tef" {with-test}
+  "trace" {>= "0.11" & with-test}
+  "trace-tef" {>= "0.11" & with-test}
   "odoc" {with-doc}
 ]
 build: [

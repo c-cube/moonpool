@@ -12,9 +12,9 @@ depends: [
   "ocaml" {>= "5.0"}
   "dune" {>= "3.0"}
   "either" {>= "1.0"}
-  "trace" {with-test}
-  "trace-tef" {with-test}
-  "qcheck-core" {with-test & >= "0.19"}
+  "trace" {>= "0.11" & with-test}
+  "trace-tef" {>= "0.11" & with-test}
+  "qcheck-core" {with-test & >= "0.21"}
   "thread-local-storage" {>= "0.2" & < "0.3"}
   "odoc" {with-doc}
   "hmap" {with-test}

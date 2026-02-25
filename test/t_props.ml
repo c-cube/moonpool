@@ -13,7 +13,7 @@ let with_pool ~kind () f =
 let () =
   add_test @@ fun ~kind ->
   Q.Test.make ~name:"map then join_list"
-    Q.(small_list small_int)
+    Q.(list_small nat_small)
     (fun l ->
       let@ pool = with_pool ~kind () in
       let l' = List.map (fun x -> Fut.spawn ~on:pool (fun () -> x + 1)) l in
@@ -24,7 +24,7 @@ let () =
 let () =
   add_test @@ fun ~kind ->
   Q.Test.make ~name:"map bind"
-    Q.(small_list small_int)
+    Q.(list_small nat_small)
     (fun l ->
       let@ pool = with_pool ~kind () in
       let open Fut.Infix in

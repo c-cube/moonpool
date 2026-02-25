@@ -171,7 +171,7 @@ module Evaluator = struct
 
   let gen_fun =
     Q.Gen.(
-      frequency
+      oneof_weighted
         [
           ( 2,
             let+ n = 0 -- 100 in
@@ -190,7 +190,7 @@ module Evaluator = struct
         abs x
     in
     let open Q.Gen in
-    frequency
+    oneof_weighted
       [
         ( 1,
           let+ x = 1 -- 10000 in
@@ -208,13 +208,13 @@ module Evaluator = struct
           let+ f = gen_fun
           and+ csize = 1 -- 16
           and+ l = list_size (0 -- 290) (gen 1)
-          and+ r = oneofl [ R_add; R_max; R_add_shift ] in
+          and+ r = oneof_list [ R_add; R_max; R_add_shift ] in
           Map_arr (csize, f, l, r) );
         ( clamp_if_base 2,
           let+ f = gen_fun
           and+ csize = 1 -- 3
           and+ l = list_size (1 -- 7) (gen (min 3 (n - 1)))
-          and+ r = oneofl [ R_add; R_max; R_add_shift ] in
+          and+ r = oneof_list [ R_add; R_max; R_add_shift ] in
           Map_arr (csize, f, l, r) );
       ]
 
@@ -280,7 +280,7 @@ let t_for_nested ~min ~chunk_size () =
   let neg x = -x in
   Q.Test.make
     ~name:(spf "t_for_nested ~min:%d" min)
-    Q.(small_list (small_list small_int))
+    Q.(list_small (list_small nat_small))
     (fun l ->
       let ref_l1 = List.map (List.map neg) l in
       let ref_l2 = List.map (List.map neg) ref_l1 in
@@ -302,7 +302,7 @@ let t_for_nested ~min ~chunk_size () =
 let t_map ~chunk_size () =
   let ppa = Q.Print.(array string) in
   Q.Test.make ~name:"map1"
-    Q.(small_list small_int |> Q.set_stats [ "len", List.length ])
+    Q.(list_small nat_small |> Q.set_stats [ "len", List.length ])
     (fun l ->
       let@ pool = Ws_pool.with_ ~num_threads:4 () in
       let@ () = Ws_pool.run_wait_block pool in

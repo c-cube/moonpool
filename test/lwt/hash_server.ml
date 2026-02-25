@@ -167,7 +167,7 @@ let main ~port ~runner () : unit =
   let handle_client client_addr (ic, oc) =
     let@ () = Moonpool_lwt.spawn_lwt in
     let _sp =
-      Trace.enter_manual_span ~parent:None ~__FILE__ ~__LINE__ "handle.client"
+      Trace.enter_span ~parent:None ~__FILE__ ~__LINE__ "handle.client"
         ~data:(fun () -> [ "addr", `String (str_of_sockaddr client_addr) ])
     in
 
@@ -199,7 +199,7 @@ let main ~port ~runner () : unit =
           Lwt_io.flush oc |> await_lwt
       done
     with End_of_file | Unix.Unix_error (Unix.ECONNRESET, _, _) ->
-      Trace.exit_manual_span _sp;
+      Trace.exit_span _sp;
       Trace.message "exit handle client"
   in
 

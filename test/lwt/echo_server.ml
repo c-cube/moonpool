@@ -22,7 +22,7 @@ let main ~port ~verbose ~runner:_ () : unit =
   let handle_client client_addr (ic, oc) : _ Lwt.t =
     let@ () = M_lwt.spawn_lwt in
     let _sp =
-      Trace.enter_manual_span ~parent:None ~__FILE__ ~__LINE__ "handle.client"
+      Trace.enter_span ~parent:None ~__FILE__ ~__LINE__ "handle.client"
         ~data:(fun () -> [ "addr", `String (str_of_sockaddr client_addr) ])
     in
 
@@ -45,7 +45,7 @@ let main ~port ~verbose ~runner:_ () : unit =
     done;
     if verbose then
       Printf.printf "done with client on %s\n%!" (str_of_sockaddr client_addr);
-    Trace.exit_manual_span _sp;
+    Trace.exit_span _sp;
     Trace.message "exit handle client"
   in
 

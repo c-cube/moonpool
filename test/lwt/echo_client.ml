@@ -25,7 +25,7 @@ let main ~port ~n ~n_conn ~verbose ~msg_per_conn () : unit =
 
     let@ () = M_lwt.spawn_lwt in
     let _sp =
-      Trace.enter_manual_span ~parent:None ~__FILE__ ~__LINE__ "connect.client"
+      Trace.enter_span ~parent:None ~__FILE__ ~__LINE__ "connect.client"
     in
     Trace.message "connecting new client…";
 
@@ -43,9 +43,7 @@ let main ~port ~n ~n_conn ~verbose ~msg_per_conn () : unit =
 
     for _j = 1 to msg_per_conn do
       let _sp =
-        Trace.enter_manual_span
-          ~parent:(Some (Trace.ctx_of_span _sp))
-          ~__FILE__ ~__LINE__ "write.loop"
+        Trace.enter_span ~parent:(Some _sp) ~__FILE__ ~__LINE__ "write.loop"
       in
 
       let s = spf "hello %d" _j in
@@ -57,10 +55,10 @@ let main ~port ~n ~n_conn ~verbose ~msg_per_conn () : unit =
       Lwt_io.read_into_exactly ic buf 0 (String.length s) |> await_lwt;
       if verbose then
         Printf.printf "read: %s\n%!" (Bytes.sub_string buf 0 (String.length s));
-      Trace.exit_manual_span _sp;
+      Trace.exit_span _sp;
       ()
     done;
-    Trace.exit_manual_span _sp
+    Trace.exit_span _sp
   in
 
   (* start the first [n_conn] tasks *)
