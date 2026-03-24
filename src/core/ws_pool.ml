@@ -223,7 +223,10 @@ let as_runner_ (self : state) : t =
   Runner.For_runner_implementors.create
     ~shutdown:(fun ~wait () -> shutdown_ self ~wait)
     ~run_async:(fun ~fiber f ->
-      schedule_in_main_queue self @@ T_start { fiber; f })
+      let task = WL.T_start { fiber; f } in
+      match get_current_worker_ () with
+      | Some wst -> schedule_from_w wst task
+      | None -> schedule_in_main_queue self task)
     ~size:(fun () -> size_ self)
     ~num_tasks:(fun () -> num_tasks_ self)
     ()
