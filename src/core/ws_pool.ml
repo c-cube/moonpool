@@ -225,8 +225,8 @@ let as_runner_ (self : state) : t =
     ~run_async:(fun ~fiber f ->
       let task = WL.T_start { fiber; f } in
       match get_current_worker_ () with
-      | Some wst -> schedule_from_w wst task
-      | None -> schedule_in_main_queue self task)
+      | Some wst when wst.st == self -> schedule_from_w wst task
+      | _ -> schedule_in_main_queue self task)
     ~size:(fun () -> size_ self)
     ~num_tasks:(fun () -> num_tasks_ self)
     ()
