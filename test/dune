@@ -20,3 +20,9 @@
   unix
   trace-tef
   trace))
+
+(test
+ (name t_fib_await_mem)
+ (package moonpool)
+ (enabled_if (= %{system} linux))
+ (libraries moonpool))
