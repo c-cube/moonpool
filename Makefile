@@ -7,7 +7,7 @@ clean:
 	@dune clean
 
 test:
-	@dune runtest $(DUNE_OPTS)
+	@dune runtest $(DUNE_OPTS) --no-buffer
 
 test-autopromote:
 	@dune runtest $(DUNE_OPTS) --auto-promote
