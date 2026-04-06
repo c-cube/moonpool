@@ -13,21 +13,17 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os:
-            - ubuntu-latest
-        ocaml-compiler:
-            - '5.0'
-            - '5.3'
+        include:
+          - ocaml-version: '5.0'
+            container: ghcr.io/c-cube/c-cube-commmon/ci-5.0:latest
+          - ocaml-version: '5.3'
+            container: ghcr.io/c-cube/c-cube-commmon/ci-doc-5.3:latest
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
+
     steps:
-      - uses: actions/checkout@main
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v3
-        with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: true
-          allow-prerelease-opam: true
+      - uses: actions/checkout@v6
 
       - run: opam pin picos 0.6.0 -y -n
 
@@ -70,20 +66,10 @@ jobs:
 
   format:
     name: format
-    strategy:
-      matrix:
-        ocaml-compiler:
-            - '5.3'
-    runs-on: 'ubuntu-latest'
-    steps:
-      - uses: actions/checkout@main
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v3
-        with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: true
-          allow-prerelease-opam: true
+    runs-on: ubuntu-latest
+    container: ghcr.io/c-cube/c-cube-commmon/ci-doc-5.3:latest
 
+    steps:
+      - uses: actions/checkout@v6
       - run: opam install ocamlformat.0.27.0
       - run: opam exec -- make format-check
-
