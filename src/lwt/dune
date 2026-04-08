@@ -1,9 +1,10 @@
 (library
  (name moonpool_lwt)
  (public_name moonpool-lwt)
- (optional)
  (enabled_if
-  (>= %{ocaml_version} 5.0))
+  (and
+   (>= %{ocaml_version} 5.0)
+   %{lib-available:lwt}))
  (modules moonpool_lwt types_)
  (libraries
   (re_export moonpool)

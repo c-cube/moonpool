@@ -8,7 +8,7 @@ license: "MIT"
 homepage: "https://github.com/c-cube/moonpool"
 bug-reports: "https://github.com/c-cube/moonpool/issues"
 depends: [
-  "dune" {>= "3.0"}
+  "dune" {>= "3.15"}
   "moonpool" {= version}
   "ocaml" {>= "5.0"}
   "qcheck-core" {with-test & >= "0.21"}
