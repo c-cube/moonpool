@@ -23,7 +23,7 @@ module Scheduler_state = struct
     mutable as_runner: Moonpool.Runner.t;
     mutable enter_hook: Lwt_main.Enter_iter_hooks.hook option;
     mutable leave_hook: Lwt_main.Leave_iter_hooks.hook option;
-    mutable notification: int;
+    mutable notification: Types_.notification;
         (** A lwt_unix notification to wake up the event loop *)
     has_notified: bool Atomic.t;
   }
@@ -42,7 +42,7 @@ module Scheduler_state = struct
       as_runner = Moonpool.Runner.dummy;
       enter_hook = None;
       leave_hook = None;
-      notification = 0;
+      notification = Types_.dummy_notification;
       has_notified = Atomic.make false;
     }
 

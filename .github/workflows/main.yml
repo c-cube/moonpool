@@ -55,8 +55,11 @@ jobs:
       # temporary until it's in a release
       - run: opam pin https://github.com/ocaml-multicore/picos.git -y -n
 
+      - run: opam pin -y -n lwt 5.9.2
       - run: opam install -t moonpool moonpool-lwt --deps-only
       - run: opam exec -- dune build @install
+
       # install some depopts
+      - run: opam pin -y -n lwt 6.1.1
       - run: opam install thread-local-storage trace domain-local-await
       - run: opam exec -- dune build --profile=release --force @install @runtest

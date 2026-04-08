@@ -3,8 +3,20 @@
  (public_name moonpool-lwt)
  (enabled_if
   (>= %{ocaml_version} 5.0))
+ (modules moonpool_lwt types_)
  (libraries
   (re_export moonpool)
   picos
   (re_export lwt)
   lwt.unix))
+
+(executable
+ (name gen_types_)
+ (modules gen_types_))
+
+(rule
+ (enabled_if %{lib-available:lwt})
+ (deps types_.ml.5 types_.ml.6)
+ (target types_.ml)
+ (action
+  (run ./gen_types_.exe %{version:lwt})))
