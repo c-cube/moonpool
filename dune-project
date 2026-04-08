@@ -60,6 +60,7 @@
     :with-test)))
  (depopts
   hmap
+  (ambient-context (>= 0.2))
   (trace
    (>= 0.6)))
  (tags

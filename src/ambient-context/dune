@@ -1,0 +1,5 @@
+(library
+ (name moonpool_ambient_context)
+ (public_name moonpool.ambient-context)
+ (optional) ; ambient-context
+ (libraries moonpool hmap ambient-context))
