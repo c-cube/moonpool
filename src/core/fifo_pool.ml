@@ -32,19 +32,11 @@ let[@inline] num_tasks_ (self : state) : int = Bb_queue.size self.q
 get_thread_state = TLS.get_opt k_worker_state
   *)
 
-let default_thread_init_exit_ ~dom_id:_ ~t_id:_ () = ()
-
 let shutdown_ ~wait (self : state) : unit =
   Bb_queue.close self.q;
   if wait then Array.iter Thread.join self.threads
 
-type ('a, 'b) create_args =
-  ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
-  ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
-  ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
-  ?num_threads:int ->
-  ?name:string ->
-  'a
+type ('a, 'b) create_args = ('a, 'b) Util_pool_.create_args
 
 (** Run [task] as is, on the pool. *)
 let schedule_ (self : state) (task : task_full) : unit =
@@ -96,9 +88,9 @@ let worker_ops : worker_state WL.ops =
     cleanup;
   }
 
-let create_ ?(on_init_thread = default_thread_init_exit_)
-    ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = Util_pool_.on_exn)
-    ~threads ?name () : state =
+let create_ ?(on_init_thread = Util_pool_.default_thread_init_exit_)
+    ?(on_exit_thread = Util_pool_.default_thread_init_exit_)
+    ?(on_exn = Util_pool_.on_exn) ~threads ?name () : state =
   let self =
     {
       threads;
@@ -114,56 +106,31 @@ let create_ ?(on_init_thread = default_thread_init_exit_)
   self
 
 let create ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name () : t =
-  let num_domains = Domain_pool_.max_number_of_domains () in
-
   (* number of threads to run *)
   let num_threads = Util_pool_.num_threads ?num_threads () in
-
-  (* make sure we don't bias towards the first domain(s) in {!D_pool_} *)
-  let offset = Random.int num_domains in
 
   let pool =
     let dummy_thread = Thread.self () in
     let threads = Array.make num_threads dummy_thread in
     create_ ?on_init_thread ?on_exit_thread ?on_exn ~threads ?name ()
   in
-  let runner = runner_of_state pool in
 
-  (* temporary queue used to obtain thread handles from domains
-     on which the thread are started. *)
-  let receive_threads = Bb_queue.create () in
-
-  (* start the thread with index [i] *)
-  let start_thread_with_idx i =
-    let dom_idx = (offset + i) mod num_domains in
-
-    (* function called in domain with index [i], to
-       create the thread and push it into [receive_threads] *)
-    let create_thread_in_domain () =
-      let st = { idx = i; dom_idx; st = pool } in
-      let thread =
-        Thread.create (WL.worker_loop ~block_signals:true ~ops:worker_ops) st
-      in
-      (* send the thread from the domain back to us *)
-      Bb_queue.push receive_threads (i, thread)
+  (* build the worker state for [idx] (on domain [dom_idx]) and start its
+     thread *)
+  let mk_thread idx ~dom_id : Thread.t =
+    let st = { idx; dom_idx = dom_id; st = pool } in
+    let thread =
+      Thread.create (WL.worker_loop ~block_signals:true ~ops:worker_ops) st
     in
-
-    Domain_pool_.run_on dom_idx create_thread_in_domain
+    pool.threads.(idx) <- thread;
+    thread
   in
 
-  (* start all threads, placing them on the domains
-     according to their index and [offset] in a round-robin fashion. *)
-  for i = 0 to num_threads - 1 do
-    start_thread_with_idx i
-  done;
+  ignore
+    (Util_pool_.spawn_workers_round_robin ~num_threads mk_thread
+      : Thread.t array);
 
-  (* receive the newly created threads back from domains *)
-  for _j = 1 to num_threads do
-    let i, th = Bb_queue.pop receive_threads in
-    pool.threads.(i) <- th
-  done;
-
-  runner
+  pool.as_runner
 
 let with_ ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name () f =
   let pool =

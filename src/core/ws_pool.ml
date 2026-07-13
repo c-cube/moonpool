@@ -201,8 +201,6 @@ let worker_ops : worker_state WL.ops =
     cleanup;
   }
 
-let default_thread_init_exit_ ~dom_id:_ ~t_id:_ () = ()
-
 let shutdown_ ~wait (self : state) : unit =
   if A.exchange self.active false then (
     Mutex.lock self.mutex;
@@ -221,23 +219,13 @@ let as_runner_ (self : state) : t =
     ~num_tasks:(fun () -> num_tasks_ self)
     ()
 
-type ('a, 'b) create_args =
-  ?on_init_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
-  ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
-  ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
-  ?num_threads:int ->
-  ?name:string ->
-  'a
+type ('a, 'b) create_args = ('a, 'b) Util_pool_.create_args
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
-let create ?(on_init_thread = default_thread_init_exit_)
-    ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = Util_pool_.on_exn)
-    ?num_threads ?name () : t =
-  let num_domains = Domain_pool_.max_number_of_domains () in
+let create ?(on_init_thread = Util_pool_.default_thread_init_exit_)
+    ?(on_exit_thread = Util_pool_.default_thread_init_exit_)
+    ?(on_exn = Util_pool_.on_exn) ?num_threads ?name () : t =
   let num_threads = Util_pool_.num_threads ?num_threads () in
-
-  (* make sure we don't bias towards the first domain(s) in {!D_pool_} *)
-  let offset = Random.int num_domains in
 
   let pool =
     {
@@ -257,49 +245,43 @@ let create ?(on_init_thread = default_thread_init_exit_)
   in
   pool.as_runner <- as_runner_ pool;
 
-  (* temporary queue used to obtain thread handles from domains
-     on which the thread are started. *)
-  let receive_threads = Bb_queue.create () in
+  (* distinct placeholders, each overwritten with the real worker state once
+     its thread starts *)
+  pool.workers <-
+    Array.init num_threads (fun _ ->
+        {
+          st = pool;
+          thread = Thread.self ();
+          q = WSQ.create ~dummy:WL._dummy_task ();
+          rng = Random.State.make [| 0 |];
+          dom_id = 0;
+          idx = 0;
+        });
 
-  (* start the thread with index [i] *)
-  let create_worker_state idx =
-    let dom_id = (offset + idx) mod num_domains in
-    {
-      st = pool;
-      thread = (* dummy *) Thread.self ();
-      q = WSQ.create ~dummy:WL._dummy_task ();
-      rng = Random.State.make [| idx |];
-      dom_id;
-      idx;
-    }
-  in
-
-  pool.workers <- Array.init num_threads create_worker_state;
-
-  (* start the thread with index [i] *)
-  let start_thread_with_idx idx (st : worker_state) =
-    (* function called in domain with index [i], to
-       create the thread and push it into [receive_threads] *)
-    let create_thread_in_domain () =
-      let thread =
-        Thread.create (WL.worker_loop ~block_signals:true ~ops:worker_ops) st
-      in
-      (* send the thread from the domain back to us *)
-      Bb_queue.push receive_threads (idx, thread)
+  (* build the worker state for [idx] (on domain [dom_id]) and start its
+     thread *)
+  let mk_thread idx ~dom_id : Thread.t =
+    let w =
+      {
+        st = pool;
+        thread = (* dummy *) Thread.self ();
+        q = WSQ.create ~dummy:WL._dummy_task ();
+        rng = Random.State.make [| idx |];
+        dom_id;
+        idx;
+      }
     in
-    Domain_pool_.run_on st.dom_id create_thread_in_domain
+    pool.workers.(idx) <- w;
+    let thread =
+      Thread.create (WL.worker_loop ~block_signals:true ~ops:worker_ops) w
+    in
+    w.thread <- thread;
+    thread
   in
 
-  (* start all worker threads, placing them on the domains
-     according to their index and [offset] in a round-robin fashion. *)
-  Array.iteri start_thread_with_idx pool.workers;
-
-  (* receive the newly created threads back from domains *)
-  for _j = 1 to num_threads do
-    let i, th = Bb_queue.pop receive_threads in
-    let worker_state = pool.workers.(i) in
-    worker_state.thread <- th
-  done;
+  ignore
+    (Util_pool_.spawn_workers_round_robin ~num_threads mk_thread
+      : Thread.t array);
 
   pool.as_runner
 
