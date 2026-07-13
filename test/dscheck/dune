@@ -1,0 +1,13 @@
+(rule
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (action
+  (copy ../../src/private/ws_deque_.ml ws_deque_.ml)))
+
+(test
+ (name ws_deque_dscheck)
+ (package moonpool)
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
+ (libraries dscheck)
+ (modules atomic ws_deque_ ws_deque_dscheck))
