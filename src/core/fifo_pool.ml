@@ -97,7 +97,7 @@ let worker_ops : worker_state WL.ops =
   }
 
 let create_ ?(on_init_thread = default_thread_init_exit_)
-    ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
+    ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = Util_pool_.on_exn)
     ~threads ?name () : state =
   let self =
     {

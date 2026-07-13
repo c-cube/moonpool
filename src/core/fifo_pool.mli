@@ -31,6 +31,9 @@ val create : (unit -> t, _) create_args
       called at the beginning of each new thread in the pool.
     @param num_threads
       number of worker threads. See {!Ws_pool.create} for more details.
+    @param on_exn
+      user-provided handler for exceptions that occur in future callbacks, etc.
+      This {b MUST NOT} rise. If it raises, the process will exit.
     @param on_exit_thread called at the end of each worker thread in the pool.
     @param name name for the pool, used in tracing (since 0.6) *)
 

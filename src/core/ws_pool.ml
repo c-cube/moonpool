@@ -231,7 +231,7 @@ type ('a, 'b) create_args =
 (** Arguments used in {!create}. See {!create} for explanations. *)
 
 let create ?(on_init_thread = default_thread_init_exit_)
-    ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = fun _ _ -> ())
+    ?(on_exit_thread = default_thread_init_exit_) ?(on_exn = Util_pool_.on_exn)
     ?num_threads ?name () : t =
   let num_domains = Domain_pool_.max_number_of_domains () in
   let num_threads = Util_pool_.num_threads ?num_threads () in
