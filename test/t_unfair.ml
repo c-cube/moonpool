@@ -39,8 +39,13 @@ let run ~kind () =
    Ws_pool.shutdown pool);
   Printf.printf "pool size after shutdown: %d\n%!" (Ws_pool.num_tasks pool);
 
+  (* [shutdown] waits for all tasks to finish, so none should be left *)
+  assert (Ws_pool.num_tasks pool = 0);
+
   let elapsed = Unix.gettimeofday () -. t in
-  Printf.printf "elapsed: %.4fs\n%!" elapsed
+  Printf.printf "elapsed: %.4fs\n%!" elapsed;
+
+  assert (elapsed < 5.0)
 
 let () =
   let@ () = Trace_tef.with_setup () in

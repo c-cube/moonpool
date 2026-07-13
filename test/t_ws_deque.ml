@@ -79,11 +79,15 @@ let t_heavy () =
   in
   let t = Moonpool.start_thread_on_some_domain main_loop () in
 
+  (* wait for the producer to finish *before* telling stealers to stop, so
+     they actually race against it for the whole run instead of exiting
+     almost immediately *)
+  Trace.message "joining t";
+  Thread.join t;
+
   (* stop *)
   A.set active false;
 
-  Trace.message "joining t";
-  Thread.join t;
   Trace.message "joining stealers";
   Array.iter Thread.join ts;
   Trace.message "done";
