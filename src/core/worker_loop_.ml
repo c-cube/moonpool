@@ -134,7 +134,11 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
      with e ->
        let bt = Printexc.get_raw_backtrace () in
        let ebt = Exn_bt.make e bt in
-       ops.on_exn st ebt);
+       (try ops.on_exn st ebt
+        with exn' ->
+          Printf.eprintf "moonpool: fatal error: user on_exn raised %s\n%!"
+            (Printexc.to_string exn');
+          exit 1));
 
     (* after_task runner _ctx; *)
     cur_fiber := _dummy_fiber;
