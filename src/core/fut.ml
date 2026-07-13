@@ -275,25 +275,29 @@ let choose a b : _ t =
     fut
 
 let choose_same a b : _ t =
-  match peek a, peek b with
-  | Some (Ok x), _ -> return x
-  | _, Some (Ok y) -> return y
-  | Some (Error ebt), Some (Error _) -> fail_exn_bt ebt
-  | _ ->
-    let fut, promise = make () in
+  map ?on:None (choose a b) ~f:(function Either.Left x | Either.Right x -> x)
 
-    let one_failure = A.make false in
-    on_result a (function
-      | Error err ->
-        if A.exchange one_failure true then
-          fulfill_idempotent promise (Error err)
-      | Ok x -> fulfill_idempotent promise (Ok x));
-    on_result b (function
-      | Error err ->
-        if A.exchange one_failure true then
-          fulfill_idempotent promise (Error err)
-      | Ok y -> fulfill_idempotent promise (Ok y));
-    fut
+open struct
+  (* latch that acts as a barrier. calls [on_all_done] when missing reaches 0 *)
+  type 'a latch = {
+    missing: int A.t;
+    promise: 'a promise;
+    on_all_done: unit -> 'a;
+  }
+
+  let create_latch_ ~n_items ~promise ~on_all_done : _ latch =
+    { missing = A.make n_items; promise; on_all_done }
+
+  let[@inline] incr_latch_ (self : _ latch) : unit = A.incr self.missing
+
+  let on_res_ (self : _ latch) : Exn_bt.t option -> unit = function
+    | None ->
+      let n = A.fetch_and_add self.missing (-1) in
+      if n = 1 then fulfill self.promise (Ok (self.on_all_done ()))
+    | Some e_bt ->
+      let n = A.exchange self.missing 0 in
+      if n > 0 then fulfill self.promise (Error e_bt)
+end
 
 let barrier_on_abstract_container_of_futures ~iter ~len ~aggregate_results cont
     : _ t =
@@ -304,27 +308,12 @@ let barrier_on_abstract_container_of_futures ~iter ~len ~aggregate_results cont
     return cont_empty
   ) else (
     let fut, promise = make () in
-    let missing = A.make n_items in
-
-    (* callback called when a future in [a] is resolved *)
-    let on_res = function
-      | None ->
-        let n = A.fetch_and_add missing (-1) in
-        if n = 1 then (
-          (* last future, we know they all succeeded, so resolve [fut] *)
-          let res = aggregate_results peek_or_assert_ cont in
-          fulfill promise (Ok res)
-        )
-      | Some e_bt ->
-        (* immediately cancel all other [on_res] *)
-        let n = A.exchange missing 0 in
-        if n > 0 then
-          (* we're the only one to set to 0, so we can fulfill [fut]
-             with an error. *)
-          fulfill promise (Error e_bt)
+    let latch =
+      create_latch_ ~n_items ~promise ~on_all_done:(fun () ->
+          aggregate_results peek_or_assert_ cont)
     in
 
-    iter (fun fut -> on_result_ignore fut on_res) cont;
+    iter (fun fut -> on_result_ignore fut (on_res_ latch)) cont;
     fut
   )
 
@@ -381,34 +370,17 @@ type 'a iter = ('a -> unit) -> unit
 let for_iter ~on (it : _ iter) f : unit t =
   let fut, promise = make () in
 
-  (* start at one for the task that traverses [it] *)
-  let missing = A.make 1 in
-
-  (* callback called when a future is resolved *)
-  let on_res = function
-    | None ->
-      let n = A.fetch_and_add missing (-1) in
-      if n = 1 then
-        (* last future, we know they all succeeded, so resolve [fut] *)
-        fulfill promise (Ok ())
-    | Some e_bt ->
-      (* immediately cancel all other [on_res] *)
-      let n = A.exchange missing 0 in
-      if n > 0 then
-        (* we're the only one to set to 0, so we can fulfill [fut]
-             with an error. *)
-        fulfill promise (Error e_bt)
-  in
-
+  let latch = create_latch_ ~n_items:1 ~promise ~on_all_done:ignore in
   let fut_iter =
     spawn ~on (fun () ->
         it (fun item ->
-            A.incr missing;
+            incr_latch_ latch;
             let fut = spawn ~on (fun () -> f item) in
-            on_result_ignore fut on_res))
+            on_result_ignore fut (on_res_ latch)))
   in
 
-  on_result_ignore fut_iter on_res;
+  (* when [fut_iter] finishes, pay for the [n_items=1] above. *)
+  on_result_ignore fut_iter (on_res_ latch);
 
   fut
 
