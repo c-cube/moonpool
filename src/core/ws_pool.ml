@@ -207,9 +207,9 @@ let shutdown_ ~wait (self : state) : unit =
   if A.exchange self.active false then (
     Mutex.lock self.mutex;
     Condition.broadcast self.cond;
-    Mutex.unlock self.mutex;
-    if wait then Array.iter (fun w -> Thread.join w.thread) self.workers
-  )
+    Mutex.unlock self.mutex
+  );
+  if wait then Array.iter (fun w -> Thread.join w.thread) self.workers
 
 let as_runner_ (self : state) : t =
   Runner.For_runner_implementors.create
