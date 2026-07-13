@@ -16,6 +16,9 @@ module CA : sig
   val size : 'a t -> int
   val get : 'a t -> int -> 'a
   val set : 'a t -> int -> 'a -> unit
+
+  val clear : _ t -> int -> unit
+  (** write dummy in slot *)
 end = struct
   (** The array has size 256. *)
   let log_size = 8
@@ -23,13 +26,20 @@ end = struct
   type 'a t = { arr: 'a array } [@@unboxed]
 
   let[@inline] size (_self : _ t) = 1 lsl log_size
-  let create ~dummy () : _ t = { arr = Array.make (1 lsl log_size) dummy }
+
+  let create ~dummy () : _ t =
+    (* allocate one more slot to hold the dummy *)
+    { arr = Array.make ((1 lsl log_size) + 1) dummy }
 
   let[@inline] get (self : 'a t) (i : int) : 'a =
     Array.unsafe_get self.arr (i land ((1 lsl log_size) - 1))
 
   let[@inline] set (self : 'a t) (i : int) (x : 'a) : unit =
     Array.unsafe_set self.arr (i land ((1 lsl log_size) - 1)) x
+
+  let[@inline] clear (self : _ t) (i : int) : _ =
+    let dummy = Array.unsafe_get self.arr (1 lsl log_size) in
+    set self i dummy
 end
 
 type 'a t = {
@@ -90,6 +100,7 @@ let pop_exn (self : 'a t) : 'a =
   ) else if size > 0 then (
     (* can pop without modifying [top] *)
     let x = CA.get self.arr b in
+    CA.clear self.arr b;
     x
   ) else (
     assert (size = 0);
@@ -97,6 +108,7 @@ let pop_exn (self : 'a t) : 'a =
        to update [self.top] *)
     if A.compare_and_set self.top t (t + 1) then (
       let x = CA.get self.arr b in
+      CA.clear self.arr b;
       A.set self.bottom (t + 1);
       x
     ) else (
@@ -122,7 +134,8 @@ let steal (self : 'a t) : 'a option =
   else (
     let x = CA.get self.arr t in
     if A.compare_and_set self.top t (t + 1) then
-      (* successfully increased top to consume [x] *)
+      (* successfully increased top to consume [x].
+         NOTE: do not clear the slot, not thread safe. slots are single writer only. *)
       Some x
     else
       None
