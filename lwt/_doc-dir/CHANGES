@@ -1,4 +1,26 @@
-===== 5.9.1 =====
+===== 5.10.1 =====
+
+====== Misc ======
+
+  * (backport from 6.1.1) lwt.unix: fix build error on OCaml.5.5. (Kate Deplaix, #1100)
+
+  * (backport from 6.1.2) fix initialisation of lock on Windows. (Mark Elvers, David Allsopp, #1103, #1107, #1104)
+
+===== 5.10.0 =====
+
+====== Additions ======
+
+  * Lwt_engine.id: an unused type definition for better 6+ compatibility
+
+  * Lwt_unix.notification=int: a type alias for better 6+ compatibility
+
+===== 5.9.3 =====
+
+====== Fixes ======
+
+  * lwt_ppx: correctly carry type annotations again (broken since in 5.9.2). (Pierre Villemot, #1091)
+
+===== 5.9.2 =====
 
 ====== Packaging ======
 
