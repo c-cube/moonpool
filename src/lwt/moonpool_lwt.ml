@@ -110,7 +110,9 @@ module Ops = struct
         Mutex.unlock self.mutex;
         n)
       ~run_async:(fun ~fiber f -> schedule self @@ WL.T_start { fiber; f })
-      ~shutdown:(fun ~wait:_ () -> Atomic.set self.closed true)
+      ~shutdown:(fun ~wait:_ () ->
+        (* NOTE: we ignore [wait], lifecycle is managed in {!lwt_main} below. *)
+        Atomic.set self.closed true)
       ()
 
   let before_start (self : st) : unit =
@@ -132,7 +134,9 @@ let transfer_lwt_to_fut (lwt_fut : 'a Lwt.t) (prom : 'a Fut.promise) : unit =
   Lwt.on_any lwt_fut
     (fun x -> M.Fut.fulfill_idempotent prom (Ok x))
     (fun exn ->
-      let bt = Printexc.get_callstack 10 in
+      (* NOTE: Lwt doesn't preserve the backtrace across the promise
+         boundary, so there's no accurate backtrace to capture here. *)
+      let bt = Printexc.get_callstack 0 in
       M.Fut.fulfill_idempotent prom (Error (Exn_bt.make exn bt)))
 
 let[@inline] register_trigger_on_lwt_termination (lwt_fut : _ Lwt.t)
