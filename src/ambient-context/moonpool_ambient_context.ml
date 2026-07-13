@@ -2,6 +2,7 @@ open struct
   module TLS = Moonpool.Task_local_storage
 end
 
+(** Storage that relies on thread-local-storage for code running in moonpool. *)
 let storage : Ambient_context.Storage.t =
   {
     name = "moonpool";
