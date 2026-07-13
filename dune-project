@@ -54,6 +54,7 @@
    (and
     (>= 0.5)
     (< 0.7)))
+  (ambient-context (and (>= 0.2) :with-test))
   (mdx
    (and
     (>= 1.9.0)
