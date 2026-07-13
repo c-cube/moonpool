@@ -104,10 +104,9 @@ let spawn ~on f : _ t =
   let fut = make_promise () in
 
   let task () =
-    try
-      let res = f () in
-      C.return fut res
-    with exn ->
+    match f () with
+    | res -> C.return fut res
+    | exception exn ->
       let bt = Printexc.get_raw_backtrace () in
       C.cancel fut exn bt
   in
