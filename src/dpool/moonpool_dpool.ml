@@ -1,69 +1,8 @@
-module Bb_queue = struct
-  type 'a t = {
-    mutex: Mutex.t;
-    cond: Condition.t;
-    q: 'a Queue.t;
-  }
-
-  let create () : _ t =
-    { mutex = Mutex.create (); cond = Condition.create (); q = Queue.create () }
-
-  let push (self : _ t) x : unit =
-    Mutex.lock self.mutex;
-    let was_empty = Queue.is_empty self.q in
-    Queue.push x self.q;
-    if was_empty then Condition.broadcast self.cond;
-    Mutex.unlock self.mutex
-
-  let pop (type a) (self : a t) : a =
-    let module M = struct
-      exception Found of a
-    end in
-    try
-      Mutex.lock self.mutex;
-      while true do
-        if Queue.is_empty self.q then
-          Condition.wait self.cond self.mutex
-        else (
-          let x = Queue.pop self.q in
-          Mutex.unlock self.mutex;
-          raise (M.Found x)
-        )
-      done;
-      assert false
-    with M.Found x -> x
-end
-
-module Lock = struct
-  type 'a t = {
-    mutex: Mutex.t;
-    mutable content: 'a;
-  }
-
-  let create content : _ t = { mutex = Mutex.create (); content }
-
-  let[@inline never] with_ (self : _ t) f =
-    Mutex.lock self.mutex;
-    match f self.content with
-    | x ->
-      Mutex.unlock self.mutex;
-      x
-    | exception e ->
-      Mutex.unlock self.mutex;
-      raise e
-
-  let[@inline] update_map l f =
-    with_ l (fun x ->
-        let x', y = f x in
-        l.content <- x';
-        y)
-
-  let get l =
-    Mutex.lock l.mutex;
-    let x = l.content in
-    Mutex.unlock l.mutex;
-    x
-end
+(* shared with {!Moonpool.Bb_queue}/{!Moonpool.Lock}; we can't depend on
+   [moonpool] itself (layering would be circular), so these live in
+   [moonpool.private] instead. *)
+module Bb_queue = Bb_queue_
+module Lock = Lock_
 
 type domain = Domain_.t
 
