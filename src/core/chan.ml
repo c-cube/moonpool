@@ -57,7 +57,10 @@ let try_pop (type elt) self : elt option =
       else
         None
     | x ->
+      let to_wakeup = Queue.create () in
+      Queue.transfer self.push_waiters to_wakeup;
       Mutex.unlock self.mutex;
+      Queue.iter Trigger.signal to_wakeup;
       Some x
   ) else
     None
@@ -102,13 +105,11 @@ let rec pop (self : 'a t) : 'a =
   Mutex.lock self.mutex;
   match Queue.pop self.q with
   | x ->
-    if Queue.is_empty self.q then (
-      let to_wakeup = Queue.create () in
-      Queue.transfer self.push_waiters to_wakeup;
-      Mutex.unlock self.mutex;
-      Queue.iter Trigger.signal to_wakeup
-    ) else
-      Mutex.unlock self.mutex;
+    (* always wakeup writers *)
+    let to_wakeup = Queue.create () in
+    Queue.transfer self.push_waiters to_wakeup;
+    Mutex.unlock self.mutex;
+    Queue.iter Trigger.signal to_wakeup;
     x
   | exception Queue.Empty ->
     if self.closed then (
