@@ -28,18 +28,18 @@
   dune
   (either
    (>= 1.0))
-   (trace
-    (and
-     (>= 0.11)
-     :with-test))
-   (trace-tef
-    (and
-     (>= 0.11)
-     :with-test))
-   (qcheck-core
-    (and
-     :with-test
-     (>= 0.21)))
+  (trace
+   (and
+    (>= 0.11)
+    :with-test))
+  (trace-tef
+   (and
+    (>= 0.11)
+    :with-test))
+  (qcheck-core
+   (and
+    :with-test
+    (>= 0.21)))
   (thread-local-storage
    (and
     (>= 0.2)
@@ -60,7 +60,8 @@
     :with-test)))
  (depopts
   hmap
-  (ambient-context (>= 0.2))
+  (ambient-context
+   (>= 0.2))
   (trace
    (>= 0.6)))
  (tags
@@ -80,7 +81,10 @@
     :with-test
     (>= 0.21)))
   (hmap :with-test)
-  (lwt (and (>= 5.0) (< 6.0)))
+  (lwt
+   (and
+    (>= 5.0)
+    (< 7.0)))
   base-unix
   (trace
    (and
