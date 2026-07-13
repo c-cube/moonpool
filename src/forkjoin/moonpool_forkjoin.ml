@@ -149,70 +149,43 @@ let for_ ?chunk_size n (f : int -> int -> unit) : unit =
     ()
   )
 
-let all_array ?chunk_size (fs : _ array) : _ array =
-  let len = Array.length fs in
-  let arr = Array.make len None in
+(** Run [g i] for [i] in [0..n-1], in parallel via {!for_}, filling a length-[n]
+    array of results. Each slot is [Some _] once [g] returns; callers unwrap via
+    {!unwrap_}. *)
+let fill_ ?chunk_size n (g : int -> 'a) : 'a option array =
+  let res = Array.make n None in
 
-  (* parallel for *)
-  for_ ?chunk_size len (fun low high ->
+  for_ ?chunk_size n (fun low high ->
       for i = low to high do
-        let x = fs.(i) () in
-        arr.(i) <- Some x
+        res.(i) <- Some (g i)
       done);
 
-  (* get all results *)
-  Array.map
-    (function
-      | None -> assert false
-      | Some x -> x)
-    arr
+  res
+
+let[@inline] unwrap_ (res : _ option array) i =
+  match res.(i) with
+  | None -> assert false
+  | Some x -> x
+
+let all_array ?chunk_size (fs : _ array) : _ array =
+  let n = Array.length fs in
+  let res = fill_ ?chunk_size n (fun i -> fs.(i) ()) in
+  Array.init n (unwrap_ res)
 
 let all_list ?chunk_size fs : _ list =
   Array.to_list @@ all_array ?chunk_size @@ Array.of_list fs
 
 let all_init ?chunk_size n f : _ list =
-  let arr = Array.make n None in
-
-  for_ ?chunk_size n (fun low high ->
-      for i = low to high do
-        let x = f i in
-        arr.(i) <- Some x
-      done);
-
-  (* get all results *)
-  List.init n (fun i ->
-      match arr.(i) with
-      | None -> assert false
-      | Some x -> x)
+  let res = fill_ ?chunk_size n f in
+  List.init n (unwrap_ res)
 
 let map_array ?chunk_size f arr : _ array =
   let n = Array.length arr in
-  let res = Array.make n None in
-
-  for_ ?chunk_size n (fun low high ->
-      for i = low to high do
-        res.(i) <- Some (f arr.(i))
-      done);
-
-  (* get all results *)
-  Array.map
-    (function
-      | None -> assert false
-      | Some x -> x)
-    res
+  let res = fill_ ?chunk_size n (fun i -> f arr.(i)) in
+  Array.init n (unwrap_ res)
 
 let map_list ?chunk_size f (l : _ list) : _ list =
   let arr = Array.of_list l in
   let n = Array.length arr in
-  let res = Array.make n None in
-
-  for_ ?chunk_size n (fun low high ->
-      for i = low to high do
-        res.(i) <- Some (f arr.(i))
-      done);
-
-  (* get all results *)
-  List.init n (fun i ->
-      match res.(i) with
-      | None -> assert false
-      | Some x -> x)
+  let res = fill_ ?chunk_size n (fun i -> f arr.(i)) in
+  List.init n (unwrap_ res)
