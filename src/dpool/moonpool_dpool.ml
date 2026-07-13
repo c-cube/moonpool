@@ -104,7 +104,14 @@ let work_ idx (st : worker_state) : unit =
     let continue = ref true in
     while !continue do
       match Bb_queue.pop st.q with
-      | Run f -> (try f () with _ -> ())
+      | Run f ->
+        (try f ()
+         with exn ->
+           (* that invariant is just too important *)
+           Printf.eprintf
+             "moonpool.dpool: fatal error, callback raised with %s\n%!"
+             (Printexc.to_string exn);
+           exit 1)
       | Decr ->
         if Atomic.fetch_and_add st.th_count (-1) = 1 then (
           continue := false;

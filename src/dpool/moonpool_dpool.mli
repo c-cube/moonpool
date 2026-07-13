@@ -25,11 +25,12 @@ val max_number_of_domains : unit -> int
 val run_on : int -> (unit -> unit) -> unit
 (** [run_on i f] runs [f()] on the domain with index [i]. Precondition:
     [0 <= i < n_domains()]. The thread must call {!decr_on} with [i] once it's
-    done. *)
+    done. NOTE: if [f()] raises, the process will exit with error. *)
 
 val decr_on : int -> unit
 (** Signal that a thread is stopping on the domain with index [i]. *)
 
 val run_on_and_wait : int -> (unit -> 'a) -> 'a
 (** [run_on_and_wait i f] runs [f()] on the domain with index [i], and blocks
-    until the result of [f()] is returned back. *)
+    until the result of [f()] is returned back. See {!run_on} for more details.
+*)
