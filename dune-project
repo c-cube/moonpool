@@ -54,6 +54,7 @@
    (and
     (>= 0.5)
     (< 0.7)))
+  (dscheck :with-test)
   (ambient-context (and (>= 0.2) :with-test))
   (mdx
    (and

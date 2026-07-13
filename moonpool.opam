@@ -20,6 +20,7 @@ depends: [
   "hmap" {with-test}
   "picos" {>= "0.5" & < "0.7"}
   "picos_std" {>= "0.5" & < "0.7"}
+  "dscheck" {with-test}
   "ambient-context" {>= "0.2" & with-test}
   "mdx" {>= "1.9.0" & with-test}
 ]
