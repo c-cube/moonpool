@@ -42,6 +42,7 @@ bench-fib:
 	hyperfine --warmup=1 \
       './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -seq' \
       './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -dl' \
+      './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -kind=pool -fj' \
       './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize=20 -kind=pool -fj' \
       './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize=20 -kind=pool -await' \
       './_build/default/benchs/fib_rec.exe -n $(N) -cutoff $(BENCH_CUTOFF) -niter $(NITER) -psize=4 -kind=fifo' \
