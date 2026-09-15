@@ -14,7 +14,7 @@ let main' ?(block_signals = false) () (f : Runner.t -> 'a) : 'a =
     (* run the main thread *)
     Worker_loop_.worker_loop worker_st
       ~block_signals (* do not disturb existing thread *)
-      ~ops:Fifo_pool.Private_.worker_ops;
+      ~ops:Fifo_pool.Private_.on_thread_worker_ops;
 
     match Fut.peek fut with
     | Some (Ok x) -> x

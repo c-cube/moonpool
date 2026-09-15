@@ -9,6 +9,9 @@
     The pool should not contain actual domains if it's not in use, ie if no
     runner is presently actively using one or more of the domain slots.
 
+    The pool is initialized by the first execution request, which must be made
+    from the main domain. A process using [fork] must fork before that request.
+
     {b NOTE}: Interface is still experimental.
 
     @since 0.6 *)
@@ -24,11 +27,13 @@ val max_number_of_domains : unit -> int
 
 val run_on : int -> (unit -> unit) -> unit
 (** [run_on i f] runs [f()] on the domain with index [i]. Precondition:
-    [0 <= i < n_domains()]. The thread must call {!decr_on} with [i] once it's
-    done. NOTE: if [f()] raises, the process will exit with error. *)
+    [0 <= i < n_domains()]. The first call must be made from the main domain.
+    The thread must call {!decr_on} with [i] once it's done. NOTE: if [f()]
+    raises, the process will exit with error. *)
 
 val decr_on : int -> unit
-(** Signal that a thread is stopping on the domain with index [i]. *)
+(** Signal that a thread is stopping on the domain with index [i]. The pool must
+    already be initialized. *)
 
 val run_on_and_wait : int -> (unit -> 'a) -> 'a
 (** [run_on_and_wait i f] runs [f()] on the domain with index [i], and blocks

@@ -68,11 +68,13 @@ let before_start (self : worker_state) =
       Tracing_.set_thread_name (Printf.sprintf "%s.worker.%d" name self.idx))
     self.st.name
 
-let cleanup (self : worker_state) : unit =
-  (* on termination, decrease refcount of underlying domain *)
-  Domain_pool_.decr_on self.dom_idx;
+let cleanup_simple (self : worker_state) : unit =
   let t_id = Thread.id @@ Thread.self () in
   self.st.on_exit_thread ~dom_id:self.dom_idx ~t_id ()
+
+let cleanup_and_pool_decr (self : worker_state) : unit =
+  Domain_pool_.decr_on self.dom_idx;
+  cleanup_simple self
 
 let worker_ops : worker_state WL.ops =
   let runner (st : worker_state) = st.st.as_runner in
@@ -85,7 +87,7 @@ let worker_ops : worker_state WL.ops =
     get_next_task;
     on_exn;
     before_start;
-    cleanup;
+    cleanup = cleanup_and_pool_decr;
   }
 
 let create_ ?(on_init_thread = Util_pool_.default_thread_init_exit_)
@@ -143,6 +145,7 @@ module Private_ = struct
   type nonrec worker_state = worker_state
 
   let worker_ops = worker_ops
+  let on_thread_worker_ops = { worker_ops with cleanup = cleanup_simple }
   let runner_of_state (self : worker_state) = worker_ops.runner self
 
   let create_single_threaded_state ~thread ?on_exn () : worker_state =

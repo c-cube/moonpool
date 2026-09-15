@@ -49,6 +49,9 @@ module Private_ : sig
 
   val worker_ops : worker_state Worker_loop_.ops
 
+  val on_thread_worker_ops : worker_state Worker_loop_.ops
+  (** Worker operations for running on an existing thread. *)
+
   val create_single_threaded_state :
     thread:Thread.t ->
     ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->

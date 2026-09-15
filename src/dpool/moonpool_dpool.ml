@@ -17,15 +17,13 @@ type worker_state = {
   th_count: int Atomic.t;  (** Number of threads on this *)
 }
 
-(** Array of (optional) workers.
+type pool = (worker_state option * Domain_.t option) Lock.t array
 
-    Workers are started/stop on demand. For each index we have the (currently
-    active) domain's state including a work queue and a thread refcount; and the
-    domain itself, if any, in a separate option because it might outlive its own
-    state. *)
-let domains_ : (worker_state option * Domain_.t option) Lock.t array =
-  let n = max 1 (Domain_.recommended_number ()) in
-  Array.init n (fun _ -> Lock.create (None, None))
+let max_number_of_domains_ = max 1 (Domain_.recommended_number ())
+
+(* lazily created pool (for fork safety; safe to fork until the first domain
+   pool is created). *)
+let domains_ : pool option Lock.t = Lock.create None
 
 (** main work loop for a domain worker.
 
@@ -37,7 +35,7 @@ let domains_ : (worker_state option * Domain_.t option) Lock.t array =
       (in case new threads are created really shortly after, which happens with
       a [Pool.with_] or [Pool.create() … Pool.shutdown()] in a tight loop), and
       if nothing happens it tries to stop to free resources. *)
-let work_ idx (st : worker_state) : unit =
+let work_ (domains : pool) idx (st : worker_state) : unit =
   Signals_.ignore_signals_ ();
   let main_loop () =
     let continue = ref true in
@@ -75,7 +73,7 @@ let work_ idx (st : worker_state) : unit =
 
     (* exit: try to remove ourselves from [domains]. If that fails, keep living. *)
     let is_alive =
-      Lock.update_map domains_.(idx) (function
+      Lock.update_map domains.(idx) (function
         | None, _ -> assert false
         | Some _st', dom ->
           assert (st == _st');
@@ -93,21 +91,26 @@ let work_ idx (st : worker_state) : unit =
   done;
   ()
 
-(* special case for main domain: we start a worker immediately *)
-let () =
-  assert (Domain_.is_main_domain ());
-  let w = { th_count = Atomic.make 1; q = Bb_queue.create () } in
-  (* thread that stays alive since [th_count>0] will always hold *)
-  ignore (Thread.create (fun () -> work_ 0 w) () : Thread.t);
-  domains_.(0) <- Lock.create (Some w, None)
+let init_domains_ () : pool =
+  Lock.update_map domains_ @@ function
+  | Some domains -> Some domains, domains
+  | None ->
+    assert (Domain_.is_main_domain ());
+    let domains =
+      Array.init max_number_of_domains_ (fun _ -> Lock.create (None, None))
+    in
+    let w = { th_count = Atomic.make 1; q = Bb_queue.create () } in
+    domains.(0) <- Lock.create (Some w, None);
+    ignore (Thread.create (fun () -> work_ domains 0 w) () : Thread.t);
+    Some domains, domains
 
-let[@inline] max_number_of_domains () : int = Array.length domains_
+let[@inline] max_number_of_domains () : int = max_number_of_domains_
 
 let run_on (i : int) (f : unit -> unit) : unit =
-  assert (i < Array.length domains_);
-
+  assert (i < max_number_of_domains_);
+  let domains = init_domains_ () in
   let w : worker_state =
-    Lock.update_map domains_.(i) (function
+    Lock.update_map domains.(i) (function
       | (Some w, _) as st ->
         Atomic.incr w.th_count;
         st, w
@@ -115,14 +118,19 @@ let run_on (i : int) (f : unit -> unit) : unit =
         (* join previous dying domain, to free its resources, if any *)
         Option.iter Domain_.join dying_dom;
         let w = { th_count = Atomic.make 1; q = Bb_queue.create () } in
-        let worker : domain = Domain_.spawn (fun () -> work_ i w) in
+        let worker : domain = Domain_.spawn (fun () -> work_ domains i w) in
         (Some w, Some worker), w)
   in
   Bb_queue.push w.q (Run f)
 
 let decr_on (i : int) : unit =
-  assert (i < Array.length domains_);
-  match Lock.get domains_.(i) with
+  assert (i < max_number_of_domains_);
+  let domains =
+    match Lock.get domains_ with
+    | Some domains -> domains
+    | None -> assert false
+  in
+  match Lock.get domains.(i) with
   | Some st, _ -> Bb_queue.push st.q Decr
   | None, _ -> ()
 
