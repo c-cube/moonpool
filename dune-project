@@ -4,7 +4,7 @@
 
 (name moonpool)
 
-(version 0.11)
+(version 0.12)
 
 (generate_opam_files true)
 

@@ -251,11 +251,11 @@ val for_list : on:Runner.t -> 'a list -> ('a -> unit) -> unit t
 
 type 'a iter = ('a -> unit) -> unit
 (** ['a iter] is an iterator on ['a].
-    @since NEXT_RELEASE *)
+    @since 0.12 *)
 
 val for_iter : on:Runner.t -> 'a iter -> ('a -> unit) -> unit t
 (** [for_iter ~on iter f] runs [f] on every item in [iter] in parallel.
-    @since NEXT_RELEASE *)
+    @since 0.12 *)
 
 (** {2 Await}
 
