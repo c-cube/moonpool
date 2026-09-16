@@ -1,4 +1,24 @@
 
+# 0.12
+
+
+- add support for ambient-context
+- support for lwt.6
+- update to trace 0.11 and qcheck 0.21
+
+- lazy initialization of main domain pool, for fork safety
+- work stealing deque: use dummy to avoid leaking values when taking/stealing
+- fut: do not capture user `on_result`'s exceptions in `task()`
+- lwt: fix misleading backtrace
+- pools: document `on_exn`; have a default version that prints exceptions
+- `ws_pool`: shutdown ~wait:true should always wait
+- chan: fix missing wakeups
+- ws pool: use ws queue in `as_runner` to fix memory usage (#46)
+
+- cleanup and refactor code
+- factor out `bb_queue` and `lock` into moonpool.private
+- dscheck for `ws_deque`
+
 # 0.11
 
 - feat: add `Fut.for_iter`
