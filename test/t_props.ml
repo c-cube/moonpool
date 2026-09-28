@@ -31,10 +31,10 @@ let () =
       let l' =
         l
         |> List.map (fun x ->
-               let* x = Fut.spawn ~on:pool (fun () -> x + 1) in
-               let* y = Fut.return (x - 1) in
-               let+ z = Fut.spawn ~on:pool (fun () -> string_of_int y) in
-               z)
+            let* x = Fut.spawn ~on:pool (fun () -> x + 1) in
+            let* y = Fut.return (x - 1) in
+            let+ z = Fut.spawn ~on:pool (fun () -> string_of_int y) in
+            z)
       in
 
       Fut.wait_list l' |> Fut.wait_block_exn;

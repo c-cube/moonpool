@@ -81,9 +81,9 @@ let () =
         Thread.delay 0.01;
         10)
     |> Fut.bind ~on:pool2 ~f:(fun x ->
-           Fut.spawn ~on:pool (fun () ->
-               Thread.delay 0.01;
-               x * 2))
+        Fut.spawn ~on:pool (fun () ->
+            Thread.delay 0.01;
+            x * 2))
   in
   let fut = Fut.both f1 f2 in
   assert (Fut.wait_block fut = Ok (2, 20))
