@@ -99,8 +99,49 @@ let t_heavy () =
   assert (ref_sum = sum);
   ()
 
+(* stolen values must not be retained by the deque *)
+let t_gc () =
+  let n = 200 in
+  let[@inline never] push_and_steal d w =
+    for i = 0 to n - 1 do
+      let r = ref i in
+      Weak.set w i (Some r);
+      assert (D.push d r)
+    done;
+    for _ = 1 to n do
+      assert (Option.is_some (D.steal d))
+    done
+  in
+  let check_collected d w =
+    Gc.full_major ();
+    for i = 0 to n - 1 do
+      assert (not (Weak.check w i))
+    done;
+    ignore (Sys.opaque_identity d : _ D.t)
+  in
+
+  (* cleared on [pop] *)
+  let d = D.create ~dummy:(ref dummy) () in
+  let w = Weak.create n in
+  push_and_steal d w;
+  assert (D.pop d = None);
+  check_collected d w;
+
+  (* cleared on [push] when it needs to refresh [top] *)
+  let d = D.create ~dummy:(ref dummy) () in
+  let w = Weak.create n in
+  push_and_steal d w;
+  for i = 1 to 256 - n do
+    assert (D.push d (ref i))
+  done;
+  check_collected d w;
+
+  Printf.printf "gc tests passed\n";
+  ()
+
 let () =
   let@ () = Trace_tef.with_setup () in
   t_simple ();
+  t_gc ();
   t_heavy ();
   ()

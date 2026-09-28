@@ -58,6 +58,13 @@ let create ~dummy () : _ t =
 
 let[@inline] size (self : _ t) : int = max 0 (A.get self.bottom - A.get self.top)
 
+(** clear slots stolen since the last refresh, and update [self.top_cached]. *)
+let[@inline] refresh_top_ (self : _ t) (t : int) : unit =
+  for i = self.top_cached to t - 1 do
+    CA.clear self.arr i
+  done;
+  self.top_cached <- t
+
 exception Full
 
 let push (self : 'a t) (x : 'a) : bool =
@@ -71,7 +78,7 @@ let push (self : 'a t) (x : 'a) : bool =
     if size_approx >= CA.size self.arr - 1 then (
       (* we need to read the actual value of [top], which might entail contention. *)
       let t = A.get self.top in
-      self.top_cached <- t;
+      refresh_top_ self t;
       let size = b - t in
 
       if size >= CA.size self.arr - 1 then (* full! *) raise_notrace Full
@@ -90,7 +97,7 @@ let pop_exn (self : 'a t) : 'a =
   A.set self.bottom b;
 
   let t = A.get self.top in
-  self.top_cached <- t;
+  refresh_top_ self t;
 
   let size = b - t in
   if size < 0 then (
