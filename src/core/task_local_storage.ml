@@ -34,8 +34,8 @@ let with_value k v (f : _ -> 'b) : 'b =
   match PF.FLS.get_exn fiber k with
   | exception Not_set ->
     PF.FLS.set fiber k v;
-    (* nothing to restore back to, just call [f] *)
-    f ()
+    let finally () = PF.FLS.remove fiber k in
+    Fun.protect f ~finally
   | old_v ->
     PF.FLS.set fiber k v;
     let finally () = PF.FLS.set fiber k old_v in
