@@ -27,7 +27,7 @@ type state = {
 and worker_state = {
   mutable thread: Thread.t;
   idx: int;
-  dom_id: int;
+  mutable dom_id: int;  (** Set before the thread starts *)
   st: state;
   q: WL.task_full WSQ.t;  (** Work stealing queue *)
   rng: Random.State.t;
@@ -245,33 +245,23 @@ let create ?(on_init_thread = Util_pool_.default_thread_init_exit_)
   in
   pool.as_runner <- as_runner_ pool;
 
-  (* distinct placeholders, each overwritten with the real worker state once
-     its thread starts *)
+  (* build worker states first, then start threads. this way workers do
+    not see a dummy state *)
   pool.workers <-
-    Array.init num_threads (fun _ ->
+    Array.init num_threads (fun idx ->
         {
           st = pool;
           thread = Thread.self ();
           q = WSQ.create ~dummy:WL._dummy_task ();
-          rng = Random.State.make [| 0 |];
+          rng = Random.State.make [| idx |];
           dom_id = 0;
-          idx = 0;
+          idx;
         });
 
-  (* build the worker state for [idx] (on domain [dom_id]) and start its
-     thread *)
+  (* start the thread for worker [idx] (on domain [dom_id]) *)
   let mk_thread idx ~dom_id : Thread.t =
-    let w =
-      {
-        st = pool;
-        thread = (* dummy *) Thread.self ();
-        q = WSQ.create ~dummy:WL._dummy_task ();
-        rng = Random.State.make [| idx |];
-        dom_id;
-        idx;
-      }
-    in
-    pool.workers.(idx) <- w;
+    let w = pool.workers.(idx) in
+    w.dom_id <- dom_id;
     let thread =
       Thread.create (WL.worker_loop ~block_signals:true ~ops:worker_ops) w
     in
