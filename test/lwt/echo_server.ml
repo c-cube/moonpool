@@ -2,6 +2,7 @@ module M = Moonpool
 module M_lwt = Moonpool_lwt
 module Trace = Trace_core
 
+let () = Watchdog.arm ()
 let ( let@ ) = ( @@ )
 let await_lwt = M_lwt.await_lwt
 let spf = Printf.sprintf

@@ -1,5 +1,7 @@
 open Moonpool
 
+let () = Watchdog.arm ()
+
 (* large pool, some of our tasks below are long lived *)
 let pool = Ws_pool.create ~num_threads:30 ()
 

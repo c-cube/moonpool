@@ -1,6 +1,7 @@
 open Moonpool
 module F = Moonpool.Fut
 
+let () = Watchdog.arm ()
 let ( let@ ) = ( @@ )
 
 let () =

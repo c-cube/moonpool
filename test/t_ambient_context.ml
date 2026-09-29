@@ -1,5 +1,6 @@
 open Moonpool
 
+let () = Watchdog.arm ()
 let () = Ambient_context.set_current_storage Moonpool_ambient_context.storage
 let key_a : string Ambient_context.Context.key = Ambient_context.new_key ()
 let key_b : int Ambient_context.Context.key = Ambient_context.new_key ()

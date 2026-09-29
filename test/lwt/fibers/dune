@@ -6,6 +6,7 @@
  (libraries
   t_fibers
   moonpool
+  watchdog
   moonpool-lwt
   hmap
   trace

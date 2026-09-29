@@ -7,6 +7,7 @@ module Str_tbl = Hashtbl.Make (struct
   let hash = Hashtbl.hash
 end)
 
+let () = Watchdog.arm ()
 let await_lwt = Moonpool_lwt.await_lwt
 let ( let@ ) = ( @@ )
 

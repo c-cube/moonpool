@@ -1,5 +1,7 @@
 open Moonpool
 
+let () = Watchdog.arm ()
+
 let rec fib x =
   if x <= 1 then
     1

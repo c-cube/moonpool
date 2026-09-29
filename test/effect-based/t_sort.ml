@@ -1,6 +1,8 @@
 open Moonpool
 module FJ = Moonpool_forkjoin
 
+let () = Watchdog.arm ()
+
 let rec select_sort arr i len =
   if len >= 2 then (
     let idx = ref i in

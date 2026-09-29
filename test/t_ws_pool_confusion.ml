@@ -1,5 +1,6 @@
 open Moonpool
 
+let () = Watchdog.arm ()
 let delay () = Thread.delay 0.001
 
 let run ~p_main:_ ~p_sub () =

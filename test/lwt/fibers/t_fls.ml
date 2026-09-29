@@ -1,5 +1,6 @@
 module M_lwt = Moonpool_lwt
 
+let () = Watchdog.arm ()
 let ( let@ ) = ( @@ )
 
 let () =

@@ -1,6 +1,7 @@
 module M_lwt = Moonpool_lwt
 module Trace = Trace_core
 
+let () = Watchdog.arm ()
 let ci_mode = Option.is_some @@ Sys.getenv_opt "CI_MODE"
 let spf = Printf.sprintf
 let await_lwt = Moonpool_lwt.await_lwt

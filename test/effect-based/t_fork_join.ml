@@ -1,3 +1,4 @@
+let () = Watchdog.arm ()
 let spf = Printf.sprintf
 let ( let@ ) = ( @@ )
 

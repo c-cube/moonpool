@@ -3,6 +3,8 @@
    This function is Copyright (c) 2008 The uuidm programmers.
    SPDX-License-Identifier: ISC *)
 
+let () = Watchdog.arm ()
+
 let sha_1 s =
   (* Based on pseudo-code of RFC 3174. Slow and ugly but does the job. *)
   let sha_1_pad s =

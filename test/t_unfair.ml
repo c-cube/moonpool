@@ -2,6 +2,7 @@
 
 open Moonpool
 
+let () = Watchdog.arm ()
 let ( let@ ) = ( @@ )
 
 let sleep_for f () =

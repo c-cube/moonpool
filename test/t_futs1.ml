@@ -1,5 +1,6 @@
 open! Moonpool
 
+let () = Watchdog.arm ()
 let pool = Ws_pool.create ~num_threads:4 ()
 let pool2 = Ws_pool.create ~num_threads:2 ()
 

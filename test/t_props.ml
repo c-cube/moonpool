@@ -1,6 +1,7 @@
 module Q = QCheck
 open Moonpool
 
+let () = Watchdog.arm ()
 let ( let@ ) = ( @@ )
 let tests = ref []
 let add_test t = tests := t :: !tests

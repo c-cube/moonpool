@@ -11,6 +11,7 @@
    same logical item twice, or drops one, across every reachable
    interleaving of a small push/pop/steal scenario. *)
 
+let () = Watchdog.arm ()
 let dummy = -1
 
 let drain_remaining (q : int Ws_deque_.t) : int list =

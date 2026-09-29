@@ -6,6 +6,7 @@
  (libraries
   t_fibers
   moonpool
+  watchdog
   trace
   trace-tef
   qcheck-core

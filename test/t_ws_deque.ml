@@ -1,6 +1,7 @@
 module A = Moonpool.Atomic
 module D = Moonpool.Private.Ws_deque_
 
+let () = Watchdog.arm ()
 let ( let@ ) = ( @@ )
 let dummy = -100
 

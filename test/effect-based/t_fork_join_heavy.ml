@@ -1,5 +1,6 @@
 module Q = QCheck
 
+let () = Watchdog.arm ()
 let spf = Printf.sprintf
 let ( let@ ) = ( @@ )
 let ppl = Q.Print.(list @@ list int)

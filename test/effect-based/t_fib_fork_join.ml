@@ -1,6 +1,8 @@
 open Moonpool
 module FJ = Moonpool_forkjoin
 
+let () = Watchdog.arm ()
+
 let rec fib_direct x =
   if x <= 1 then
     1

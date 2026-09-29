@@ -9,5 +9,5 @@
  (package moonpool)
  (enabled_if
   (>= %{ocaml_version} 5.0))
- (libraries dscheck)
+ (libraries dscheck watchdog)
  (modules atomic ws_deque_ ws_deque_dscheck))

@@ -1,3 +1,4 @@
+let () = Watchdog.arm ()
 let ( let@ ) = ( @@ )
 
 open Moonpool

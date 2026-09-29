@@ -2,6 +2,7 @@
 
 open Moonpool
 
+let () = Watchdog.arm ()
 let ( let@ ) = ( @@ )
 
 let rec fib_direct x =

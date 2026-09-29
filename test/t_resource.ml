@@ -1,5 +1,6 @@
 open! Moonpool
 
+let () = Watchdog.arm ()
 let ( let@ ) = ( @@ )
 
 let with_pool ~kind () f =

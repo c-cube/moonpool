@@ -18,6 +18,7 @@
   qcheck-core.runner
   ;tracy-client.trace
   unix
+  watchdog
   trace-tef
   trace))
 
@@ -33,11 +34,11 @@
  (package moonpool)
  (enabled_if
   (and %{lib-available:ambient-context} %{lib-available:hmap}))
- (libraries moonpool moonpool.ambient-context ambient-context))
+ (libraries moonpool moonpool.ambient-context ambient-context watchdog))
 
 (test
  (name t_fib_await_mem)
  (package moonpool)
  (enabled_if
   (= %{system} linux))
- (libraries moonpool))
+ (libraries moonpool watchdog))
