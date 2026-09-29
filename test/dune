@@ -10,7 +10,8 @@
   t_resource
   t_unfair
   t_ws_deque
-  t_ws_wait)
+  t_ws_wait
+  t_ws_wakeup)
  (package moonpool)
  (libraries
   moonpool
