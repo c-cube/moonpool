@@ -74,7 +74,7 @@ let run ~psize ~n ~seq ~dl ~fj ~await ~niter ~kind () : unit =
   let pool = lazy (create_pool ~kind ~psize ()) in
   let dl_pool =
     lazy
-      (let n = Domain.recommended_domain_count () in
+      (let n = Domain.recommended_domain_count () - 1 in
        Printf.printf "use %d domains\n%!" n;
        Domainslib.Task.setup_pool ~num_domains:n ())
   in
