@@ -24,7 +24,9 @@ val main : (Runner.t -> 'a) -> 'a
 (** [main f] runs [f()] in a scope that handles effects, including
     {!Fiber.await}.
 
-    This scope can run background tasks as well, in a cooperative fashion. *)
+    This scope can run background tasks as well, in a cooperative fashion. If a
+    task started with {!Runner.run_async} raises, the runner is shut down and
+    [main] re-raises that exception. *)
 
 val main' : ?block_signals:bool -> unit -> (Runner.t -> 'a) -> 'a
 (** Same as {!main} but with room for optional arguments. *)

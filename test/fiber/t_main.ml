@@ -42,3 +42,13 @@ let () =
   with Failure msg ->
     (* Printf.eprintf "got %S\n%!" msg; *)
     assert (msg = "oops")
+
+let () =
+  try
+    let _r =
+      Moonpool.main @@ fun runner ->
+      Runner.run_async runner (fun () -> failwith "task failed");
+      F.await (F.spawn ~on:runner (fun () -> 1))
+    in
+    assert false
+  with Failure msg -> assert (msg = "task failed")
