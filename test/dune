@@ -11,7 +11,8 @@
   t_unfair
   t_ws_deque
   t_ws_wait
-  t_ws_wakeup)
+  t_ws_wakeup
+  t_fut_cb_exn)
  (package moonpool)
  (libraries
   moonpool

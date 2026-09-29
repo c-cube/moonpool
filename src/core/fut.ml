@@ -58,12 +58,18 @@ let[@inline] peek_or_assert_ (self : 'a t) : 'a =
   | x -> x
   | exception C.Running -> assert false
 
+let[@inline] run_cb_ f r =
+  try f r
+  with exn ->
+    let bt = Printexc.get_raw_backtrace () in
+    Util_pool_.on_exn exn bt
+
 let on_result_cb_ _tr f self : unit =
   match peek_or_assert_ self with
-  | x -> f (Ok x)
+  | x -> run_cb_ f (Ok x)
   | exception exn ->
     let ebt = Exn_bt.get exn in
-    f (Error ebt)
+    run_cb_ f (Error ebt)
 
 let on_result (self : _ t) (f : _ waiter) : unit =
   let trigger =
@@ -72,7 +78,7 @@ let on_result (self : _ t) (f : _ waiter) : unit =
   if not (C.try_attach self trigger) then on_result_cb_ () f self
 
 let on_result_ignore_cb_ _tr f (self : _ t) =
-  f (Picos.Computation.canceled self)
+  run_cb_ f (Picos.Computation.canceled self)
 
 let on_result_ignore (self : _ t) f : unit =
   if Picos.Computation.is_running self then (
@@ -156,8 +162,10 @@ let map ?on ~f fut : _ t =
   | None, Some runner ->
     let fut2, promise = make () in
     on_result fut (fun res ->
-        Runner.run_async runner (fun () ->
-            fulfill promise @@ map_immediate_ res));
+        try
+          Runner.run_async runner (fun () ->
+              fulfill promise @@ map_immediate_ res)
+        with exn -> fulfill_idempotent promise (Error (Exn_bt.get exn)));
     fut2
 
 let join (fut : 'a t t) : 'a t =
@@ -197,7 +205,8 @@ let bind ?on ~f fut : _ t =
   | None, Some runner ->
     let fut2, promise = make () in
     on_result fut (fun r ->
-        Runner.run_async runner (bind_and_fulfill r promise));
+        try Runner.run_async runner (bind_and_fulfill r promise)
+        with exn -> fulfill_idempotent promise (Error (Exn_bt.get exn)));
     fut2
   | None, None ->
     let fut2, promise = make () in
@@ -293,10 +302,10 @@ open struct
   let on_res_ (self : _ latch) : Exn_bt.t option -> unit = function
     | None ->
       let n = A.fetch_and_add self.missing (-1) in
-      if n = 1 then fulfill self.promise (Ok (self.on_all_done ()))
+      if n = 1 then fulfill_idempotent self.promise (Ok (self.on_all_done ()))
     | Some e_bt ->
       let n = A.exchange self.missing 0 in
-      if n > 0 then fulfill self.promise (Error e_bt)
+      if n > 0 then fulfill_idempotent self.promise (Error e_bt)
 end
 
 let barrier_on_abstract_container_of_futures ~iter ~len ~aggregate_results cont
