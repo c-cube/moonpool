@@ -76,7 +76,17 @@ bench-repro-41:
 		"./_build/default/examples/repro_41/run.exe 5 moonpool" \
 		"./_build/default/examples/repro_41/run.exe 5 seq"
 
-.PHONY: test clean bench-fib bench-pi
+# needs labltk (opam install labltk); bench-gui-tcl only needs tk
+bench-gui:
+	dune build $(DUNE_OPTS_BENCH) benchs/pi.exe benchs/fib_rec.exe
+	MOONPOOL_GUI=1 dune build $(DUNE_OPTS_BENCH) benchs/gui/bench_gui.exe
+	./_build/default/benchs/gui/bench_gui.exe
+
+bench-gui-tcl:
+	dune build $(DUNE_OPTS_BENCH) benchs/pi.exe benchs/fib_rec.exe
+	tclsh benchs/bench_gui.tcl
+
+.PHONY: test clean bench-fib bench-pi bench-gui bench-gui-tcl
 
 VERSION=$(shell awk '/^version:/ {print $$2}' moonpool.opam)
 update_next_tag:

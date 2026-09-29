@@ -1,0 +1,10 @@
+; Tk front-end for the benchmarks, see `make bench-gui`. Opt-in: only built
+; with MOONPOOL_GUI=1 (and labltk installed), so that moonpool doesn't depend
+; on labltk.
+(executable
+ (name bench_gui)
+ (enabled_if
+  (= %{env:MOONPOOL_GUI=0} 1))
+ ; labltk 8.06.15 doesn't record the Tcl/Tk libraries it needs
+ (link_flags (-cclib -ltk -cclib -ltcl))
+ (libraries labltk unix))
