@@ -11,10 +11,11 @@ type state = {
   mutable workers: worker_state array;  (** Fixed set of workers. *)
   main_q: WL.task_full Queue.t;
       (** Main queue for tasks coming from the outside *)
-  mutable n_waiting: int; (* protected by mutex *)
-  mutable n_waiting_nonzero: bool;  (** [n_waiting > 0] *)
+  mutable idle: worker_state list;
+      (** Parked workers, protected by mutex. LIFO: waking the most recently
+          parked worker keeps the others asleep. *)
+  n_idle: int A.t;  (** Length of [idle], written under mutex, read freely *)
   mutex: Mutex.t;
-  cond: Condition.t;
   mutable as_runner: t;
   (* init options *)
   name: string option;
@@ -31,6 +32,8 @@ and worker_state = {
   st: state;
   q: WL.task_full WSQ.t;  (** Work stealing queue *)
   rng: Random.State.t;
+  parker: Parker_.t;  (** Used to block/unblock the worker thread reliably *)
+  mutable is_idle: bool;  (** In [st.idle], protected by [st.mutex] *)
 }
 (** State for a given worker. Only this worker is allowed to push into the
     queue, but other workers can come and steal from it if they're idle. *)
@@ -50,12 +53,33 @@ let k_worker_state : worker_state TLS.t = TLS.create ()
 let[@inline] get_current_worker_ () : worker_state option =
   TLS.get_opt k_worker_state
 
-(** Try to wake up a waiter, if there's any. *)
-let[@inline] try_wake_someone_ (self : state) : unit =
-  if self.n_waiting_nonzero then (
+(** Take an idle worker. Precondition: we hold the mutex. The caller must unpark
+    it. *)
+let pop_idle_ (self : state) : worker_state option =
+  match self.idle with
+  | [] -> None
+  | w :: tl ->
+    self.idle <- tl;
+    A.decr self.n_idle;
+    w.is_idle <- false;
+    Some w
+
+(** Precondition: we hold the mutex and [w.is_idle = true]. *)
+let remove_idle_ (w : worker_state) : unit =
+  w.st.idle <- List.filter (fun w' -> w != w') w.st.idle;
+  A.decr w.st.n_idle;
+  assert (A.get w.st.n_idle = List.length w.st.idle);
+  w.is_idle <- false
+
+let[@inline] unpark_worker (w : worker_state) : unit = Parker_.unpark w.parker
+
+(** Wake up an idle worker, if there's any. *)
+let wake_one_ (self : state) : unit =
+  if A.get self.n_idle > 0 then (
     Mutex.lock self.mutex;
-    Condition.signal self.cond;
-    Mutex.unlock self.mutex
+    let w = pop_idle_ self in
+    Mutex.unlock self.mutex;
+    Option.iter unpark_worker w
   )
 
 (** Push into worker's local queue, open to work stealing. precondition: this
@@ -66,27 +90,32 @@ let schedule_on_current_worker (self : worker_state) task : unit =
      so we have to check that identifiers match. *)
   let pushed = WSQ.push self.q task in
   if pushed then
-    try_wake_someone_ self.st
+    wake_one_ self.st
   else (
     (* overflow into main queue *)
     Mutex.lock self.st.mutex;
     Queue.push task self.st.main_q;
-    if self.st.n_waiting_nonzero then Condition.signal self.st.cond;
-    Mutex.unlock self.st.mutex
+    (* wake up one idle worker, if any *)
+    let w = pop_idle_ self.st in
+    Mutex.unlock self.st.mutex;
+    Option.iter unpark_worker w
   )
 
 (** Push into the shared queue of this pool *)
 let schedule_in_main_queue (self : state) task : unit =
-  if A.get self.active then (
-    (* push into the main queue *)
-    Mutex.lock self.mutex;
-    Queue.push task self.main_q;
-    if self.n_waiting_nonzero then Condition.signal self.cond;
-    Mutex.unlock self.mutex
-  ) else
+  (* check [active] under the lock: workers only exit after seeing it false
+     with an empty [main_q] under this lock, so a task pushed here is run *)
+  Mutex.lock self.mutex;
+  if not (A.get self.active) then (
+    Mutex.unlock self.mutex;
     (* notify the caller that scheduling tasks is no
        longer permitted *)
     raise Shutdown
+  );
+  Queue.push task self.main_q;
+  let w = pop_idle_ self in
+  Mutex.unlock self.mutex;
+  Option.iter unpark_worker w
 
 let schedule_from_anywhere_ (st : state) (task : WL.task_full) : unit =
   match get_current_worker_ () with
@@ -100,43 +129,38 @@ let schedule_from_w (w : worker_state) task : unit =
 
 exception Got_task of WL.task_full
 
-(** Try to steal a task.
-    @raise Got_task if it finds one. *)
-let try_to_steal_work_once_ (self : worker_state) : unit =
+(** Try to steal a task. *)
+let try_to_steal_work_once_ (self : worker_state) : WL.task_full option =
   let init = Random.State.int self.rng (Array.length self.st.workers) in
-  for i = 0 to Array.length self.st.workers - 1 do
-    let w' =
-      Array.unsafe_get self.st.workers
-        ((i + init) mod Array.length self.st.workers)
-    in
+  try
+    for i = 0 to Array.length self.st.workers - 1 do
+      let w' =
+        Array.unsafe_get self.st.workers
+          ((i + init) mod Array.length self.st.workers)
+      in
 
-    if self != w' then (
-      match WSQ.steal w'.q with
-      | Some t -> raise_notrace (Got_task t)
-      | None -> ()
-    )
-  done
-
-(** Wait on condition. Precondition: we hold the mutex. *)
-let[@inline] wait_for_condition_ (self : state) : unit =
-  self.n_waiting <- self.n_waiting + 1;
-  if self.n_waiting = 1 then self.n_waiting_nonzero <- true;
-  Condition.wait self.cond self.mutex;
-  self.n_waiting <- self.n_waiting - 1;
-  if self.n_waiting = 0 then self.n_waiting_nonzero <- false
+      (* no self-stealing! *)
+      if self != w' then (
+        match WSQ.steal w'.q with
+        | Some t -> raise_notrace (Got_task t)
+        | None -> ()
+      )
+    done;
+    None
+  with Got_task t -> Some t
 
 let rec get_next_task (self : worker_state) : WL.task_full =
   (* see if we can empty the local queue *)
   match WSQ.pop_exn self.q with
   | task ->
-    try_wake_someone_ self.st;
+    if WSQ.size self.q > 0 then wake_one_ self.st;
     task
   | exception WSQ.Empty -> try_to_steal_from_other_workers_ self
 
 and try_to_steal_from_other_workers_ (self : worker_state) =
   match try_to_steal_work_once_ self with
-  | exception Got_task task -> task
-  | () -> wait_on_main_queue self
+  | Some task -> task
+  | None -> wait_on_main_queue self
 
 and wait_on_main_queue (self : worker_state) : WL.task_full =
   Mutex.lock self.st.mutex;
@@ -145,28 +169,39 @@ and wait_on_main_queue (self : worker_state) : WL.task_full =
     Mutex.unlock self.st.mutex;
     task
   | exception Queue.Empty ->
-    (* wait here *)
-    if A.get self.st.active then (
-      wait_for_condition_ self.st;
-
-      (* see if a task became available *)
-      match Queue.pop self.st.main_q with
-      | task ->
-        Mutex.unlock self.st.mutex;
-        task
-      | exception Queue.Empty ->
-        Mutex.unlock self.st.mutex;
-        try_to_steal_from_other_workers_ self
-    ) else (
-      (* do nothing more: no task in main queue, and we are shutting
-         down so no new task should arrive.
-         The exception is if another task is creating subtasks
-         that overflow into the main queue, but we can ignore that at
-         the price of slightly decreased performance for the last few
-         tasks *)
+    if not (A.get self.st.active) then (
+      (* shutting down, exit. Tasks overflowing into [main_q] from now on are
+         still run by the remaining workers, with less parallelism: they come
+         from a running worker, which drains [main_q] before exiting. *)
       Mutex.unlock self.st.mutex;
       raise WL.No_more_tasks
-    )
+    );
+
+    (* register as idle to be sure not to miss a new main-queue task *)
+    self.is_idle <- true;
+    self.st.idle <- self :: self.st.idle;
+    A.incr self.st.n_idle;
+    Mutex.unlock self.st.mutex;
+
+    (* try to steal a task anyway, in case one was made available in the mean
+       time. Must come after registering as idle. *)
+    (match try_to_steal_work_once_ self with
+    | Some task ->
+      Mutex.lock self.st.mutex;
+      (* not waiting on main queue anymore *)
+      let is_idle = self.is_idle in
+      if is_idle then remove_idle_ self;
+      Mutex.unlock self.st.mutex;
+      if not is_idle then (
+        (* a waker picked us for its task, pass the wakeup on *)
+        Parker_.park self.parker;
+        wake_one_ self.st
+      );
+      task
+    | None ->
+      (* just gotta wait *)
+      Parker_.park self.parker;
+      get_next_task self)
 
 let before_start (self : worker_state) : unit =
   let t_id = Thread.id @@ Thread.self () in
@@ -204,8 +239,12 @@ let worker_ops : worker_state WL.ops =
 let shutdown_ ~wait (self : state) : unit =
   if A.exchange self.active false then (
     Mutex.lock self.mutex;
-    Condition.broadcast self.cond;
-    Mutex.unlock self.mutex
+    let idle = self.idle in
+    self.idle <- [];
+    A.set self.n_idle 0;
+    List.iter (fun w -> w.is_idle <- false) idle;
+    Mutex.unlock self.mutex;
+    List.iter unpark_worker idle
   );
   if wait then Array.iter (fun w -> Thread.join w.thread) self.workers
 
@@ -232,10 +271,9 @@ let create ?(on_init_thread = Util_pool_.default_thread_init_exit_)
       active = A.make true;
       workers = [||];
       main_q = Queue.create ();
-      n_waiting = 0;
-      n_waiting_nonzero = true;
+      idle = [];
+      n_idle = A.make 0;
       mutex = Mutex.create ();
-      cond = Condition.create ();
       on_exn;
       on_init_thread;
       on_exit_thread;
@@ -256,6 +294,8 @@ let create ?(on_init_thread = Util_pool_.default_thread_init_exit_)
           rng = Random.State.make [| idx |];
           dom_id = 0;
           idx;
+          parker = Parker_.create ();
+          is_idle = false;
         });
 
   (* start the thread for worker [idx] (on domain [dom_id]) *)
