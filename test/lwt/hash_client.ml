@@ -16,7 +16,7 @@ let main ~port ~ext ~dir ~n_conn () : unit =
 
   Printf.printf "hash dir=%S\n%!" dir;
 
-  Printf.printf "connecting to port %d\n%!" port;
+  Printf.printf "connecting\n%!";
   let addr = Unix.ADDR_INET (Unix.inet_addr_loopback, port) in
 
   (* TODO: *)

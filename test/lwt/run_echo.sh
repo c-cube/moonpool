@@ -1,13 +1,15 @@
 #!/bin/bash
 
-PORT=12346
-echo "run echo server on port=$PORT"
-./echo_server.exe -p $PORT &
+PORT_FILE=$(mktemp)
+rm -f "$PORT_FILE"
+echo "run echo server"
+./echo_server.exe -p 0 -port-file "$PORT_FILE" &
 if [ "x$?" != x0 ]; then exit 1 ; fi
 
-
-sleep 2
-echo "run echo client -p $PORT $*"
+for _ in $(seq 100); do [ -s "$PORT_FILE" ] && break; sleep 0.1; done
+PORT=$(cat "$PORT_FILE")
+rm -f "$PORT_FILE"
+echo "run echo client $*"
 
 export LC_LANG=C
 export LC_ALL=C

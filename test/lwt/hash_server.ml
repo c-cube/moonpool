@@ -158,14 +158,19 @@ let read_file filename : string =
   in
   In_channel.with_open_bin filename In_channel.input_all
 
-let main ~port ~runner () : unit =
+(* written via rename so readers never see a partial file *)
+let write_port_file file port =
+  let oc = open_out (file ^ ".tmp") in
+  Printf.fprintf oc "%d\n" port;
+  close_out oc;
+  Sys.rename (file ^ ".tmp") file
+
+let main ~port ~port_file ~runner () : unit =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "main" in
 
   let lwt_fut, _lwt_prom = Lwt.wait () in
 
   (* TODO: handle exit?? *)
-  Printf.printf "listening on port %d\n%!" port;
-
   let handle_client client_addr (ic, oc) =
     let@ () = Moonpool_lwt.spawn_lwt in
     let _sp =
@@ -206,9 +211,15 @@ let main ~port ~runner () : unit =
   in
 
   let addr = Unix.ADDR_INET (Unix.inet_addr_loopback, port) in
+  let fd = Lwt_unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
   let _server =
-    Lwt_io.establish_server_with_client_address addr handle_client |> await_lwt
+    Lwt_io.establish_server_with_client_address ~fd addr handle_client
+    |> await_lwt
   in
+  Printf.printf "listening\n%!";
+  (match Lwt_unix.getsockname fd, port_file with
+  | Unix.ADDR_INET (_, port), Some file -> write_port_file file port
+  | _ -> ());
 
   lwt_fut |> await_lwt
 
@@ -217,10 +228,15 @@ let () =
   Trace.set_thread_name "main";
   let port = ref 1234 in
   let j = ref 0 in
+  let port_file = ref None in
 
   let opts =
     [
-      "-p", Arg.Set_int port, " port"; "-j", Arg.Set_int j, " number of threads";
+      "-p", Arg.Set_int port, " port (0 for any free port)";
+      "-j", Arg.Set_int j, " number of threads";
+      ( "-port-file",
+        Arg.String (fun f -> port_file := Some f),
+        " write the actual port to this file once listening" );
     ]
     |> Arg.align
   in
@@ -236,4 +252,5 @@ let () =
     in
     Moonpool.Ws_pool.with_ ?num_threads ()
   in
-  M_lwt.lwt_main @@ fun _main_runner -> main ~runner ~port:!port ()
+  M_lwt.lwt_main @@ fun _main_runner ->
+  main ~runner ~port:!port ~port_file:!port_file ()

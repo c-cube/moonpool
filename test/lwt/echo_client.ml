@@ -12,9 +12,8 @@ let main ~port ~n ~n_conn ~verbose ~msg_per_conn () : unit =
 
   let t0 = Unix.gettimeofday () in
   Printf.printf
-    "connecting to port %d (%d msg per conn, %d conns total, %d max at a time)\n\
-     %!"
-    port msg_per_conn n n_conn;
+    "connecting (%d msg per conn, %d conns total, %d max at a time)\n%!"
+    msg_per_conn n n_conn;
   let addr = Unix.ADDR_INET (Unix.inet_addr_loopback, port) in
 
   let token_pool = Lwt_pool.create n_conn (fun () -> Lwt.return_unit) in

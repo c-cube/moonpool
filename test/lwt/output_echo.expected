@@ -1,10 +1,10 @@
-run echo server on port=12346
-listening on port 12346
-run echo client -p 12346 -n 10 --n-conn=2 -v
+run echo server
+listening
+run echo client -n 10 --n-conn=2 -v
 all done
 all done
-connecting to port 12346 (10 msg per conn, 10 conns total, 2 max at a time)
-connecting to port 12346 (10 msg per conn, 10 conns total, 2 max at a time)
+connecting (10 msg per conn, 10 conns total, 2 max at a time)
+connecting (10 msg per conn, 10 conns total, 2 max at a time)
 done
 first run
 read: hello 1

@@ -12,14 +12,19 @@ let str_of_sockaddr = function
   | Unix.ADDR_INET (addr, port) ->
     spf "%s:%d" (Unix.string_of_inet_addr addr) port
 
-let main ~port ~verbose ~runner:_ () : unit =
+(* written via rename so readers never see a partial file *)
+let write_port_file file port =
+  let oc = open_out (file ^ ".tmp") in
+  Printf.fprintf oc "%d\n" port;
+  close_out oc;
+  Sys.rename (file ^ ".tmp") file
+
+let main ~port ~port_file ~verbose ~runner:_ () : unit =
   let@ _sp = Trace.with_span ~__FILE__ ~__LINE__ "main" in
 
   let lwt_fut, _lwt_prom = Lwt.wait () in
 
   (* TODO: handle exit?? ctrl-c? *)
-  Printf.printf "listening on port %d\n%!" port;
-
   let handle_client client_addr (ic, oc) : _ Lwt.t =
     let@ () = M_lwt.spawn_lwt in
     let _sp =
@@ -51,9 +56,15 @@ let main ~port ~verbose ~runner:_ () : unit =
   in
 
   let addr = Unix.ADDR_INET (Unix.inet_addr_any, port) in
+  let fd = Lwt_unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
   let _server =
-    Lwt_io.establish_server_with_client_address addr handle_client |> await_lwt
+    Lwt_io.establish_server_with_client_address ~fd addr handle_client
+    |> await_lwt
   in
+  Printf.printf "listening\n%!";
+  (match Lwt_unix.getsockname fd, port_file with
+  | Unix.ADDR_INET (_, port), Some file -> write_port_file file port
+  | _ -> ());
 
   M_lwt.await_lwt lwt_fut
 
@@ -63,12 +74,16 @@ let () =
   let port = ref 0 in
   let j = ref 4 in
   let verbose = ref false in
+  let port_file = ref None in
 
   let opts =
     [
       "-v", Arg.Set verbose, " verbose";
-      "-p", Arg.Set_int port, " port";
+      "-p", Arg.Set_int port, " port (0 for any free port)";
       "-j", Arg.Set_int j, " number of threads";
+      ( "-port-file",
+        Arg.String (fun f -> port_file := Some f),
+        " write the actual port to this file once listening" );
     ]
     |> Arg.align
   in
@@ -76,4 +91,5 @@ let () =
 
   let@ runner = M.Ws_pool.with_ ~name:"tpool" ~num_threads:!j () in
   (* Lwt_engine.set @@ new Lwt_engine.libev (); *)
-  M_lwt.lwt_main @@ fun _ -> main ~runner ~port:!port ~verbose:!verbose ()
+  M_lwt.lwt_main @@ fun _ ->
+  main ~runner ~port:!port ~port_file:!port_file ~verbose:!verbose ()
