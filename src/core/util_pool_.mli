@@ -1,6 +1,6 @@
 (** Utils for pools *)
 
-val num_threads : ?num_threads:int -> unit -> int
+val num_threads : ?num_threads:int -> use_main_domain:bool -> unit -> int
 (** Number of threads a pool should have.
     @param num_threads user-specified number of threads *)
 
@@ -15,12 +15,17 @@ type ('a, 'b) create_args =
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
   ?num_threads:int ->
+  ?use_main_domain:bool ->
   ?name:string ->
   'a
 (** Shared shape of the [create] argument list used by pool implementations. *)
 
 val spawn_workers_round_robin :
-  num_threads:int -> (int -> dom_id:int -> Thread.t) -> Thread.t array
+  num_threads:int ->
+  use_main_domain:bool ->
+  (int -> dom_id:int -> Thread.t) ->
+  Thread.t array
 (** [spawn_workers_round_robin ~num_threads mk_thread] spawns [num_threads]
     worker threads across domains. Calls [mk_thread] to create [num_threads]
-    threads (to start workers). *)
+    threads (to start workers). If [not use_main_domain], domain [0] is skipped
+    unless it is the only one. *)

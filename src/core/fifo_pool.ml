@@ -107,9 +107,10 @@ let create_ ?(on_init_thread = Util_pool_.default_thread_init_exit_)
   self.as_runner <- runner_of_state self;
   self
 
-let create ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name () : t =
+let create ?on_init_thread ?on_exit_thread ?on_exn ?num_threads
+    ?(use_main_domain = true) ?name () : t =
   (* number of threads to run *)
-  let num_threads = Util_pool_.num_threads ?num_threads () in
+  let num_threads = Util_pool_.num_threads ?num_threads ~use_main_domain () in
 
   let pool =
     let dummy_thread = Thread.self () in
@@ -129,14 +130,17 @@ let create ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name () : t =
   in
 
   ignore
-    (Util_pool_.spawn_workers_round_robin ~num_threads mk_thread
+    (Util_pool_.spawn_workers_round_robin ~num_threads ~use_main_domain
+       mk_thread
       : Thread.t array);
 
   pool.as_runner
 
-let with_ ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name () f =
+let with_ ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?use_main_domain
+    ?name () f =
   let pool =
-    create ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?name ()
+    create ?on_init_thread ?on_exit_thread ?on_exn ?num_threads ?use_main_domain
+      ?name ()
   in
   let@ () = Fun.protect ~finally:(fun () -> shutdown pool) in
   f pool

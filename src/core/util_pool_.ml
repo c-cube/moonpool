@@ -10,25 +10,35 @@ type ('a, 'b) create_args =
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
   ?num_threads:int ->
+  ?use_main_domain:bool ->
   ?name:string ->
   'a
 
-let num_threads ?num_threads () : int =
+let num_threads ?num_threads ~use_main_domain () : int =
   let n_domains = Moonpool_dpool.max_number_of_domains () in
 
   (* number of threads to run *)
   let num_threads =
     match num_threads with
     | Some j -> max 1 j
-    | None -> n_domains
+    | None when use_main_domain || n_domains = 1 -> n_domains
+    | None -> n_domains - 1
   in
 
   num_threads
 
 (* extracted from ws_pool/fifo_pool *)
-let spawn_workers_round_robin ~num_threads
+let spawn_workers_round_robin ~num_threads ~use_main_domain
     (mk_thread : int -> dom_id:int -> Thread.t) : Thread.t array =
   let num_domains = Moonpool_dpool.max_number_of_domains () in
+  (* start threads on domains [base_offset..] *)
+  let base_offset =
+    if use_main_domain || num_domains = 1 then
+      0
+    else
+      1
+  in
+  let num_domains = num_domains - base_offset in
 
   (* make sure we don't bias towards the first domain(s) *)
   let offset = Random.int num_domains in
@@ -38,7 +48,7 @@ let spawn_workers_round_robin ~num_threads
   let receive_threads = Bb_queue.create () in
 
   for i = 0 to num_threads - 1 do
-    let dom_id = (offset + i) mod num_domains in
+    let dom_id = base_offset + ((offset + i) mod num_domains) in
     (* function called in domain with index [dom_id], to
        create the thread and push it into [receive_threads] *)
     Moonpool_dpool.run_on dom_id (fun () ->

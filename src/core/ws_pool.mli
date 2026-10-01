@@ -25,6 +25,7 @@ type ('a, 'b) create_args =
   ?on_exit_thread:(dom_id:int -> t_id:int -> unit -> unit) ->
   ?on_exn:(exn -> Printexc.raw_backtrace -> unit) ->
   ?num_threads:int ->
+  ?use_main_domain:bool ->
   ?name:string ->
   'a
 (** Arguments used in {!create}. See {!create} for explanations. *)
@@ -49,6 +50,9 @@ val create : (unit -> t, _) create_args
       This {b MUST NOT} rise. If it raises, the process will exit.
 
     @param on_exit_thread called at the end of each thread in the pool
+    @param use_main_domain
+      if [false], worker threads are not started on the main domain, unless it
+      is the only one. Default [true] (since NEXT_RELEASE).
     @param name
       a name for this thread pool, used if tracing is enabled (since 0.6) *)
 
