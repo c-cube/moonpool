@@ -321,8 +321,17 @@ let barrier_on_abstract_container_of_futures ~iter ~len ~aggregate_results cont
       create_latch_ ~n_items ~promise ~on_all_done:(fun () ->
           aggregate_results peek_or_assert_ cont)
     in
-
-    iter (fun fut -> on_result_ignore fut (on_res_ latch)) cont;
+    let children = ref [] in
+    iter
+      (fun fut ->
+        children := fut :: !children;
+        on_result_ignore fut (on_res_ latch))
+      cont;
+    (* conversely: cancel the group -> cancel the members *)
+    on_result fut (function
+      | Ok _ -> ()
+      | Error ebt ->
+        List.iter (fun c -> ignore (try_cancel c ebt : bool)) !children);
     fut
   )
 

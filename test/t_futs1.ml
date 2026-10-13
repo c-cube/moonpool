@@ -171,3 +171,53 @@ let () =
   in
 
   List.iter run_for [ 0; 1; 2; 3; 10; 50; 1_000 ]
+
+(* group semantics: a group resolving with an error cancels its members *)
+exception Boom_test
+
+let () =
+  let never, _ = Fut.make () in
+  let kids =
+    [
+      Fut.spawn ~on:pool (fun () -> raise Not_found);
+      Fut.spawn ~on:pool (fun () -> Fut.await never);
+      Fut.spawn ~on:pool (fun () -> Fut.await never);
+    ]
+  in
+  let group = Fut.wait_list kids in
+  (match Fut.wait_block group with
+  | Error ebt -> assert (Exn_bt.exn ebt = Not_found)
+  | Ok () -> assert false);
+  List.iter
+    (fun k ->
+      match Fut.wait_block k with
+      | Error ebt -> assert (Exn_bt.exn ebt = Not_found)
+      | Ok () -> assert false)
+    kids
+
+let () =
+  let never, _ = Fut.make () in
+  let kids =
+    Array.init 4 (fun _ -> Fut.spawn ~on:pool (fun () -> Fut.await never))
+  in
+  let group = Fut.wait_list (Array.to_list kids) in
+  let ebt = Exn_bt.make Boom_test (Printexc.get_callstack 0) in
+  assert (Fut.try_cancel (Fut.Private_.unsafe_promise_of_fut group) ebt);
+  (match Fut.peek group with
+  | Some (Error ebt) -> assert (Exn_bt.exn ebt = Boom_test)
+  | _ -> assert false);
+  Array.iter
+    (fun k ->
+      match Fut.wait_block k with
+      | Error ebt -> assert (Exn_bt.exn ebt = Boom_test)
+      | Ok () -> assert false)
+    kids
+
+let () =
+  let never, _ = Fut.make () in
+  let fut = Fut.for_ ~on:pool 4 (fun _ -> Fut.await never) in
+  let ebt = Exn_bt.make Boom_test (Printexc.get_callstack 0) in
+  assert (Fut.try_cancel (Fut.Private_.unsafe_promise_of_fut fut) ebt);
+  match Fut.peek fut with
+  | Some (Error ebt) -> assert (Exn_bt.exn ebt = Boom_test)
+  | _ -> assert false
