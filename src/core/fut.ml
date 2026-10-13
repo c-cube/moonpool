@@ -358,14 +358,18 @@ let wait_list (a : _ t list) : unit t =
     ~aggregate_results:(fun _f _ -> ())
 
 let for_ ~on n f : unit t =
-  barrier_on_abstract_container_of_futures
-    ~len:(fun () -> n)
-    ~iter:(fun yield () ->
-      for i = 0 to n - 1 do
-        yield (spawn ~on (fun () -> f i))
-      done)
-    ~aggregate_results:(fun _f () -> ())
-    ()
+  match n with
+  | n when n <= 0 -> return ()
+  | 1 -> spawn ~on (fun () -> f 0)
+  | _ ->
+    barrier_on_abstract_container_of_futures
+      ~len:(fun () -> n)
+      ~iter:(fun yield () ->
+        for i = 0 to n - 1 do
+          yield (spawn ~on (fun () -> f i))
+        done)
+      ~aggregate_results:(fun _f () -> ())
+      ()
 
 let for_array ~on arr f : unit t =
   for_ ~on (Array.length arr) (fun i -> f i arr.(i))

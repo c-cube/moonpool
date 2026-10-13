@@ -121,6 +121,12 @@ let () =
   assert (Atomic.get n = 99 * 100)
 
 let () =
+  (* for_ with a non-positive count resolves at once (cfr. dhyx) *)
+  assert (Fut.peek (Fut.for_ ~on:pool 0 ignore) = Some (Ok ()));
+  assert (Fut.peek (Fut.for_ ~on:pool (-1) ignore) = Some (Ok ()));
+  assert (Fut.peek (Fut.for_ ~on:pool (-42) ignore) = Some (Ok ()))
+
+let () =
   let f1 = mk_ret_delay 0.1 "foo" in
   assert (
     try
