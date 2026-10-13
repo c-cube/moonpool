@@ -28,7 +28,7 @@ let try_push (self : _ t) x : bool =
     );
 
     match Queue.length self.q with
-    | 0 ->
+    | n when n < self.max_size ->
       let to_awake = Queue.create () in
       Queue.push x self.q;
       Queue.transfer self.pop_waiters to_awake;
@@ -36,10 +36,6 @@ let try_push (self : _ t) x : bool =
       (* wake up pop triggers if needed. Be careful to do that
          outside the critical section*)
       Queue.iter Trigger.signal to_awake;
-      true
-    | n when n < self.max_size ->
-      Queue.push x self.q;
-      Mutex.unlock self.mutex;
       true
     | _ ->
       Mutex.unlock self.mutex;
@@ -85,15 +81,12 @@ let rec push (self : _ t) x : unit =
   );
 
   match Queue.length self.q with
-  | 0 ->
+  | n when n < self.max_size ->
     Queue.push x self.q;
     let to_wakeup = Queue.create () in
     Queue.transfer self.pop_waiters to_wakeup;
     Mutex.unlock self.mutex;
     Queue.iter Trigger.signal to_wakeup
-  | n when n < self.max_size ->
-    Queue.push x self.q;
-    Mutex.unlock self.mutex
   | _ ->
     let tr = Trigger.create () in
     Queue.push tr self.push_waiters;

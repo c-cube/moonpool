@@ -5,6 +5,7 @@
   t_bench1
   t_fib_rec
   t_futs1
+  t_chan
   t_tree_futs
   t_props
   t_resource
