@@ -6,6 +6,7 @@
   t_fib_rec
   t_futs1
   t_chan
+  t_after_main
   t_tree_futs
   t_props
   t_resource

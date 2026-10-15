@@ -50,14 +50,6 @@ module For_runner_implementors = struct
   let k_cur_runner : t TLS.t = Types_.k_cur_runner
 end
 
-let dummy : t =
-  For_runner_implementors.create
-    ~size:(fun () -> 0)
-    ~num_tasks:(fun () -> 0)
-    ~shutdown:(fun ~wait:_ () -> ())
-    ~run_async:(fun ~fiber:_ _ ->
-      failwith "Runner.dummy: cannot actually run tasks")
-    ()
-
+let dummy : t = Types_.dummy_runner
 let get_current_runner = get_current_runner
 let get_current_fiber = get_current_fiber

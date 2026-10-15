@@ -171,6 +171,8 @@ module Fine_grained (Args : FINE_GRAINED_ARGS) () = struct
     if !state <> Torn_down then (
       state := Torn_down;
       cur_fiber := _dummy_fiber;
+      (* make sure we don't leave a dead runner around *)
+      TLS.set Runner.For_runner_implementors.k_cur_runner Runner.dummy;
       ops.cleanup st
     )
 end

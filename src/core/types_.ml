@@ -20,7 +20,24 @@ let _dummy_computation : Picos.Computation.packed =
   Picos.Computation.Packed c
 
 let _dummy_fiber = Picos.Fiber.create_packed ~forbid:true _dummy_computation
-let[@inline] get_current_runner () : _ option = TLS.get_opt k_cur_runner
+
+let dummy_runner : runner =
+  {
+    run_async =
+      (fun ~fiber:_ _ -> failwith "Runner.dummy: cannot actually run tasks");
+    shutdown = (fun ~wait:_ () -> ());
+    size = (fun () -> 0);
+    num_tasks = (fun () -> 0);
+  }
+
+let[@inline] get_current_runner () : _ option =
+  match TLS.get_exn k_cur_runner with
+  | r ->
+    if r != dummy_runner then
+      Some r
+    else
+      None
+  | exception TLS.Not_set -> None
 
 let[@inline] get_current_fiber () : fiber option =
   match TLS.get_exn k_cur_fiber with
